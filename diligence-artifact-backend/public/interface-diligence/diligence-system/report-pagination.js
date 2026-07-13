@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  const VERSION = "interface_report_pagination.v1";
+  const VERSION = "interface_report_pagination.v2.accessible";
   const TABLE_PAGE_SIZE = 10;
   const DECK_PAGE_SIZE = 5;
   const state = new Map();
@@ -28,25 +28,43 @@
     const shell = node("div", "report-table-shell");
     shell.dataset.reportPaginationId = componentId;
     shell.dataset.reportPaginationKind = "table";
+    shell.setAttribute("role", "group");
 
-    if (caption) shell.append(node("div", "report-table-caption", caption));
+    const table = node("table", "report-document-table");
+    table.id = `${componentId}-table`;
+    if (caption) {
+      const tableCaption = node("caption", "report-table-caption", caption);
+      tableCaption.id = `${componentId}-caption`;
+      table.append(tableCaption);
+      shell.setAttribute("aria-labelledby", tableCaption.id);
+    } else {
+      table.setAttribute("aria-label", "Report table");
+      shell.setAttribute("aria-label", "Report table");
+    }
+
     if (!Array.isArray(rows) || !rows.length) {
-      shell.append(node("p", "report-narrative", emptyMessage));
+      const empty = node("p", "report-empty-state", emptyMessage);
+      empty.setAttribute("role", "status");
+      shell.append(empty);
       return shell;
     }
 
-    const table = node("table", "report-document-table");
     const thead = document.createElement("thead");
     const headRow = document.createElement("tr");
-    for (const column of columns) headRow.append(node("th", "", column.label || column.key || "Column"));
+    for (const column of columns) {
+      const th = node("th", "", column.label || column.key || "Column");
+      th.scope = "col";
+      headRow.append(th);
+    }
     thead.append(headRow);
 
     const tbody = document.createElement("tbody");
     const rowNodes = rows.map(function (row, rowIndex) {
       const tr = document.createElement("tr");
       tr.dataset.reportRowIndex = String(rowIndex);
-      for (const column of columns) {
+      for (const [columnIndex, column] of columns.entries()) {
         const td = document.createElement("td");
+        td.dataset.reportColumn = column.key || String(columnIndex);
         const rendered = renderCell(row, column, rowIndex);
         appendValue(td, rendered);
         tr.append(td);
@@ -58,7 +76,7 @@
     table.append(thead, tbody);
     shell.append(table);
     shell.append(buildControls({ componentId, total: rows.length, pageSize: TABLE_PAGE_SIZE, itemNodes: rowNodes, itemLabel: "rows" }));
-    applyPage(componentId);
+    applyPage(componentId, { announce: false });
     return shell;
   }
 
@@ -67,10 +85,21 @@
     const shell = node("div", "report-deck-shell");
     shell.dataset.reportPaginationId = componentId;
     shell.dataset.reportPaginationKind = "deck";
+    shell.setAttribute("role", "group");
 
-    if (caption) shell.append(node("div", "report-table-caption", caption));
+    if (caption) {
+      const heading = node("div", "report-table-caption", caption);
+      heading.id = `${componentId}-caption`;
+      shell.append(heading);
+      shell.setAttribute("aria-labelledby", heading.id);
+    } else {
+      shell.setAttribute("aria-label", "Report detail deck");
+    }
+
     if (!Array.isArray(items) || !items.length) {
-      shell.append(node("p", "report-narrative", emptyMessage));
+      const empty = node("p", "report-empty-state", emptyMessage);
+      empty.setAttribute("role", "status");
+      shell.append(empty);
       return shell;
     }
 
@@ -79,13 +108,15 @@
       const card = typeof renderCard === "function" ? renderCard(item, index) : defaultCardRenderer(item, index);
       card.classList.add("report-detail-card");
       card.dataset.reportCardIndex = String(index);
+      card.setAttribute("aria-setsize", String(items.length));
+      card.setAttribute("aria-posinset", String(index + 1));
       deck.append(card);
       return card;
     });
 
     shell.append(deck);
     shell.append(buildControls({ componentId, total: items.length, pageSize: DECK_PAGE_SIZE, itemNodes: cardNodes, itemLabel: "cards" }));
-    applyPage(componentId);
+    applyPage(componentId, { announce: false });
     return shell;
   }
 
@@ -93,16 +124,20 @@
     const pageCount = Math.max(1, Math.ceil(total / pageSize));
     state.set(componentId, { page: 0, total, pageSize, pageCount, itemNodes });
 
-    const controls = node("div", "report-pagination no-print");
+    const controls = node("nav", "report-pagination no-print");
     controls.dataset.reportPaginationControls = componentId;
+    controls.setAttribute("aria-label", `Pagination for ${componentId}`);
     const summary = node("span", "report-pagination-summary", "");
+    summary.id = `${componentId}-pagination-summary`;
+    summary.setAttribute("aria-live", "polite");
+    summary.setAttribute("aria-atomic", "true");
     const actions = node("div", "report-pagination-actions");
 
     actions.append(
-      pageButton("First", function () { setPage(componentId, 0); }),
-      pageButton("Previous", function () { shiftPage(componentId, -1); }),
-      pageButton("Next", function () { shiftPage(componentId, 1); }),
-      pageButton("Last", function () { setPage(componentId, pageCount - 1); })
+      pageButton("First", componentId, function () { setPage(componentId, 0); }),
+      pageButton("Previous", componentId, function () { shiftPage(componentId, -1); }),
+      pageButton("Next", componentId, function () { shiftPage(componentId, 1); }),
+      pageButton("Last", componentId, function () { setPage(componentId, pageCount - 1); })
     );
 
     controls.append(summary, actions);
@@ -112,7 +147,7 @@
     return controls;
   }
 
-  function applyPage(componentId) {
+  function applyPage(componentId, { announce = true } = {}) {
     const current = state.get(componentId);
     if (!current) return;
     const page = clamp(current.page, 0, current.pageCount - 1);
@@ -121,8 +156,10 @@
     const end = Math.min(start + current.pageSize, current.total);
 
     current.itemNodes.forEach(function (item, index) {
-      item.classList.toggle("is-page-hidden", index < start || index >= end);
-      item.setAttribute("aria-hidden", index < start || index >= end ? "true" : "false");
+      const hidden = index < start || index >= end;
+      item.classList.toggle("is-page-hidden", hidden);
+      item.setAttribute("aria-hidden", hidden ? "true" : "false");
+      if ("inert" in item) item.inert = hidden;
     });
 
     const shell = document.querySelector(`[data-report-pagination-id="${cssEscape(componentId)}"]`);
@@ -133,6 +170,13 @@
     first.disabled = previous.disabled = page === 0;
     next.disabled = last.disabled = page >= current.pageCount - 1;
     controls.hidden = current.pageCount <= 1;
+
+    if (announce) {
+      shell?.dispatchEvent(new CustomEvent("interface:report-pagination-change", {
+        bubbles: true,
+        detail: { componentId, page: page + 1, pageCount: current.pageCount, start: start + 1, end, total: current.total }
+      }));
+    }
   }
 
   function setPage(componentId, page) {
@@ -158,9 +202,10 @@
     state.clear();
   }
 
-  function pageButton(label, handler) {
+  function pageButton(label, componentId, handler) {
     const button = node("button", "report-page-button", label);
     button.type = "button";
+    button.setAttribute("aria-label", `${label} page for ${componentId}`);
     button.addEventListener("click", handler);
     return button;
   }
