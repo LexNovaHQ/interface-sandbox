@@ -46,6 +46,15 @@ For material profile jobs:
 
 Target Profile Review uses `ROUTE.PHASE3A.TARGET_PROFILE` and bucket `2A_BUCKET_TARGET_PROFILE`. It may use only routed target evidence, `target_profile_source_index`, and bounded `legal_signal_derivation_profile` rows. It must not derive Lane/domain package/AI mount decisions.
 
+3A scoped routed primary evidence roots:
+
+- `lossless_root__homepage_landing`
+- `lossless_root__company_identity`
+- `lossless_root__contact_notice`
+- `lossless_root__pricing_commercial_availability`
+- `lossless_root__regulatory_licensing_status`
+- `lossless_root__grievance_complaints`
+
 ## Domain Derivation Layer read authority
 
 Domain Derivation Layer uses `ROUTE.PHASE3B.DOMAIN_DERIVATION` and bucket `2B_BUCKET_DOMAIN_DERIVATION`. It uses `domain_derivation_source_index` as navigation, mounted Registry Keys plus catalog/FDR grammar as rule authority, and deterministic validator/compiler as lock authority.
