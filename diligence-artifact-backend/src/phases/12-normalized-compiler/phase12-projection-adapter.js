@@ -14,6 +14,7 @@ import {
   section8ChildForRow
 } from "./phase12-artifact-family.contract.js";
 import { injectPhase12ActivityPresentation } from "./phase12-activity-presentation.js";
+import { injectPhase12ObligationPresentation } from "./phase12-obligation-presentation.js";
 import { buildExposureDisplayRow, projectFdrFinding } from "./phase12-profile-normalizer.js";
 import { validatePhase12CompilerOutput } from "./phase12-compiler-validator.js";
 
@@ -49,6 +50,11 @@ export function buildPhase12ProjectionAdapter({ run = {}, artifacts = {}, admiss
   Object.assign(reportArtifacts, buildSection8ArtifactFamily({ admissionRoot, routeRoot, custody, status: preliminaryStatus }));
   injectPhase12ActivityPresentation({
     section: reportArtifacts.report_section__04_product_activity_architecture,
+    artifacts,
+    custody
+  });
+  injectPhase12ObligationPresentation({
+    section: reportArtifacts.report_section__06_sector_control_obligations,
     artifacts,
     custody
   });
