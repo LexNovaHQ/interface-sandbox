@@ -61,6 +61,7 @@ function validateAnnexure() {
   has(files.annexHtml, "Reference layer");
   has(files.annexHtml, 'id="backToReportButton"');
   has(files.annexHtml, 'id="annexureQualifiedReviewButton"');
+  has(files.annexHtml, 'id="annexureHeaderQualifiedReview"');
   has(files.annexHtml, 'id="manifestJsonButton"');
   has(files.annexHtml, 'id="artifactIndex"');
   has(files.annexHtml, "annexure-route-sync.js");
@@ -84,8 +85,11 @@ function validateAnnexure() {
   has(files.annexJs, "exclusion_reason");
   has(files.annexJs, "Public manifest metadata only");
   has(files.annexJs, 'th.scope = "col"');
-  lacks(files.annexJs, "raw infrastructure payload");
+  has(files.annexJs, "qualified-review.html?run_id=");
+  has(files.annexJs, "report.html?run_id=");
   has(files.annexRoutes, "qualified-review.html?run_id=");
+  lacks(files.annexJs, "reviewer submission payload");
+  lacks(files.annexJs, "provider telemetry payload");
 }
 
 function validateQualifiedReview() {
@@ -111,7 +115,20 @@ function validateQualifiedReview() {
   has(files.qrCss, ".qr-receipt-panel");
   has(files.qrCss, ".qr-alert-panel");
 
+  has(files.qrRenderer, 'QUALIFIED_REVIEW_RENDERER_VERSION = "qualified_review_renderer_matrix_artifacts_v2.separate_workspace"');
+  has(files.qrRenderer, "qualified_review_is_separate_system: true");
+  has(files.qrRenderer, "shares_pipeline_run_id: true");
   has(files.qrRenderer, "no_document_assembly: true");
+  has(files.qrRenderer, "limitation_notes: true");
+  has(files.qrRenderer, "save_response_state: true");
+  has(files.qrRenderer, "submission_receipt: true");
+  has(files.qrRenderer, 'reviewer_decisions: ["confirm", "correct", "limitation", "not_applicable"]');
+  has(files.qrRenderer, 'forbidden_public_actions: ["Download JSON", "Assemble Document", "Proceed to Drafting"]');
+  has(files.qrRenderer, "before Qualified Review submission");
+  lacks(files.qrRenderer, "before draft preparation");
+  lacks(files.qrRenderer, "ready_for_assembly");
+  lacks(files.qrRenderer, "assembly-engine.html");
+
   has(files.qrJs, 'const VERSION = "interface_qualified_review_workspace.v2"');
   has(files.qrJs, "qualified_review_is_separate_system: true");
   has(files.qrJs, "shares_pipeline_run_id: true");
@@ -125,8 +142,8 @@ function validateQualifiedReview() {
   has(files.qrJs, '["not_applicable", "Not applicable"]');
   has(files.qrJs, "reviewer_limitation");
   has(files.qrJs, "not_applicable_reason: limitation");
-  has(files.qrJs, 'save_reason: reason');
-  has(files.qrJs, 'question_responses: responses');
+  has(files.qrJs, "save_reason: reason");
+  has(files.qrJs, "question_responses: responses");
   has(files.qrJs, "localStorage.setItem");
   has(files.qrJs, "renderReceipt");
   has(files.qrJs, "Qualified Review receipt");
@@ -144,6 +161,7 @@ function validateScripts() {
     base + "technical-annexure.js",
     base + "annexure-route-sync.js",
     base + "qualified-review-system/qualified-review.js",
+    "src/qualified-review-system/renderer.js",
     "scripts/check-interface-annex-qr-contract.mjs"
   ]) {
     const result = spawnSync(process.execPath, ["--check", path.join(root, file)], { encoding: "utf8" });
