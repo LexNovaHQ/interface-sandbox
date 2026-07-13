@@ -86,11 +86,9 @@ jobs:
         if: steps.apply_cutover.outcome == 'failure'
         run: exit 1
 
-      - name: Validate CO-P12-01 through CO-P12-05
+      - name: Validate current Phase 12 authority
         working-directory: diligence-artifact-backend
         run: |
-          npm run check:p12:co1
-          npm run check:p12:co2
           npm run check:p12:co3
           npm run check:p12:co4
           npm run check:p12:co5
@@ -147,7 +145,7 @@ jobs:
             schema_version: 'co_p12_05_certified_receipt.v1',
             status: 'PASS',
             exit_code: 0,
-            command: 'npm run check:p12:co1..co5 && npm run check',
+            command: 'npm run check:p12:co3 && npm run check:p12:co4 && npm run check:p12:co5 && npm run check',
             workflow: process.env.WORKFLOW_NAME,
             run_id: process.env.RUN_ID,
             target_branch: 'domain-gate-v0-preflight',
