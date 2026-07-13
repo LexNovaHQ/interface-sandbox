@@ -15,6 +15,25 @@ export const CO_CLEAN_02_ABSENT_FILES = Object.freeze([
   "receipts/CO_P12_CLOSEOUT_APPLIED.json"
 ]);
 
+export const CO_PROD_AUDIT_02_ABSENT_FILES = Object.freeze([
+  "audits/PHASE11_PRODUCTION_CLOSURE_RECEIPT.md",
+  "scripts/check-phase11-production-closure.mjs",
+  "scripts/check-phase11-central-runtime-e2e.mjs",
+  "scripts/check-phase11-false-blockers.mjs",
+  "scripts/check-phase11-lease-concurrency.mjs",
+  "scripts/check-phase11-multi-owner-routing.mjs",
+  "scripts/check-phase11-owner-adapters.mjs",
+  "scripts/check-phase11-phase10-targeted-hardening.mjs",
+  "scripts/check-phase11-phase3-targeted.mjs",
+  "scripts/check-phase11-phase5-targeted.mjs",
+  "scripts/check-phase11-phase7-single-batch-targeted.mjs",
+  "scripts/check-phase11-phase8-targeted.mjs",
+  "scripts/check-phase11-staged-mutation-commit.mjs",
+  "scripts/check-phase11-targeted-packet-runtime.mjs",
+  "scripts/check-phase11-technical-attempt-separation.mjs",
+  "scripts/phase11-executable-test-fixtures.mjs"
+]);
+
 export const CO_CLEAN_02_FORBIDDEN_PACKAGE_SCRIPTS = Object.freeze([
   "audit:migration-receipts",
   "check:p12:co1",
@@ -23,6 +42,16 @@ export const CO_CLEAN_02_FORBIDDEN_PACKAGE_SCRIPTS = Object.freeze([
   "check:p12:co4",
   "check:p12:co5",
   "check:runtime-cleanup"
+]);
+
+export const CO_PROD_AUDIT_02_FORBIDDEN_PACKAGE_SCRIPTS = Object.freeze([
+  "check:phase11-targeted-runtime",
+  "check:phase11-owner-adapters",
+  "check:phase11-control-plane",
+  "check:phase11-central-e2e",
+  "check:phase11-co14",
+  "check:phase11-production-closure",
+  "check:phase11-full"
 ]);
 
 const PHASE3A_AUTHORITY = "references/registry/M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml";
@@ -60,8 +89,16 @@ export function assertNoUnreferencedCleaningArtifacts() {
     if (exists(file)) failures.push(`STALE_CLEANING_ARTIFACT_PRESENT:${file}`);
   }
 
+  for (const file of CO_PROD_AUDIT_02_ABSENT_FILES) {
+    if (exists(file)) failures.push(`PHASE11_CLOSURE_SPILLOVER_PRESENT:${file}`);
+  }
+
   for (const scriptName of CO_CLEAN_02_FORBIDDEN_PACKAGE_SCRIPTS) {
     if (Object.prototype.hasOwnProperty.call(scripts, scriptName)) failures.push(`RETIRED_PACKAGE_SCRIPT_PRESENT:${scriptName}`);
+  }
+
+  for (const scriptName of CO_PROD_AUDIT_02_FORBIDDEN_PACKAGE_SCRIPTS) {
+    if (Object.prototype.hasOwnProperty.call(scripts, scriptName)) failures.push(`PHASE11_CLOSURE_PACKAGE_SCRIPT_PRESENT:${scriptName}`);
   }
 
   if (scripts["check:phase12-post-clean"] !== "node scripts/check-phase12-post-clean-production.mjs") {
@@ -89,12 +126,15 @@ export function assertNoUnreferencedCleaningArtifacts() {
     check: "CO-CLEAN-02 unreferenced cleaning artifacts",
     status: "PASS",
     absent_files_asserted: CO_CLEAN_02_ABSENT_FILES.length,
+    phase11_closure_spillover_absent_files_asserted: CO_PROD_AUDIT_02_ABSENT_FILES.length,
     forbidden_package_scripts_asserted: CO_CLEAN_02_FORBIDDEN_PACKAGE_SCRIPTS.length,
+    phase11_closure_package_scripts_forbidden: CO_PROD_AUDIT_02_FORBIDDEN_PACKAGE_SCRIPTS.length,
     post_clean_guard_wired: true,
     active_pollution_scan_file_count: CO_PROD_AUDIT_01_ACTIVE_POLLUTION_SCAN_FILES.length,
     active_pollution_markers_forbidden: CO_PROD_AUDIT_01_FORBIDDEN_ACTIVE_MARKERS.length,
     co_prod_audit_01_phase3a_authority_boundary: "PHASE2G_ROUTED_ONLY",
-    co_prod_audit_01_reviewer_smoke_renderer_shape: "REPORT_ARTIFACT_REFS"
+    co_prod_audit_01_reviewer_smoke_renderer_shape: "REPORT_ARTIFACT_REFS",
+    co_prod_audit_02_phase11_closure_spillover: "ABSENT"
   };
 }
 
