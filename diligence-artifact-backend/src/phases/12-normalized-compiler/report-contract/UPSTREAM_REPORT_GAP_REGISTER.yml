@@ -1,5 +1,5 @@
 upstream_report_gap_register:
-  schema_version: upstream_report_gap_register.v1.co_p12_02
+  schema_version: upstream_report_gap_register.v1.co_p12_closeout
   status: LOCKED
   blocking_rule: Phase 12 must not derive, repair or synthesize a field whose upstream owner is absent.
   gaps:
@@ -49,12 +49,16 @@ upstream_report_gap_register:
         - FPA.LIM.001
       treatment: BLOCK_FROM_REPORT_UNTIL_PHASE11_OR_AN_EXPLICIT_FINAL_ASSESSMENT_OWNER_EMITS_THE_FIELDS
       p12_derivation_forbidden: true
-    - gap_id: P12.GAP.ROUTE_BINDINGS
-      type: SOURCE_PATH_BINDING_NOT_YET_FROZEN
+  resolved_items:
+    - resolved_id: P12.RESOLVED.ROUTE_BINDINGS
+      former_type: SOURCE_PATH_BINDING_NOT_YET_FROZEN
       affected_active_field_count: 430
-      treatment: CO_P12_03 must bind each active field to an exact material artifact path before compiler cutover.
-      current_change_order_may_not_guess_paths: true
+      resolved_by: CO_P12_03_ROUTE_PLAN
+      treatment: RESOLVED_BY_PHASE12_ROUTE_ADAPTER_AND_PRODUCTION_COMPILER_CUTOVER
+      phase12_must_not_guess_paths: true
   summary:
     active_owned_fields: 430
     blocked_upstream_gap_fields: 27
     total_fdr_fields: 457
+    unresolved_gap_count: 3
+    resolved_closeout_item_count: 1
