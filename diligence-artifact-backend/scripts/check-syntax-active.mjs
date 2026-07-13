@@ -33,13 +33,18 @@ console.log(JSON.stringify({
   active_test_entrypoints_checked: activeScriptEntrypoints.length,
   active_test_support_files_checked: activeTestSupport.length,
   files_checked: files.length,
-  excluded_from_blocking_gate: ["unreferenced historical acceptance scripts", "one-time applicators"]
+  excluded_from_blocking_gate: [
+    "manual audit scripts",
+    "unreferenced historical acceptance scripts",
+    "one-time applicators"
+  ]
 }, null, 2));
 
 function discoverActiveScriptEntrypoints(scripts) {
   const files = [];
   const pattern = /(?:^|(?:&&|\|\||;)\s*)node\s+(?!--check\b)([^\s;&|]+\.mjs)(?=\s|$|[;&|])/g;
-  for (const command of Object.values(scripts)) {
+  for (const [scriptName, command] of Object.entries(scripts)) {
+    if (scriptName.startsWith("audit:")) continue;
     let match;
     while ((match = pattern.exec(command)) !== null) files.push(normalize(match[1]));
   }
