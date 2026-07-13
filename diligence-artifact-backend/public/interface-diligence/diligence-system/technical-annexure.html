@@ -11,8 +11,10 @@
   <link rel="stylesheet" href="./diligence-system.css?v=locked-report-20260701" />
   <link rel="stylesheet" href="./interface-header.css?v=20260703" />
   <link rel="stylesheet" href="./interface-ui-shell.css?v=shell-v1-20260713" />
+  <link rel="stylesheet" href="./interface-annexure.css?v=annexure-v1-20260713" />
 </head>
-<body>
+<body class="annexure-page">
+  <div class="report-visually-hidden" id="annexureLiveStatus" role="status" aria-live="polite" aria-atomic="true"></div>
   <div class="progress-line" style="width:100%" aria-hidden="true"></div>
   <header class="topbar interface-topbar no-print">
     <div class="topbar-inner">
@@ -22,7 +24,7 @@
       </a>
       <nav class="engine-nav" aria-label="Interface engines">
         <a class="engine-nav-link active" href="/interface-diligence/diligence-system/">Diligence</a>
-        <a class="engine-nav-link" href="/interface-diligence/diligence-system/qualified-review.html">Qualified Review</a>
+        <a class="engine-nav-link" id="annexureHeaderQualifiedReview" href="qualified-review.html">Qualified Review</a>
         <span class="engine-nav-link preview" aria-disabled="true">Assembly Preview</span>
         <span class="engine-nav-link preview" aria-disabled="true">Signals Preview</span>
         <a class="engine-nav-link" href="https://portfolio-shwetabh.lexnovahq.com/" target="_blank" rel="noopener">Portfolio</a>
@@ -31,34 +33,55 @@
   </header>
 
   <div class="page-shell">
-    <main>
-      <section class="hero report-shell">
-        <div class="eyebrow">Public Technical Annexure</div>
-        <h1 id="annexureTitle">Loading annexure...</h1>
-        <p class="hero-copy" id="annexureSubtitle">Manifest view for preserved public diligence artifacts.</p>
-        <div class="report-actions no-print">
-          <a class="btn" id="backToReportButton" href="#">Back to Report</a>
-          <a class="btn secondary" id="manifestJsonButton" href="#" target="_blank" rel="noopener">Open Manifest JSON</a>
-          <a class="btn secondary" href="/interface-diligence/diligence-system/">New Run</a>
+    <main class="annexure-main" id="annexureMain">
+      <header class="annexure-header">
+        <div>
+          <div class="eyebrow">Public Technical Annexure</div>
+          <h1 id="annexureTitle">Loading annexure...</h1>
+          <p class="annexure-subtitle" id="annexureSubtitle">Manifest view for preserved public diligence artifacts.</p>
         </div>
-        <div class="notice"><strong>Boundary:</strong> This is the public auditability layer. It shows artifact manifest metadata only. It excludes platform secrets, provider telemetry, raw infrastructure logs, and private reviewer submissions.</div>
+        <div class="annexure-actions no-print">
+          <a class="btn" id="backToReportButton" href="#">Back to Report</a>
+          <a class="btn secondary" id="annexureQualifiedReviewButton" href="#">Open Qualified Review</a>
+          <a class="btn secondary" id="manifestJsonButton" href="#" target="_blank" rel="noopener">Open Manifest JSON</a>
+        </div>
+      </header>
+
+      <section class="annexure-boundary" aria-label="Public annexure boundary">
+        <div class="annexure-boundary-item">
+          <strong>Public manifest only</strong>
+          <p>This layer lists public artifact metadata. It does not inline underlying diligence payloads or reconstruct report findings.</p>
+        </div>
+        <div class="annexure-boundary-item">
+          <strong>Private material excluded</strong>
+          <p>Reviewer submissions, provider telemetry, platform secrets, private infrastructure logs and non-public custody material remain outside this page.</p>
+        </div>
+        <div class="annexure-boundary-item">
+          <strong>Reference layer</strong>
+          <p>The report remains the readable diligence document. Qualified Review remains the separate confirmation and correction workspace.</p>
+        </div>
       </section>
 
-      <section class="card" id="annexureMetaCard">
-        <div class="eyebrow">Annexure manifest</div>
-        <div id="annexureMeta">Loading...</div>
+      <section aria-labelledby="annexureMetaHeading">
+        <div class="eyebrow" id="annexureMetaHeading">Annexure manifest</div>
+        <div class="annexure-meta" id="annexureMeta">Loading manifest metadata...</div>
       </section>
 
-      <section class="report-section">
-        <div class="eyebrow">Artifact index</div>
-        <h2>Public Artifact Manifest</h2>
-        <p class="section-summary">Artifacts marked excluded are deliberately outside the public technical annexure layer.</p>
-        <div id="artifactTable">Loading...</div>
+      <section aria-labelledby="artifactIndexHeading">
+        <div class="annexure-index-heading">
+          <div>
+            <div class="eyebrow">Artifact index</div>
+            <h2 id="artifactIndexHeading">Public Artifact Manifest</h2>
+            <p class="small-muted">Artifacts are grouped by phase and public profile family. Excluded rows remain visible only as manifest exclusions.</p>
+          </div>
+          <div class="annexure-counts" id="annexureCounts"></div>
+        </div>
+        <div id="artifactIndex">Loading artifact manifest...</div>
       </section>
     </main>
-    <div class="footer-note">Layer 2 of the deterministic diligence report: public technical annexure manifest.</div>
+    <div class="footer-note">Public Technical Annexure. Manifest metadata only; private reviewer and infrastructure material excluded.</div>
   </div>
 
-  <script src="./technical-annexure.js?v=locked-report-20260701" defer></script>
+  <script src="./technical-annexure.js?v=annexure-v1-20260713" defer></script>
 </body>
 </html>
