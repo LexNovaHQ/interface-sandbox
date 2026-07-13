@@ -6,13 +6,23 @@ const root = process.cwd();
 const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), "utf8");
 
 const uiLock = read("docs/ui/INTERFACE_UI_LOCK_v1.md");
+const shellCss = read("public/interface-diligence/diligence-system/interface-ui-shell.css");
 const reportHtml = read("public/interface-diligence/diligence-system/report.html");
 const reportJs = read("public/interface-diligence/diligence-system/report.js");
 const p12Bridge = read("public/interface-diligence/diligence-system/report-p12-payload-adapter.js");
 const landing = read("public/interface-diligence/diligence-system/index.html");
+const annexure = read("public/interface-diligence/diligence-system/technical-annexure.html");
+const qualifiedReview = read("public/interface-diligence/diligence-system/qualified-review.html");
 const packageJson = JSON.parse(read("package.json"));
 
 const expectedSectionIds = '["01", "02", "03", "04", "05", "06", "07", "08", "09", "10"]';
+const shellImport = "interface-ui-shell.css?v=shell-v1-20260713";
+const shellPages = [
+  ["landing", landing],
+  ["report", reportHtml],
+  ["technical_annexure", annexure],
+  ["qualified_review", qualifiedReview]
+];
 const legacySectionIds = [
   "matter_overview",
   "executive_summary",
@@ -37,6 +47,29 @@ assert.match(landing, /Law × Technology · AI Governance · Privacy · Systems/
 assert.match(landing, /<div class="eyebrow">Diligence Intake<\/div>/, "landing eyebrow changed unexpectedly");
 assert.match(landing, /<h1>Start a legal diligence run\.<\/h1>/, "landing hero title changed unexpectedly");
 assert.doesNotMatch(landing, /Lex Nova Diligence Engine/, "landing page must not be rebranded to Lex Nova");
+
+assert.match(shellCss, /INTERFACE_UI_SHELL_V1/, "shared shell CSS must carry INTERFACE_UI_SHELL_V1 marker");
+assert.match(shellCss, /--interface-shell-version: "interface_ui_shell\.v1"/, "shared shell CSS must expose shell version token");
+assert.match(shellCss, /\.interface-topbar/, "shared shell CSS must include header shell primitives");
+assert.match(shellCss, /\.footer-note/, "shared shell CSS must include footer shell primitives");
+assert.match(shellCss, /\.rail-wrap/, "shared shell CSS must include rail shell primitives");
+assert.match(shellCss, /\.report-left-rail/, "shared shell CSS must include report rail primitives");
+assert.match(shellCss, /\.qr-left-rail/, "shared shell CSS must include QR rail primitives");
+assert.match(shellCss, /prefers-reduced-motion/, "shared shell CSS must include reduced-motion protection");
+assert.doesNotMatch(shellCss, /Lex Nova Diligence Engine/, "shared shell CSS must not introduce Lex Nova rebrand text");
+
+for (const [pageName, source] of shellPages) {
+  assert.match(source, new RegExp(escapeRegExp(shellImport)), `${pageName} must import shared Interface UI shell`);
+  assert.match(source, /interface-header\.css/, `${pageName} must preserve Interface header CSS import`);
+  assert.match(source, /<span class="wordmark-title">The Interface<\/span>/, `${pageName} must preserve The Interface wordmark`);
+  assert.match(source, /Law × Technology · AI Governance · Privacy · Systems/, `${pageName} must preserve Interface subtitle`);
+  assert.doesNotMatch(source, /Lex Nova Diligence Engine/, `${pageName} must not be rebranded to Lex Nova`);
+}
+
+assert.ok(landing.indexOf(shellImport) > landing.indexOf("diligence-homepage-gate.css"), "landing shell import must load after landing page CSS");
+assert.ok(reportHtml.indexOf(shellImport) > reportHtml.indexOf("report-dap-row-layout.css"), "report shell import must load after report page CSS");
+assert.ok(annexure.indexOf(shellImport) > annexure.indexOf("interface-header.css"), "annexure shell import must load after header CSS");
+assert.ok(qualifiedReview.indexOf(shellImport) > qualifiedReview.indexOf("qualified-review.css"), "QR shell import must load after QR page CSS");
 
 const adapterIndex = reportHtml.indexOf("report-p12-payload-adapter.js");
 const rendererIndex = reportHtml.indexOf("report.js?v=section-card-rows-20260703");
@@ -73,9 +106,11 @@ console.log(JSON.stringify({
   check: "interface-ui-contract",
   status: "PASS",
   ui_lock: "INTERFACE_UI_LOCK_v1",
+  shell: "interface_ui_shell.v1",
   p12_bridge: "interface_p12_frontend_bridge.v1",
   renderer_schema: "renderer_payload.v14.co_p12_05",
   renderer_source: "report_manifest_clean_profiles",
+  shell_pages: shellPages.map(([pageName]) => pageName),
   section_ids: ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10"]
 }, null, 2));
 
