@@ -123,7 +123,7 @@ for (const routeMap of ROUTE_MAPS) {
 for (const marker of ["Phase 2B builds a source-navigation index", "Phase 2B owns", "domain_derivation_source_index", "Phase 3B Domain Derivation owns", "Phase 2C / Phase 5 owns", "not an activity profile layer"]) assert.ok(moduleText.includes(marker), `module missing boundary marker: ${marker}`);
 for (const marker of ["AI_SIGNAL_PLUS_ONE_OR_MORE_PRIMARY_REGULATORY_ACTIVITY_OR_COMMERCIAL_SIGNAL", "composite_signal_required: true", "derived_value_forbidden: true", "phase_2b_action: LOCATE_ONLY"]) assert.ok(referenceMap.includes(marker), `reference map missing route doctrine: ${marker}`);
 for (const marker of ["Semantic coverage is measured against deterministic `semantic_label_queue`", "coverage_ratio", "ready_for_compiler", "Forbidden outputs", "Retired roots forbidden", "lossless_family__"]) assert.ok(validator.includes(marker), `validator rules missing ${marker}`);
-for (const marker of ["strict JSON", "same-chat next-phase instructions", "Do not continue to:", "P3_DOMAIN_DERIVATION_LAYER", "Each save event must have one top-level root only"]) assert.ok(terminal.includes(marker), `terminal missing ${marker}`);
+for (const marker of ["strict JSON", "No same-chat next-phase instruction", "Do not continue to:", "P3_DOMAIN_DERIVATION_LAYER", "Each save event must have one top-level root only"]) assert.ok(terminal.includes(marker), `terminal missing ${marker}`);
 assert.ok(controller.includes("Phase 2B exists only to build a pointer-only source index"));
 assert.ok(binding.includes("runtime_wiring_changed: true"));
 assert.ok(binding.includes("P2B_DOMAIN_DERIVATION_SOURCE_INDEX"));
