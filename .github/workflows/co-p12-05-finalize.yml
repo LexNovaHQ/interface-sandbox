@@ -73,6 +73,7 @@ jobs:
             scripts/check-public-report-ui.mjs
           node scripts/apply-co-p12-05-cutover.mjs 2>&1 | tee -a co-p12-05-apply.log
           node scripts/apply-phase1-active-runtime-legacy-token-sanitize.mjs 2>&1 | tee -a co-p12-05-apply.log
+          git checkout origin/domain-gate-v0-preflight -- agent-packages/agent_3_target_feature/AGENT3_RUNTIME_BINDING_PACKET.yaml
 
       - name: Upload applicator diagnostics
         if: always()
