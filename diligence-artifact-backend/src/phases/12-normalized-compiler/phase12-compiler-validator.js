@@ -4,6 +4,7 @@ import {
   SECTION5_CHILD_PROFILES,
   SECTION8_CHILD_PROFILES
 } from "./phase12-artifact-family.contract.js";
+import { assertPhase12ActivityPresentation } from "./phase12-activity-presentation.js";
 import { assertNoForbiddenReportKeys } from "./phase12-profile-normalizer.js";
 
 const EXPOSURE_DISPLAY_PATHS = Object.freeze({
@@ -62,6 +63,7 @@ export function validatePhase12CompilerOutput({ output = {}, contract = null } =
   for (const key of Object.keys(output)) if (key.startsWith("normalized_section__")) failures.push(`LEGACY_NORMALIZED_SECTION_EMITTED:${key}`);
 
   validateWrappers(output, failures);
+  validateSection4(output, failures);
   validateSection5(output, route, failures);
   validateSection8(output, admission, failures);
   validateManifestAndHandoff(output, failures);
@@ -87,6 +89,7 @@ export function validatePhase12CompilerOutput({ output = {}, contract = null } =
         report_artifact_purity_enforced: true,
         custody_isolation_enforced: true,
         forensic_payloads_forbidden: true,
+        section4_activity_presentation_enforced: true,
         section5_family_split_enforced: true,
         section8_stream_status_split_enforced: true,
         phase2g_dependency_forbidden: true,
@@ -108,6 +111,18 @@ function validateWrappers(output, failures) {
     if (wrapper.artifact_role !== "SECTION_WRAPPER") failures.push(`SECTION_WRAPPER_ROLE_INVALID:${name}`);
     if (Object.prototype.hasOwnProperty.call(wrapper, "rows")) failures.push(`SECTION_WRAPPER_ROWS_FORBIDDEN:${name}`);
     if (Object.prototype.hasOwnProperty.call(wrapper, "findings")) failures.push(`SECTION_WRAPPER_FINDINGS_FORBIDDEN:${name}`);
+  }
+}
+
+function validateSection4(output, failures) {
+  const section = output.report_section__04_product_activity_architecture || {};
+  try {
+    const register = assertPhase12ActivityPresentation(section);
+    if (register.row_count !== register.rows.length) failures.push(`SECTION4_ACTIVITY_ROW_COUNT_INVALID:${register.row_count}:${register.rows.length}`);
+    if (section.summary?.activity_row_count !== register.rows.length) failures.push(`SECTION4_ACTIVITY_SUMMARY_COUNT_INVALID:${section.summary?.activity_row_count}:${register.rows.length}`);
+    if (section.summary?.primary_overlay_classification_separation_preserved !== true) failures.push("SECTION4_PRIMARY_OVERLAY_SEPARATION_NOT_PRESERVED");
+  } catch (error) {
+    failures.push(error?.message || String(error));
   }
 }
 
