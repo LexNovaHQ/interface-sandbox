@@ -1,0 +1,1 @@
+Validate Step 5 severity-aware universal production gate against domain-gate-v0-preflight.
