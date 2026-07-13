@@ -7,6 +7,8 @@ import {
   PRIMARY_FULL_EXTRACT_ROOT_CODES,
   SECONDARY_CONDITIONAL_ROOT_CODES,
   ROOT_TRAVERSAL_POLICY,
+  RETIRED_COMMON_ROOT_CODES,
+  COMMON_ROOT_CODES,
   legalDocTypeFromUrlOrRoute
 } from "../src/phases/01-source-discovery/services/source-discovery-taxonomy.service.js";
 
@@ -71,7 +73,9 @@ assert.ok(extractionService.includes("buildSparseRootArtifacts") && extractionSe
 assert.ok(extractionService.includes("source_text_cutting_allowed: false"), "extraction service must explicitly forbid source text cutting");
 assert.ok(handoffService.includes("lossless_root__"), "handoff must advertise lossless_root names");
 assert.ok(validator.includes("legal_doc_lossless_validation_manifest"), "validator must require legal document validation manifest");
-assert.ok(taxonomy.includes("technical_docs_api_developer"), "taxonomy must keep retired developer root only as redirect metadata");
+assert.ok(taxonomy.includes("RETIRED_COMMON_ROOT_CODES"), "taxonomy must keep retired roots only in retired-root metadata");
+assert.equal(COMMON_ROOT_CODES.includes("technical_docs_api_developer"), false, "retired developer root must not be active common root");
+assert.equal(RETIRED_COMMON_ROOT_CODES.includes("public_repository_developer_assets"), true, "retired developer/source repository root must remain in retired-root metadata");
 assert.ok(pipelineService.includes("resolveLosslessRootArtifact"), "pipeline service must resolve sparse lossless roots");
 assert.ok(pipelineService.includes("readSourceFamilyIndexForRootResolver"), "pipeline service must navigate source_family_index for sparse roots");
 assert.ok(pipelineContract.includes("export const PIPELINE_CONTRACTS"), "runtime pipeline contract must remain the Phase 1 contract authority");
