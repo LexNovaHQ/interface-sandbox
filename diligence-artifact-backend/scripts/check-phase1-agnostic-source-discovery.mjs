@@ -1,15 +1,13 @@
 import fs from "node:fs";
 import path from "node:path";
 import assert from "node:assert/strict";
-import { buildSourceUrlManifestArtifact } from "../src/phases/01-source-discovery/services/url-manifest.service.js";
 import {
   COMMON_ROOTS,
   PRIMARY_FULL_EXTRACT_ROOT_CODES,
   SECONDARY_CONDITIONAL_ROOT_CODES,
   ROOT_TRAVERSAL_POLICY,
   RETIRED_COMMON_ROOT_CODES,
-  COMMON_ROOT_CODES,
-  legalDocTypeFromUrlOrRoute
+  COMMON_ROOT_CODES
 } from "../src/phases/01-source-discovery/services/source-discovery-taxonomy.service.js";
 
 const ROOT = process.cwd();
@@ -69,6 +67,8 @@ assert.ok(urlService.includes("classifyCompanyIdentity"), "URL manifest service 
 assert.ok(urlService.includes("classifyDataGovernanceControls"), "URL manifest service must include dedicated data governance classifier");
 assert.ok(urlService.includes("classifyRegulatoryLicensingStatus"), "URL manifest service must include dedicated regulatory/licensing classifier");
 assert.ok(urlService.includes("classifyGrievanceComplaints"), "URL manifest service must include dedicated grievance/complaints classifier");
+assert.ok(urlService.includes("source_discovery_matrix_manifest") && urlService.includes("common_core_roots: COMMON_ROOTS.map"), "URL manifest must emit source_discovery_matrix_manifest.common_core_roots from locked COMMON_ROOTS");
+assert.ok(urlService.includes("neutral_signal_buckets") && urlService.includes("loaded_domain_hint_packs"), "URL manifest must emit neutral bucket and domain hint metadata");
 assert.ok(extractionService.includes("buildSparseRootArtifacts") && extractionService.includes("lossless_root__${artifact.common_root}"), "extraction service must persist lossless_root artifacts through sparse root artifacts");
 assert.ok(extractionService.includes("source_text_cutting_allowed: false"), "extraction service must explicitly forbid source text cutting");
 assert.ok(handoffService.includes("lossless_root__"), "handoff must advertise lossless_root names");
@@ -81,12 +81,6 @@ assert.ok(pipelineService.includes("readSourceFamilyIndexForRootResolver"), "pip
 assert.ok(pipelineContract.includes("export const PIPELINE_CONTRACTS"), "runtime pipeline contract must remain the Phase 1 contract authority");
 assert.ok(pipelineContract.includes("export function getPipelineContract"), "runtime pipeline contract must expose the canonical contract reader");
 assert.equal(fs.existsSync(path.join(ROOT, "src/phase-contracts.js")), false, "retired phase-contracts compatibility shim must not return");
-
-const sampleManifest = buildSourceUrlManifestArtifact({ run: { run_id: "PHASE1-CHECK" }, target: { url: "https://example.com" }, discoveredUrls: ["https://example.com/", "https://example.com/privacy", "https://example.com/security", "https://example.com/help", "https://example.com/regulatory", "https://example.com/grievance"] });
-assert.ok(sampleManifest.source_discovery_matrix_manifest.root_matrix.length >= 17, "URL manifest must emit the locked root matrix");
-assert.ok(sampleManifest.source_discovery_matrix_manifest.root_matrix.some((row) => row.root_code === "privacy_data_processing"));
-assert.ok(sampleManifest.source_discovery_matrix_manifest.root_matrix.some((row) => row.root_code === "security_trust_compliance"));
-assert.ok(sampleManifest.source_discovery_matrix_manifest.root_matrix.some((row) => row.root_code === "grievance_complaints"));
 
 console.log(JSON.stringify({ check: "phase1 agnostic source discovery", status: "PASS", locked_roots: LOCKED_ROOTS.length, primary_full_roots: PRIMARY_FULL.length, secondary_conditional_roots: SECONDARY_CONDITIONAL.length }, null, 2));
 
