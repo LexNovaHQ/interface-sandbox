@@ -30,6 +30,43 @@ export function buildPhase12ProductionFixture(contract, { challengeStatus = "PAS
     };
   }
 
+  artifacts.target_feature_profile = {
+    ...(artifacts.target_feature_profile || {}),
+    activities: [
+      activityRow({
+        reference: "ACT-001",
+        name: "Automated payment decisioning",
+        primaryBehavior: ["PAY"],
+        primarySurface: ["Financial"],
+        overlayId: "AI_OVERLAY",
+        overlayBehavior: ["JDG"],
+        overlaySurface: ["Consumer-Public", "PII"]
+      }),
+      activityRow({
+        reference: "ACT-002",
+        name: "Synthetic customer communication",
+        primaryBehavior: ["COMMS"],
+        primarySurface: ["Consumer-Public"],
+        overlayId: "AI_OVERLAY",
+        overlayBehavior: ["CRT"],
+        overlaySurface: ["Content&IP"]
+      })
+    ],
+    commercial_availability_posture: {
+      posture: "Paid production service",
+      free_trial_freemium_signal: "Not visible",
+      beta_pilot_early_access_signal: "Not visible",
+      paid_production_enterprise_plan_signal: "Visible",
+      evidence_basis: "Fixture commercial evidence.",
+      limitation: null
+    },
+    profile_level_limitations: [],
+    mounted_taxonomy_ref: {
+      primary_package: "fintech",
+      capability_overlays: ["ai-governance"]
+    }
+  };
+
   const materialRows = [];
   for (const streamType of ["PRIMARY", "OVERLAY"]) {
     for (const [index, status] of MATERIAL_STATUSES.entries()) {
@@ -81,6 +118,46 @@ export function buildPhase12ProductionFixture(contract, { challengeStatus = "PAS
   };
 
   return Object.freeze({ artifacts, materialRows, firstDapField });
+}
+
+function activityRow({ reference, name, primaryBehavior, primarySurface, overlayId, overlayBehavior, overlaySurface }) {
+  return {
+    activity_reference: reference,
+    product_service_wrapper: "Fixture product wrapper",
+    activity_feature_name: name,
+    activity_candidate_summary: `${name} activity summary.`,
+    mechanics_proof: "Fixture mechanics proof.",
+    autonomy_human_control_signal: "Human review signal preserved from Phase 5.",
+    data_content_object_touched: "Customer transaction and account information.",
+    external_internal_action_signal: "External customer-facing effect.",
+    primary_classification: {
+      package_id: "fintech",
+      behavior_class_codes: primaryBehavior,
+      behavior_class_derivation_basis: primaryBehavior.map((code) => classificationBasis(code, "Primary")),
+      surface_context_tokens: primarySurface,
+      surface_derivation_basis: primarySurface.map((token) => classificationBasis(token, "Primary surface"))
+    },
+    overlay_classifications: [{
+      package_id: "ai-governance",
+      overlay_id: overlayId,
+      behavior_class_codes: overlayBehavior,
+      behavior_class_derivation_basis: overlayBehavior.map((code) => classificationBasis(code, "Overlay")),
+      surface_context_tokens: overlaySurface,
+      surface_derivation_basis: overlaySurface.map((token) => classificationBasis(token, "Overlay surface"))
+    }]
+  };
+}
+
+function classificationBasis(codeOrToken, label) {
+  return {
+    code_or_token: codeOrToken,
+    normalized_name: codeOrToken,
+    conditions_satisfied: ["fixture condition"],
+    trigger_if_applied: true,
+    exclude_if_checked: true,
+    material_basis: `${label} fixture basis for ${codeOrToken}.`,
+    limitation: null
+  };
 }
 
 function warning(registryRowKey) {
