@@ -7,9 +7,9 @@ export function buildPhaseRoutingManifest({ artifacts = {}, runId = null } = {})
     phase_id: "CARTOGRAPHY_INDEX",
     job_id: P2G_PHASE_ROUTER_JOB_ID,
     run_id: runId || "",
-    manifest_version: "phase2g_phase_routing_manifest_v3_runtime_cutover_through_compiler",
+    manifest_version: "phase2g_phase_routing_manifest_v4_boundary_ends_before_compiler",
     routing_authority: "P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY",
-    runtime_cutover_status: "RUNTIME_CUTOVER_COMPLETE_THROUGH_NORMALIZED_COMPILER",
+    runtime_cutover_status: "RUNTIME_CUTOVER_COMPLETE_THROUGH_OPERATOR_CHALLENGE_PHASE12_EXCLUDED",
     doctrine: Object.freeze({
       lossless_evidence_is_primary: true,
       lossless_evidence_role: "PRIMARY_EVIDENCE",
@@ -25,7 +25,8 @@ export function buildPhaseRoutingManifest({ artifacts = {}, runId = null } = {})
       preceding_forensics_profiles_forbidden: true,
       derived_only_downstream_packets_supported: true,
       sparse_lossless_root_resolution_owned_by_2g: true,
-      runtime_cutover_complete_through_compiler: true,
+      runtime_boundary_ends_at_operator_challenge: true,
+      phase12_compiler_excluded: true,
       no_other_routing_authority_allowed: true,
       derived_value_generation_forbidden_in_2g: true
     }),
@@ -46,7 +47,7 @@ export function buildPhaseRouteValidationManifest({ phaseRoutingManifest = {}, v
       artifact_type: P2G_PHASE_ROUTING_ARTIFACTS.validation,
       phase_id: "CARTOGRAPHY_INDEX",
       job_id: P2G_PHASE_ROUTER_JOB_ID,
-      manifest_version: "phase2g_phase_route_validation_manifest_v3_runtime_cutover_through_compiler",
+      manifest_version: "phase2g_phase_route_validation_manifest_v4_boundary_ends_before_compiler",
       routing_authority: manifest.routing_authority || "P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY",
       runtime_cutover_status: manifest.runtime_cutover_status || "UNKNOWN",
       route_count: Array.isArray(manifest.route_buckets) ? manifest.route_buckets.length : 0,
@@ -63,7 +64,8 @@ export function buildPhaseRouteValidationManifest({ phaseRoutingManifest = {}, v
         job_scoped_derived_profiles_declared_in_2g: true,
         derived_only_downstream_packets_supported: true,
         sparse_lossless_root_resolution_owned_by_2g: true,
-        runtime_cutover_complete_through_compiler: true,
+        runtime_boundary_ends_at_operator_challenge: true,
+        phase12_compiler_excluded: true,
         no_other_routing_authority_allowed: true
       }),
       lock_status: validation.ok ? "LOCKED" : "REPAIR_REQUIRED"
