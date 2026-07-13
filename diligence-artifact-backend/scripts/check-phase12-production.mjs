@@ -16,6 +16,12 @@ import {
   ACTIVITY_TABLE_PAGE_SIZE,
   PHASE12_ACTIVITY_PRESENTATION_SCHEMA
 } from "../src/phases/12-normalized-compiler/phase12-activity-presentation.js";
+import {
+  OBLIGATION_DECK_PAGE_SIZE,
+  OBLIGATION_PRESENTATION_FIELDS,
+  OBLIGATION_TABLE_PAGE_SIZE,
+  PHASE12_OBLIGATION_PRESENTATION_SCHEMA
+} from "../src/phases/12-normalized-compiler/phase12-obligation-presentation.js";
 import { FORBIDDEN_REPORT_KEYS } from "../src/phases/12-normalized-compiler/phase12-artifact-family.contract.js";
 import {
   assertIncludesFailure,
@@ -60,6 +66,7 @@ const output = compilePhase12DirectReportProjection({ run, artifacts, admission,
 validateProductionProjection(output);
 validateSection4(output);
 validateSection5(output);
+validateSection6(output);
 validateSection8(output);
 validateWarningsAndCustody(output);
 validateNegativeOutputMutations(output);
@@ -81,12 +88,13 @@ console.log(JSON.stringify({
     pass_with_limitation: 1,
     pass: 1,
     forbidden_phase2g_admission: 1,
-    validator_mutations: 4
+    validator_mutations: 5
   },
   canonical_section_count: output.report_manifest.canonical_section_count,
   report_facing_artifact_count: output.report_manifest.report_facing_artifact_count,
   section4_activity_row_count: output.report_section__04_product_activity_architecture.activity_register.row_count,
   section5_child_profile_count: SECTION5_CHILD_PROFILES.length,
+  section6_obligation_row_count: output.report_section__06_sector_control_obligations.obligation_register.row_count,
   section8_child_profile_count: SECTION8_CHILD_PROFILES.length,
   legacy_normalized_artifacts_emitted: false,
   local_counsel_review_required: true
@@ -95,6 +103,7 @@ console.log(JSON.stringify({
 function validateProductionProjection(projected) {
   assert.equal(projected.phase12_compiler_validation.validation.status, "PASS_WITH_LIMITATION");
   assert.equal(projected.phase12_compiler_validation.validation.section4_activity_presentation_enforced, true);
+  assert.equal(projected.phase12_compiler_validation.validation.section6_obligation_presentation_enforced, true);
   assert.equal(projected.report_manifest.schema_version, "report_manifest.v1.co_p12_04");
   assert.equal(projected.report_manifest.status, "PASS_WITH_LIMITATION");
   assert.equal(projected.report_manifest.canonical_section_count, 10);
@@ -175,6 +184,45 @@ function validateSection5(projected) {
   for (const key of ["batch_id", "forensics", "validation"]) assertOwnPropertyAbsent(sanitized.value, key, "sanitized DAP finding");
 }
 
+function validateSection6(projected) {
+  const section = projected.report_section__06_sector_control_obligations;
+  const register = section.obligation_register;
+  assert.equal(register.schema_version, PHASE12_OBLIGATION_PRESENTATION_SCHEMA);
+  assert.equal(register.presentation_only, true);
+  assert.equal(register.substantive_derivation_performed, false);
+  assert.equal(register.legal_applicability_conclusion_forbidden, true);
+  assert.equal(register.compliance_conclusion_forbidden, true);
+  assert.equal(register.source_profile, "domain_control_obligation_profile");
+  assert.equal(register.row_count, 3);
+  assert.equal(register.rows.length, 3);
+  assert.equal(register.table_rows_per_page, OBLIGATION_TABLE_PAGE_SIZE);
+  assert.equal(register.deck_cards_per_page, OBLIGATION_DECK_PAGE_SIZE);
+  assert.equal(section.summary.obligation_row_count, 3);
+  assert.equal(section.summary.primary_sector_obligation_count, 2);
+  assert.equal(section.summary.capability_overlay_obligation_count, 1);
+  assert.equal(section.summary.legal_applicability_conclusion_forbidden, true);
+
+  for (const row of register.rows) {
+    assert.deepEqual(Object.keys(row), OBLIGATION_PRESENTATION_FIELDS);
+    assert.ok(["Primary Sector", "Capability Overlay"].includes(row.source_scope));
+    assert.ok(row.obligation_reference);
+    assert.ok(row.normalized_name);
+    assert.ok(row.what_it_requires);
+    for (const forbidden of [
+      "candidate_id",
+      "source_package_id",
+      "catalog_package_id",
+      "registry_key_ref",
+      "obligation_catalog_ref",
+      "p2e_navigation_route_refs",
+      "legal_applicability_conclusion",
+      "compliance_conclusion",
+      "breach_conclusion",
+      "liability_conclusion"
+    ]) assertOwnPropertyAbsent(row, forbidden, "Section 06 obligation row");
+  }
+}
+
 function validateSection8(projected) {
   const wrapper = projected.report_section__08_exposure_register;
   assert.equal(wrapper.artifact_role, "SECTION_WRAPPER");
@@ -231,6 +279,7 @@ function validateWarningsAndCustody(projected) {
   assert.ok(projected.phase12_report_custody_manifest.exposure_row_bindings.every((row) => row.registry_row_key));
   assert.equal(projected.phase12_report_custody_manifest.field_binding_count > 0, true);
   assert.ok(projected.phase12_report_custody_manifest.profile_family_bindings.some((row) => row.report_section === "04" && row.projection_mode === "CLEAN_ACTIVITY_PRESENTATION_REGISTER" && row.activity_row_count === 2));
+  assert.ok(projected.phase12_report_custody_manifest.profile_family_bindings.some((row) => row.report_section === "06" && row.projection_mode === "CLEAN_OBLIGATION_PRESENTATION_REGISTER" && row.obligation_row_count === 3));
   const items = projected.report_section__09_open_review_items_handoff.open_review_items;
   assert.equal(items.length, 1);
   assert.equal(items[0].remaining_uncertainty, "Private workflow evidence remains unavailable.");
@@ -249,6 +298,12 @@ function validateNegativeOutputMutations(projected) {
   const activityValidation = validatePhase12CompilerOutput({ output: collapsedActivity, contract }).phase12_compiler_validation;
   assert.equal(activityValidation.validation.status, "CONTROLLED_FAILURE");
   assert.ok(activityValidation.validation.failures.some((failure) => failure.includes("SECTION4_COLLAPSED_CLASSIFICATION_FIELD_FORBIDDEN")));
+
+  const pollutedObligation = structuredClone(projected);
+  pollutedObligation.report_section__06_sector_control_obligations.obligation_register.rows[0].compliance_conclusion = "COMPLIANT";
+  const obligationValidation = validatePhase12CompilerOutput({ output: pollutedObligation, contract }).phase12_compiler_validation;
+  assert.equal(obligationValidation.validation.status, "CONTROLLED_FAILURE");
+  assert.ok(obligationValidation.validation.failures.some((failure) => failure.includes("SECTION6_FORBIDDEN_ROW_KEY")));
 
   const missingMaterial = structuredClone(projected);
   delete missingMaterial.report_section__08_primary_triggered_exposures.rows[0].response.recommended_fix;
