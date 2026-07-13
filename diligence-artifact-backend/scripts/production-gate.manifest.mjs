@@ -24,6 +24,7 @@ export const PRODUCTION_GATE_CHECKS = Object.freeze([
   gate("phase10-exposure", "Phase 10 exposure profile", "check:phase10-full", "MATERIAL_OUTPUT_INTEGRITY", ADVISORY_STATUSES),
   gate("phase11-operator-challenge", "Phase 11 operator challenge", "check:phase11-critical", "MATERIAL_OUTPUT_INTEGRITY", ADVISORY_STATUSES),
   gate("phase12-production", "Phase 12 production compiler and renderer", "check:phase12-production", "PHASE_BOUNDARY_INTEGRITY", CRITICAL_ONLY),
+  gate("phase12-post-clean", "Phase 12 post-clean production hygiene", "check:phase12-post-clean", "STRUCTURAL_RUNTIME_SAFETY", CRITICAL_ONLY),
   gate("runtime-authority", "Runtime authority boundaries", "check:runtime-authority-boundaries", "PHASE_BOUNDARY_INTEGRITY", CRITICAL_ONLY),
   gate("domain-registry", "Assembled domain registry", "check:domain-registry-assembled", "STRUCTURAL_RUNTIME_SAFETY", CRITICAL_ONLY)
 ]);
