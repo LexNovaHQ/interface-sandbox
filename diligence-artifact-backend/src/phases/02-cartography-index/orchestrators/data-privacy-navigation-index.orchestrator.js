@@ -9,7 +9,7 @@ import { compilePhase7DapRegistryDerivationRules, PHASE7_REGISTRY_SOURCE_PATH } 
 import { buildPhase7StrategicDerivationMatrixArtifact } from "../../07-data-provenance-profile/dap-strategic-derivation-matrix.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const BACKEND_ROOT = path.resolve(__dirname, "../../..");
+const BACKEND_ROOT = path.resolve(__dirname, "../../../..");
 
 export async function runDataPrivacyNavigationIndexRuntimeJob({ run, contract, readArtifacts, saveArtifact } = {}) {
   assertCallback(readArtifacts, "readArtifacts");
