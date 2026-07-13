@@ -30,6 +30,7 @@ const EXPECTED_PACKAGE_SCRIPTS = Object.freeze([
   "check:phase11-critical",
   "check:phase12-production",
   "check:phase12-post-clean",
+  "check:interface-ui",
   "check:runtime-authority-boundaries",
   "check:domain-registry-assembled",
   "smoke:health",
@@ -63,6 +64,7 @@ assert.equal(pkg.scripts.check, "npm run check:critical");
 assert.equal(pkg.scripts["check:critical"], "node scripts/run-production-gate.mjs");
 assert.equal(pkg.scripts["check:phase12-production"], "node scripts/check-phase12-production.mjs");
 assert.equal(pkg.scripts["check:phase12-post-clean"], "node scripts/check-phase12-post-clean-production.mjs");
+assert.equal(pkg.scripts["check:interface-ui"], "node scripts/check-interface-ui-contract.mjs");
 assert.equal(pkg.dependencies.cors, "^2.8.5", "cors dependency must remain on the real cors package line, not Express version drift");
 
 for (const forbiddenScript of ["check:p12:co1", "check:p12:co2", "check:p12:co3", "check:p12:co4", "check:p12:co5", "check:runtime-cleanup", "audit:migration-receipts"]) {
@@ -111,6 +113,7 @@ const renderer = read("src/runtime/services/reporting/report-renderer.service.js
 assert.ok(renderer.includes("renderer_payload.v14.co_p12_05"));
 assert.ok(renderer.includes("report_manifest"));
 assert.ok(renderer.includes("clean_report_profiles_only"));
+assert.ok(renderer.includes("interface_report_presentation.v1"));
 assert.equal(renderer.includes("normalized_section__"), false);
 assert.equal(renderer.includes("normalized_report_manifest"), false);
 
@@ -130,6 +133,7 @@ console.log(JSON.stringify({
   phase12_compiler: "DIRECT_PROFILE_COMPILER_ACTIVE",
   phase12_renderer: "CLEAN_PROFILE_RENDERER_ACTIVE",
   route_contract_status: "CO_P12_03_ROUTE_CONTRACT_ACTIVE",
+  interface_ui_gate: "ACTIVE",
   closeout_stale_markers: "ABSENT",
   legacy_normalized_aliases: "ABSENT",
   one_time_applicators: "ABSENT",
