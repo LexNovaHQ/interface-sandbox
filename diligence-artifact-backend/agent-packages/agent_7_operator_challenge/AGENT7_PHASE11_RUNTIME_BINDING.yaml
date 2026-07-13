@@ -1,6 +1,6 @@
 runtime_contract: AGENT7_PHASE11_OPERATOR_CHALLENGE
-runtime_contract_version: v5_production_integration_mutation_checkpoint
-compatibility_marker_v4: "runtime_contract_version: v4_reinvestigation_dispatch_return"
+runtime_contract_version: v6_attempt_safe_staged_mutation
+compatibility_marker_v5: "runtime_contract_version: v5_production_integration_mutation_checkpoint"
 active_agent_id: agent_7_m12
 active_phase_scope: OPERATOR_CHALLENGE
 public_phase_name: Operator Challenge
@@ -65,15 +65,20 @@ production_integration:
   effective_contract_version: PHASE11_PRODUCTION_RUNTIME_CONTRACT_v1
   independent_artifact_contract_version: PHASE11_INDEPENDENT_ARTIFACT_CONTRACT_v1
   mutation_guard_version: phase11_mutation_guard.v1
-  dispatch_checkpoint_version: phase11_dispatch_checkpoint.v1
-  dispatch_lease_version: phase11_dispatch_lease.v1
-  dispatch_adapter_version: phase11_reinvestigation_dispatch_return_adapter.v2.production
-  internal_job_contract_override_active: true
+  dispatch_checkpoint_version: phase11_dispatch_checkpoint.v2
+  dispatch_lease_version: phase11_dispatch_lease.v2
+  dispatch_adapter_version: phase11_reinvestigation_dispatch_return_adapter.v4.attempt_safe
+  internal_job_contract_override_active: false
   artifact_permission_cutover_active: true
   restart_safe_dispatch_active: true
   run_scoped_lease_active: true
+  lease_owner_token_required: true
   unauthorized_mutation_rollback_active: true
+  staged_mutation_proposals_active: true
+  persistence_before_mutation_guard: false
+  technical_failures_are_not_substantive_attempts: true
   owner_contract_exactness_preserved: true
+  ordinary_owner_runners_forbidden: true
   normal_owner_downstream_cascade_allowed: false
   owner_phase_locking_performed: false
   return_directly_to_phase11: true
@@ -107,9 +112,10 @@ mutation_guard:
 
 checkpoint_state_machine:
   - DISPATCH_CREATED
-  - OWNER_RUNNING
-  - OWNER_RETURNED
-  - RETURN_VALIDATED
+  - OWNER_PROPOSAL_RUNNING
+  - OWNER_PROPOSAL_CREATED
+  - PROPOSAL_COMMITTED
+  - NON_SUBSTANTIVE_RETRY_REQUIRED
   - ATTEMPT_RECORDED
   - COMPLETE
 
@@ -121,9 +127,10 @@ reinvestigation_dispatch_return:
   exact_row_identity_preserved: true
   resolved_only_if_exact_candidate_disappears: true
   artifact_version_advance_required: true
-  owner_runtime_error_counts_as_unresolved_attempt: true
-  maximum_dispatches_per_candidate: 2
-  third_dispatch_forbidden: true
+  owner_runtime_error_is_technical_failure: true
+  technical_failure_consumes_substantive_attempt: false
+  maximum_substantive_attempts_per_candidate: 2
+  third_substantive_attempt_forbidden: true
 
 supported_reinvestigation_owners:
   PHASE_3_DOMAIN_DERIVATION: P3_DOMAIN_DERIVATION_LAYER
