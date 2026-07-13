@@ -4,7 +4,6 @@ qr_registry_catalog:
   status: ACTIVE_PHASE13_AUTHORITY
   phase_owner: PHASE_13_QUALIFIED_REVIEW
   governing_contract_path: docs/phase13/PHASE13_AUTHORITY_AND_VALIDATION_CONTRACT_v1.md
-
   authority_boundary:
     deterministic_only: true
     phase12_material_values_are_sole_diligence_prefill_authority: true
@@ -16,16 +15,13 @@ qr_registry_catalog:
     operator_lane_selection_forbidden: true
     confirmation_unit: SECTION
     per_question_confirmation_forbidden: true
-
   activation_order:
-    - UNIVERSAL
-    - PRIMARY_DOMAIN
-    - CAPABILITY_OVERLAY
-    - REGULATORY_OVERLAY
-    - DOMAIN_SUBPACKAGE
-
+  - UNIVERSAL
+  - PRIMARY_DOMAIN
+  - CAPABILITY_OVERLAY
+  - REGULATORY_OVERLAY
+  - DOMAIN_SUBPACKAGE
   schema_path: references/registry/qr/v2_1/QR_Bridge_Registry_Schema.yml
-
   phase12_authority:
     ownership_matrix_path: src/phases/12-normalized-compiler/report-contract/REPORT_FIELD_OWNERSHIP_MATRIX.json
     report_manifest_artifact: report_manifest
@@ -34,39 +30,149 @@ qr_registry_catalog:
     report_artifact_prefix: report_section__
     exact_route_prefix: P12.ROUTE.
     exact_value_selector_contract: findings[field_id="<FIELD_ID>"].value
-
   registries:
-    - registry_id: UNIVERSAL_QR_BRIDGE_REGISTRY
-      registry_class: UNIVERSAL
-      path: references/registry/qr/v2_1/Universal_QR_Bridge_Registry.yml
-      load_order: 1
+  - registry_id: UNIVERSAL_QR_BRIDGE_REGISTRY
+    registry_class: UNIVERSAL
+    path: references/registry/qr/v2_1/Universal_QR_Bridge_Registry.yml
+    load_order: 1
+    activation:
+      mode: ALWAYS
+    expected_record_count: 19
+    expected_atomic_value_count: 44
+  - registry_id: AI_QR_BRIDGE_REGISTRY
+    registry_class: PRIMARY_DOMAIN_OR_CAPABILITY_OVERLAY
+    path: references/registry/qr/v2_1/AI_QR_Bridge_Registry.yml
+    load_order: 2
+    activation:
+      any:
+      - source: active_run_package_manifest.primary_domain_package
+        operator: IN
+        values:
+        - ai-governance
+        - ai
+      - source: active_run_package_manifest.capability_overlays
+        operator: CONTAINS_ANY
+        values:
+        - ai-native
+        - ai
+    expected_record_count: 46
+    expected_atomic_value_count: 82
+    subpackages:
+    - subpackage_id: AI_LANE_A
+      registry_scope: LANE_A
+      field_selector:
+        registry_scope: LANE_A
       activation:
-        mode: ALWAYS
-      expected_record_count: 19
-      expected_atomic_value_count: 44
-
-    - registry_id: AI_QR_BRIDGE_REGISTRY
-      registry_class: PRIMARY_DOMAIN_OR_CAPABILITY_OVERLAY
-      path: references/registry/qr/v2_1/AI_QR_Bridge_Registry.yml
-      load_order: 2
-      activation:
+        false_state: UNRESOLVED
         any:
-          - source: active_run_package_manifest.primary_domain_package
+        - source: active_run_package_manifest.active_lanes
+          operator: CONTAINS
+          value: A
+        - source: domain_derivation_profile.active_lanes
+          operator: CONTAINS
+          value: A
+        - source: phase12_report_artifacts.report_section__04_product_activity_architecture.activity_register.rows[*].external_internal_action_signal
+          operator: TEXT_CONTAINS_ANY
+          values:
+          - external
+          - customer
+          - client
+          - both
+        - source: phase12_report_artifacts.report_section__08_exposure_register.child_artifacts[*].rows[*].classification.lane
+          operator: EQUALS
+          value: A
+      inactive_when:
+        any:
+        - source: active_run_package_manifest.active_lanes
+          operator: EXCLUDES
+          value: A
+        - source: domain_derivation_profile.active_lanes
+          operator: EXCLUDES
+          value: A
+      activation_probe:
+        field_ids:
+        - A01
+        active_when:
+          any:
+          - source: reviewer_values.A01.atomic_values
+            operator: HAS_MATERIAL_VALUE
+          - source: reviewer_values.A01.value
+            operator: HAS_MATERIAL_VALUE
+        inactive_when:
+          any:
+          - source: reviewer_values.A01.review_status
+            operator: IN
+            values:
+            - NOT_APPLICABLE
+            - INACTIVE
+          - source: reviewer_values.A01.not_applicable
+            operator: BOOLEAN_TRUE
+        phase12_value_alone_may_not_activate: true
+    - subpackage_id: AI_LANE_B
+      registry_scope: LANE_B
+      field_selector:
+        registry_scope: LANE_B
+      activation:
+        false_state: UNRESOLVED
+        any:
+        - source: active_run_package_manifest.active_lanes
+          operator: CONTAINS
+          value: B
+        - source: domain_derivation_profile.active_lanes
+          operator: CONTAINS
+          value: B
+        - source: phase12_report_artifacts.report_section__04_product_activity_architecture.activity_register.rows[*].external_internal_action_signal
+          operator: TEXT_CONTAINS_ANY
+          values:
+          - internal
+          - workforce
+          - employee
+          - contractor
+          - both
+        - source: phase12_report_artifacts.report_section__08_exposure_register.child_artifacts[*].rows[*].classification.lane
+          operator: EQUALS
+          value: B
+        - all:
+          - source: phase12_field_resolutions.B01.atomic_values.internal_ai_use.source
             operator: EQUALS
-            value: ai-governance
-          - source: active_run_package_manifest.capability_overlays
-            operator: CONTAINS
-            value: ai-native
-      expected_record_count: 46
-      expected_atomic_value_count: 82
-
+            value: PHASE_12
+          - source: phase12_field_resolutions.B01.atomic_values.internal_ai_use.value
+            operator: BOOLEAN_TRUE
+      inactive_when:
+        any:
+        - source: active_run_package_manifest.active_lanes
+          operator: EXCLUDES
+          value: B
+        - source: domain_derivation_profile.active_lanes
+          operator: EXCLUDES
+          value: B
+      activation_probe:
+        field_ids:
+        - B01
+        active_when:
+          any:
+          - source: reviewer_values.B01.atomic_values.internal_ai_use
+            operator: BOOLEAN_TRUE
+          - source: reviewer_values.B01.value
+            operator: BOOLEAN_TRUE
+        inactive_when:
+          any:
+          - source: reviewer_values.B01.atomic_values.internal_ai_use
+            operator: BOOLEAN_FALSE
+          - source: reviewer_values.B01.value
+            operator: BOOLEAN_FALSE
+          - source: reviewer_values.B01.review_status
+            operator: IN
+            values:
+            - NOT_APPLICABLE
+            - INACTIVE
+        phase12_false_is_unresolved: true
   document_assets:
     template_manifest_path: references/document-templates/ai/v2_1/TEMPLATE_MANIFEST.yml
     injection_map_path: references/registry/qr/v2_1/QR_Document_Injection_Map.yml
     registry_validation_report_path: references/registry/qr/v2_1/QR_Registry_Validation_Report.md
     injection_validation_report_path: references/registry/qr/v2_1/QR_Document_Injection_Validation.md
     template_root: references/document-templates/ai/v2_1
-
   locked_counts:
     registry_count: 2
     canonical_field_count: 65
@@ -80,7 +186,6 @@ qr_registry_catalog:
     section_count: 19
     market_based_demo_field_count: 65
     market_based_demo_atomic_count: 126
-
   integrity:
     all_catalog_paths_must_resolve_inside_backend_root: true
     registry_id_must_match_catalog_entry: true
@@ -94,3 +199,20 @@ qr_registry_catalog:
     duplicate_placeholder_authority_forbidden: true
     missing_template_is_blocking: true
     unknown_document_id_is_blocking: true
+  domain_responsive_activation_contract:
+    tri_state_enum:
+    - ACTIVE
+    - INACTIVE
+    - UNRESOLVED
+    unresolved_subpackage_renders_only_activation_probe_fields: true
+    operator_domain_selection_forbidden: true
+    operator_lane_selection_forbidden: true
+    runtime_code_may_not_name_domain_or_lane_ids: true
+  binding_overrides:
+  - override_id: AI_B01_ACTIVITY_PRESENTATION_FILTER_v1
+    registry_id: AI_QR_BRIDGE_REGISTRY
+    qr_field_id: B01
+    binding_index: 0
+    replace_filters:
+      external_internal_action_signal: INTERNAL
+    reason: Phase 12 activity presentation emits external_internal_action_signal but does not emit a lane field.
