@@ -1,2 +1,2 @@
 Validate Step 3 consolidated tests against domain-gate-v0-preflight.
-Attempt 3 includes the synchronized Phase 10 behavior-class fixture and active Agent 5 package assertions.
+Attempt 4 includes synchronized Phase 10 behavior-class, Agent 5, and complete report-row spine fixtures.
