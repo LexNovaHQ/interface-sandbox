@@ -1,1 +1,1 @@
-Temporary CO-P12-05 atomic finalize trigger after structured unaffected batch count patch. Do not merge.
+Temporary CO-P12-05 atomic finalize trigger after full batch rerun flag patch. Do not merge.
