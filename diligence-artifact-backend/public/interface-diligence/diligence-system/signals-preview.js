@@ -1,0 +1,30 @@
+(function(){
+"use strict";
+const VERSION="interface_signals_preview.v1";
+const runId=new URLSearchParams(location.search||"").get("run_id")||"";
+const packages=[
+{id:"ai",label:"AI Governance",package:"ai-governance",registry:"AI Registry",status:"Preview package",signals:[
+{id:"AI-SIG-001",title:"Automated decisioning and human review",copy:"Navigate signals concerning automated evaluation, decision support, reviewability and human intervention.",jurisdictions:["India","EU","US"],obligation:"Human review, transparency and escalation context",state:"Preview fixture"},
+{id:"AI-SIG-002",title:"Synthetic content and information rights",copy:"Navigate content-generation, provenance, disclosure and rights-allocation signals.",jurisdictions:["EU","US","Global"],obligation:"Content provenance and rights controls",state:"Preview fixture"},
+{id:"AI-SIG-003",title:"Model and vendor governance",copy:"Navigate third-party model, provider, monitoring and incident-governance signals.",jurisdictions:["India","EU","Global"],obligation:"Vendor, monitoring and governance controls",state:"Preview fixture"}]},
+{id:"fintech",label:"FinTech",package:"fintech",registry:"FinTech Registry",status:"Preview package",signals:[
+{id:"FIN-SIG-001",title:"Payment authorization and customer control",copy:"Navigate payment authorization, confirmation, reversal and customer-control signals.",jurisdictions:["India","EU","US"],obligation:"Transaction authorization and dispute controls",state:"Preview fixture"},
+{id:"FIN-SIG-002",title:"Transaction records and operational evidence",copy:"Navigate record, retention, reconciliation and dispute-support signals.",jurisdictions:["India","EU","US"],obligation:"Records, retention and operational support",state:"Preview fixture"},
+{id:"FIN-SIG-003",title:"Licensing and perimeter context",copy:"Navigate public licensing, regulatory-status and perimeter signals without making an applicability conclusion.",jurisdictions:["India","EU","US"],obligation:"Regulatory-status and perimeter review",state:"Preview fixture"}]},
+{id:"privacy",label:"Data & Privacy",package:"data-privacy",registry:"Data and Privacy Registry",status:"Preview package",signals:[
+{id:"PRIV-SIG-001",title:"Purpose, notice and user control",copy:"Navigate purpose, notice, consent, withdrawal and user-control signals.",jurisdictions:["India","EU","US"],obligation:"Notice, authorization and user-control context",state:"Preview fixture"},
+{id:"PRIV-SIG-002",title:"Transfer, custody and processor chain",copy:"Navigate processor, transfer, location and custody signals.",jurisdictions:["India","EU","Global"],obligation:"Processor-chain and transfer controls",state:"Preview fixture"},
+{id:"PRIV-SIG-003",title:"Retention, deletion and portability",copy:"Navigate lifecycle, deletion, return and portability signals.",jurisdictions:["India","EU","US"],obligation:"Data lifecycle and rights controls",state:"Preview fixture"}]}
+];
+const els={controls:byId("signalsSectorControls"),active:byId("signalsActivePackage"),cards:byId("signalsCardGrid"),map:byId("signalsMapGrid"),report:byId("signalsReportLink"),bridgeReport:byId("signalsBridgeReport"),bridgeQr:byId("signalsBridgeQr"),live:byId("signalsLiveStatus")};
+let active=packages[0];
+window.InterfaceSignalsPreview=Object.freeze({version:VERSION,navigation_only:true,live_change_feed:false,phase12_override_forbidden:true,packages});
+wireRoutes();renderControls();render();
+function wireRoutes(){const suffix=runId?`?run_id=${encodeURIComponent(runId)}`:"";els.report.href=`report.html${suffix}`;els.bridgeReport.href=`report.html${suffix}`;els.bridgeQr.href=`qualified-review.html${suffix}`;for(const id of["signalsQrNav","signalsAssemblyNav","signalsNavLink"]){const el=byId(id);if(!el)continue;const base=el.getAttribute("href").split("?")[0];el.href=base+suffix;}}
+function renderControls(){els.controls.replaceChildren(...packages.map(pkg=>{const b=node("button",`signals-sector-button ${pkg.id===active.id?"active":""}`,pkg.label);b.type="button";b.dataset.packageId=pkg.id;b.setAttribute("aria-pressed",pkg.id===active.id?"true":"false");b.addEventListener("click",()=>{active=pkg;renderControls();render();announce(`${pkg.label} preview package selected.`);});return b;}));}
+function render(){renderActive();renderCards();renderMap();}
+function renderActive(){const rows=[["Sector",active.label],["Package ID",active.package],["Registry",active.registry],["State",active.status],["Live feed","Not connected"],["Report authority","Phase 12 only"],["Selected run",runId||"No run selected"],["Override power","None"]];els.active.replaceChildren(...rows.map(([l,v])=>{const x=node("div","signals-package-item");x.append(node("div","signals-package-label",l),node("div","signals-package-value",v));return x;}));}
+function renderCards(){els.cards.replaceChildren(...active.signals.map(s=>{const c=node("article","signal-card");const top=node("div","signal-card-top");top.append(node("div","signal-id",s.id),node("div","signal-state",s.state));const chips=node("div","signal-meta");s.jurisdictions.forEach(j=>chips.append(node("span","signal-chip",j)));c.append(top,node("div","signal-title",s.title),node("div","signal-copy",s.copy),chips);return c;}));}
+function renderMap(){const groups=new Map;active.signals.forEach(s=>s.jurisdictions.forEach(j=>{if(!groups.has(j))groups.set(j,[]);groups.get(j).push(s);}));els.map.replaceChildren(...[...groups.entries()].sort((a,b)=>a[0].localeCompare(b[0])).map(([jurisdiction,signals])=>{const c=node("section","signals-map-card");c.append(node("h3","",jurisdiction));const list=node("div","signals-obligation-list");signals.forEach(s=>{const row=node("div","signals-obligation");row.append(node("strong","",s.id),node("span","",s.obligation));list.append(row);});c.append(list);return c;}));}
+function announce(v){if(els.live)els.live.textContent=v;}function byId(id){return document.getElementById(id);}function node(t,c,x){const e=document.createElement(t);if(c)e.className=c;if(x!==undefined)e.textContent=String(x);return e;}
+})();
