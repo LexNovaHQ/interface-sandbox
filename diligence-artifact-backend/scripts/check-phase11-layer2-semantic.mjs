@@ -62,11 +62,13 @@ for (const marker of [
   "buildOperatorChallengeLayer3"
 ]) assert.ok(runner.includes(marker), `runner marker missing: ${marker}`);
 for (const marker of [
-  "runtime_contract_version: v4_reinvestigation_dispatch_return",
+  "runtime_contract_version: v6_attempt_safe_staged_mutation",
   "status: ACTIVE",
   "blocking_decision_forbidden: true",
   "maximum_reinvestigation_attempts: 2",
-  "final_adjudication_authority: DETERMINISTIC_BACKEND"
+  "final_adjudication_authority: DETERMINISTIC_BACKEND",
+  "staged_mutation_proposals_active: true",
+  "technical_failures_are_not_substantive_attempts: true"
 ]) assert.ok(binding.includes(marker), `binding marker missing: ${marker}`);
 for (const marker of [
   "CRITICAL_REVIEW_CANDIDATE",
@@ -82,6 +84,8 @@ console.log(JSON.stringify({
   blocking_authority: false,
   field_reinvestigation_attempts_executed: 0,
   malformed_output_repair_maximum: 1,
+  staged_mutation_proposals: true,
+  technical_failures_are_not_substantive_attempts: true,
   repeated_raw_threat_ids_preserved_by_compound_reference: true
 }, null, 2));
 
