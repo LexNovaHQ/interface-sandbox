@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>Operator Sector Packages</title>
+  <meta name="robots" content="noindex,nofollow" />
+  <link rel="stylesheet" href="./diligence-system.css?v=locked-report-20260701" />
+  <link rel="stylesheet" href="./interface-header.css?v=20260703" />
+  <link rel="stylesheet" href="./interface-ui-shell.css?v=shell-v1-20260713" />
+  <link rel="stylesheet" href="./interface-state-system.css?v=state-v1-20260713" />
+  <link rel="stylesheet" href="./interface-sector-admin.css?v=sector-admin-v1-20260713" />
+</head>
+<body class="sector-admin-page">
+  <a class="skip-link" href="#sectorAdminMain">Skip to package diagnostics</a>
+  <div class="report-visually-hidden" id="sectorAdminLiveStatus" role="status" aria-live="polite" aria-atomic="true"></div>
+  <div class="progress-line" style="width:100%" aria-hidden="true"></div>
+  <header class="topbar interface-topbar no-print">
+    <div class="topbar-inner">
+      <a class="wordmark" href="/interface-diligence/diligence-system/" aria-label="The Interface diligence home"><span class="wordmark-title">The Interface</span><span class="wordmark-subtitle">Law × Technology · AI Governance · Privacy · Systems</span></a>
+      <nav class="engine-nav" aria-label="Interface engines">
+        <a class="engine-nav-link" href="/interface-diligence/diligence-system/">Diligence</a>
+        <a class="engine-nav-link" href="qualified-review.html">Qualified Review</a>
+        <a class="engine-nav-link" href="assembly-engine.html">Assembly Preview</a>
+        <a class="engine-nav-link" href="signals-preview.html">Signals Preview</a>
+        <a class="engine-nav-link active" href="operator-sector-packages.html">Operator Diagnostics</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="page-shell sector-admin-shell">
+    <main id="sectorAdminMain" tabindex="-1">
+      <header class="sector-admin-hero">
+        <div><div class="eyebrow">Operator Diagnostics</div><h1>Multi-sector package state</h1><p class="hero-copy">Internal control surface for active package, registry-key, source-hint and validation state. This page does not change package selection or report outputs.</p></div>
+        <div class="sector-admin-badge">Internal · Read only</div>
+      </header>
+
+      <section class="sector-admin-boundary" aria-label="Operator diagnostics boundary">
+        <strong>Passive control layer.</strong>
+        <span>Package state is displayed for operator verification only. Dynamic prompt, report, QR and assembly routing remain disabled under the v0 package contract.</span>
+      </section>
+
+      <section class="sector-admin-panel" aria-labelledby="activePackageHeading">
+        <div class="sector-admin-heading"><div><div class="eyebrow">Active sector package</div><h2 id="activePackageHeading">Run package display</h2></div><div class="sector-admin-status" id="activePackageStatus">No run attached</div></div>
+        <div class="sector-admin-summary" id="activePackageSummary"></div>
+      </section>
+
+      <section class="sector-admin-grid">
+        <article class="sector-admin-panel"><div class="eyebrow">Package manifest status</div><h2>Catalog contract</h2><div id="packageManifestStatus"></div></article>
+        <article class="sector-admin-panel"><div class="eyebrow">Registry key status</div><h2>Registry authorities</h2><div id="registryKeyStatus"></div></article>
+        <article class="sector-admin-panel"><div class="eyebrow">Source-hint pack status</div><h2>Discovery hint packs</h2><div id="sourceHintStatus"></div></article>
+        <article class="sector-admin-panel"><div class="eyebrow">Validation state</div><h2>Package checks</h2><div id="sectorValidationStatus"></div></article>
+      </section>
+    </main>
+    <div class="footer-note">Internal operator diagnostics. Read-only package-state display; public intake remains uncluttered.</div>
+  </div>
+
+  <script src="./interface-state-system.js?v=state-v1-20260713" defer></script>
+  <script src="./operator-sector-packages.js?v=sector-admin-v1-20260713" defer></script>
+</body>
+</html>
