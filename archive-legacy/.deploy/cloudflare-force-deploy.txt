@@ -1,6 +1,0 @@
-Cloudflare force deploy marker.
-
-Purpose: trigger automatic Cloudflare Pages production deployment without changing application logic.
-
-Timestamp: 2026-06-11T00:00:00+05:30
-Scope: deploy trigger only.
