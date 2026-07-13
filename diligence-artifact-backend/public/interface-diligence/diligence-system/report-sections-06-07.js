@@ -6,6 +6,8 @@
   renderers["07"] = renderSection07;
   window.InterfaceReportSectionRenderers = renderers;
 
+  const LEGAL_LIMITATION_PREFIX = "LGC.LIM.";
+
   const LEGAL_GROUPS = Object.freeze([
     { title: "07.1 Legal Document Stack", label: "Document posture", prefixes: ["LGC.STACK."] },
     { title: "07.2 Artifact Inventory and Coverage", label: "Artifact coverage", prefixes: ["LGC.ART.", "LGC.CORE.", "LGC.COV."] },
@@ -23,7 +25,7 @@
     const summary = R.findSubsection(section, "section_summary");
 
     if (summary) {
-      const overview = R.part("06.1 Obligation Inventory", "Sector-control architecture");
+      const overview = R.part("Section 06 Overview", "Sector-control architecture");
       overview.append(R.callout(
         "Interpretation boundary",
         "These rows preserve upstream Phase 8 obligation context. They are not legal-applicability, compliance, breach, licence, adequacy or liability conclusions.",
@@ -169,7 +171,7 @@
     const summary = fields.find((field) => field.field_id === "07.SUMMARY");
     if (summary) {
       used.add(summary);
-      const posture = R.part("07.1 Legal Document Stack", "Legal-document posture");
+      const posture = R.part("Legal Architecture Overview", "Legal-document posture");
       posture.append(R.callout("Document-stack summary", summary.value, ""));
       root.append(posture);
     }
@@ -185,7 +187,7 @@
       root.append(block);
     }
 
-    const limitations = fields.filter((field) => !used.has(field) && R.isLimitationField(field));
+    const limitations = fields.filter((field) => !used.has(field) && (R.isLimitationField(field) || String(field.field_id || "").startsWith(LEGAL_LIMITATION_PREFIX)));
     limitations.forEach((field) => used.add(field));
     const limitationBlock = R.part("07.9 Legal Cartography Limitations", "Evidence and access limitations");
     if (limitations.length) R.renderLimitationFields(limitationBlock, limitations);
