@@ -29,6 +29,7 @@ export function buildPhase11TargetedMutationProposal(input = {}) {
     provider_call_count: Number(input.provider_call_count || 0),
     output_repair_count: Number(input.output_repair_count || 0),
     technical_retry_count: Number(input.technical_retry_count || 0),
+    unaffected_batch_count_reused: Number(input.unaffected_batch_count_reused || 0),
     substantive_reinvestigation_performed: input.substantive_reinvestigation_performed === true,
     owner_notes: String(input.owner_notes || "")
   };
@@ -47,6 +48,7 @@ export function assertPhase11TargetedMutationProposal({ proposal, dispatch = nul
   if (String(proposal.owner_internal_job || "") !== proposal.phase11_reinvestigation_context.owner_internal_job) throw new Error("PHASE11_TARGETED_PROPOSAL_OWNER_MISMATCH");
   if (!Array.isArray(proposal.proposed_writes)) throw new Error("PHASE11_TARGETED_PROPOSAL_WRITES_INVALID");
   if (!Array.isArray(proposal.actual_write_manifest)) throw new Error("PHASE11_TARGETED_PROPOSAL_MANIFEST_INVALID");
+  if (!Number.isFinite(Number(proposal.unaffected_batch_count_reused || 0)) || Number(proposal.unaffected_batch_count_reused || 0) < 0) throw new Error("PHASE11_TARGETED_PROPOSAL_UNAFFECTED_BATCH_COUNT_INVALID");
   if (proposal.status === PHASE11_TARGETED_PROPOSAL_STATUS.proposedMutation && !proposal.proposed_writes.length) throw new Error("PHASE11_TARGETED_PROPOSAL_EMPTY_MUTATION");
   const manifestNames = unique(proposal.actual_write_manifest.map((row) => row.artifact_name));
   const writeNames = unique(proposal.proposed_writes.map((row) => row.artifact_name));
