@@ -118,11 +118,13 @@ for (const marker of [
   "compiler_handoff_allowed"
 ]) assert.ok(runner.includes(marker), `runner missing Layer 3 marker: ${marker}`);
 for (const marker of [
-  "runtime_contract_version: v4_reinvestigation_dispatch_return",
+  "runtime_contract_version: v6_attempt_safe_staged_mutation",
   "status: ACTIVE",
   "only_critical_failure_blocks: true",
   "maximum_reinvestigation_attempts: 2",
-  "unresolved_after_two_attempts: PASS_WITH_LIMITATION"
+  "unresolved_after_two_attempts: PASS_WITH_LIMITATION",
+  "technical_failure_consumes_substantive_attempt: false",
+  "third_substantive_attempt_forbidden: true"
 ]) assert.ok(binding.includes(marker), `binding missing Layer 3 marker: ${marker}`);
 for (const marker of ["REINVESTIGATION_REQUIRED", "CONTROLLED_FAILURE", "PASS_WITH_LIMITATION", "A third attempt is forbidden"]) assert.ok(contract.includes(marker));
 assert.equal(runner.includes("profile_forensics_inputs_allowed !== false"), true);
@@ -133,7 +135,8 @@ console.log(JSON.stringify({
   status: "PASS",
   critical_failure_blocks: true,
   material_reinvestigation_runtime_status: "CREATED",
-  maximum_reinvestigation_attempts: 2,
+  maximum_substantive_reinvestigation_attempts: 2,
+  technical_failures_consume_substantive_attempts: false,
   unresolved_after_two_attempts: "PASS_WITH_LIMITATION",
   compiler_handoff_statuses: ["PASS", "PASS_WITH_LIMITATION"]
 }, null, 2));
