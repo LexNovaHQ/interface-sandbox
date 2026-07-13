@@ -1,1 +1,1 @@
-Temporary CO-P12-05 atomic finalize trigger after Phase 2C validator identity sync. Do not merge.
+Temporary CO-P12-05 atomic finalize trigger after Phase 2D registry path sync. Do not merge.
