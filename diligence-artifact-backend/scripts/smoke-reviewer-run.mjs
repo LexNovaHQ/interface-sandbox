@@ -36,9 +36,24 @@ if (status.current_phase !== "COMPLETE" && status.status !== "COMPLETE") {
 }
 
 const report = await request(`/v1/reviewer/report/${created.run_id}`, { method: "GET" });
+const renderer = report.renderer_payload || {};
+const reportArtifactRefs = Array.isArray(renderer.report_artifact_refs) ? renderer.report_artifact_refs : [];
+
+if (Object.prototype.hasOwnProperty.call(renderer, "sections")) {
+  throw new Error("SMOKE_REVIEWER_STALE_RENDERER_SHAPE:renderer_payload.sections");
+}
+if (reportArtifactRefs.length !== 29) {
+  throw new Error(`SMOKE_REVIEWER_REPORT_ARTIFACT_REF_COUNT:${reportArtifactRefs.length}:29`);
+}
+if (renderer.custody_artifact_rendering_forbidden !== true) {
+  throw new Error("SMOKE_REVIEWER_CUSTODY_RENDERING_BOUNDARY_MISSING");
+}
+
 console.log("REPORT_READY", {
   run_id: report.run_id,
-  sections: report.renderer_payload?.sections?.length || 0
+  renderer_source: renderer.renderer_source || "report_manifest_clean_profiles",
+  report_artifact_refs: reportArtifactRefs.length,
+  custody_artifact_rendering_forbidden: renderer.custody_artifact_rendering_forbidden === true
 });
 
 async function request(path, init) {
