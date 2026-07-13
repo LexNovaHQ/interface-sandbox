@@ -1,1 +1,1 @@
-Temporary CO-P12-05 atomic finalize trigger after Phase 11 owner adapter checker sync. Do not merge.
+Temporary CO-P12-05 atomic finalize trigger after structured unaffected batch count patch. Do not merge.
