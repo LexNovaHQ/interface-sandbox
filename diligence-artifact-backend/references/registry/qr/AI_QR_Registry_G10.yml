@@ -1,0 +1,158 @@
+registry_section:
+  id: G10
+  parent: AI_QR_REGISTRY_LANE_A
+  version: v1.0
+  lane: A
+  title: Interface and audience
+  display_order: 10
+  record_count: 4
+  atomic_value_count: 4
+  rows:
+  - id: A08
+    key: ai.lane_a.interface.conversational
+    section: G10
+    lane: A
+    shape: BOOLEAN
+    leaves:
+    - conversational_interface
+    materiality: MATERIAL
+    required: true
+    effects:
+    - SELECT_CLAUSE
+    documents:
+    - DOC_AI_A_TOS
+    - DOC_AI_A_AUP
+    - DOC_AI_A_PP
+    mapping_key: QR.A08
+    upstream:
+      artifacts:
+      - target_feature_profile
+      selectors:
+      - activity mechanics and delivery surface
+      - conversational activity evidence
+      coverage: PREFILLED_CONFIRM
+    resolve: CONFIRM
+    ui:
+      label: Conversational end-user interface
+      prompt: Does an end user interact directly with the AI through chat, voice, or another conversational interface?
+      input: boolean
+      mode: CONFIRM_OR_CORRECT
+      when:
+        all:
+        - active_scope == true
+    demo: 'Yes'
+    threats:
+    - UNI_HAL_004
+    - UNI_HAL_001
+  - id: A09
+    key: ai.lane_a.interface.companion_relational
+    section: G10
+    lane: A
+    shape: BOOLEAN
+    leaves:
+    - companion_system
+    materiality: MATERIAL
+    required: true
+    effects:
+    - SELECT_CLAUSE
+    documents:
+    - DOC_AI_A_TOS
+    - DOC_AI_A_AUP
+    mapping_key: QR.A09
+    upstream:
+      artifacts:
+      - target_feature_profile
+      selectors:
+      - AI behavior CMP
+      coverage: PREFILLED_CONFIRM
+    resolve: CONFIRM
+    ui:
+      label: Companion / relational system
+      prompt: Is forming an ongoing personalized or emotional relationship with the user a principal product function?
+      input: boolean
+      mode: CONFIRM_OR_CORRECT
+      when:
+        all:
+        - A08 == true
+    demo: 'No'
+    threats:
+    - CMP_HRM_001
+    - CMP_HRM_002
+    - CMP_HRM_003
+    - CMP_HRM_005
+    - CMP_HRM_006
+  - id: A10
+    key: ai.lane_a.audience.minors
+    section: G10
+    lane: A
+    shape: BOOLEAN
+    leaves:
+    - minor_access
+    materiality: MATERIAL
+    required: true
+    effects:
+    - SELECT_CLAUSE
+    documents:
+    - DOC_AI_A_TOS
+    - DOC_AI_A_AUP
+    - DOC_AI_A_PP
+    mapping_key: QR.A10
+    upstream:
+      artifacts:
+      - target_feature_profile
+      - dap_semantic_batch_party_artifact
+      selectors:
+      - PA.SURF Minors
+      - DAP.PARTY subject categories
+      coverage: PREFILLED_CONFIRM
+    resolve: CONFIRM
+    ui:
+      label: Minor access or child-directed service
+      prompt: Can minors access the service, or is the service directed to children or teenagers?
+      input: boolean
+      mode: CONFIRM_OR_CORRECT
+      when:
+        all:
+        - lane_a_active == true
+    demo: 'No'
+    threats:
+    - CMP_HRM_004
+    - CMP_HRM_007
+    - UNI_PRV_IN1
+  - id: A11
+    key: ai.lane_a.audience.vulnerable_users
+    section: G10
+    lane: A
+    shape: BOOLEAN
+    leaves:
+    - vulnerable_user_context
+    materiality: MATERIAL
+    required: true
+    effects:
+    - SELECT_CLAUSE
+    documents:
+    - DOC_AI_A_TOS
+    - DOC_AI_A_AUP
+    mapping_key: QR.A11
+    upstream:
+      artifacts:
+      - target_feature_profile
+      - dap_semantic_batch_sens_artifact
+      selectors:
+      - Minors/sensitive/high-risk surface signals
+      - DAP.SENS
+      coverage: PARTIAL_INPUT
+    resolve: COMPLETE
+    ui:
+      label: Vulnerable-user context
+      prompt: Is the service intended for or reasonably likely to be used by vulnerable users?
+      input: boolean
+      mode: PREFILLED_COMPLETION
+      when:
+        all:
+        - lane_a_active == true
+    demo: 'No'
+    threats:
+    - CMP_HRM_001
+    - CMP_HRM_003
+    - CMP_HRM_006
