@@ -10,28 +10,24 @@
   <link rel="stylesheet" href="./interface-header.css?v=20260703" />
   <link rel="stylesheet" href="./diligence-homepage-gate.css?v=compact-registry-20260703" />
   <link rel="stylesheet" href="./interface-ui-shell.css?v=shell-v1-20260713" />
+  <link rel="stylesheet" href="./interface-state-system.css?v=state-v1-20260713" />
   <link rel="stylesheet" href="./interface-landing-polish.css?v=landing-v1-20260713" />
 </head>
 <body class="diligence-gate-page">
   <div class="progress-line" id="progressLine" aria-hidden="true"></div>
   <header class="topbar interface-topbar no-print">
     <div class="topbar-inner">
-      <a class="wordmark" href="/interface-diligence/diligence-system/" aria-label="The Interface diligence home">
-        <span class="wordmark-title">The Interface</span>
-        <span class="wordmark-subtitle">Law × Technology · AI Governance · Privacy · Systems</span>
-      </a>
+      <a class="wordmark" href="/interface-diligence/diligence-system/" aria-label="The Interface diligence home"><span class="wordmark-title">The Interface</span><span class="wordmark-subtitle">Law × Technology · AI Governance · Privacy · Systems</span></a>
       <nav class="engine-nav" aria-label="Interface engines">
         <a class="engine-nav-link active" href="/interface-diligence/diligence-system/">Diligence</a>
         <a class="engine-nav-link" href="/interface-diligence/diligence-system/qualified-review.html">Qualified Review</a>
-        <span class="engine-nav-link preview" aria-disabled="true">Assembly Preview</span>
-        <span class="engine-nav-link preview" aria-disabled="true">Signals Preview</span>
+        <a class="engine-nav-link" href="/interface-diligence/diligence-system/assembly-engine.html">Assembly Preview</a>
+        <a class="engine-nav-link" href="/interface-diligence/diligence-system/signals-preview.html">Signals Preview</a>
         <a class="engine-nav-link" href="https://portfolio-shwetabh.lexnovahq.com/" target="_blank" rel="noopener">Portfolio</a>
       </nav>
     </div>
   </header>
-  <div class="mobile-funnel no-print" id="mobileFunnel" aria-label="Run progress">
-    <span class="lbl" id="mobileFunnelLabel">Intake</span>
-  </div>
+  <div class="mobile-funnel no-print" id="mobileFunnel" aria-label="Run progress"><span class="lbl" id="mobileFunnelLabel">Intake</span></div>
   <div class="page-shell gate-shell">
     <div class="main-grid gate-main-grid">
       <aside class="rail-wrap no-print" aria-label="Diligence phase rail"><div class="rail" id="phaseRail"></div></aside>
@@ -42,127 +38,32 @@
           <p class="hero-copy">Submit a public target URL and optional approved source materials. The system will assemble a structured diligence report, then route the same matter into Qualified Review.</p>
           <div class="notice gate-boundary"><strong>Boundary:</strong> Public or approved review materials only. Do not upload confidential, privileged, personal, sensitive, or restricted material. This is a diligence workflow for qualified review, not legal advice or a compliance certification.</div>
         </section>
-
         <article class="card gate-card gate-status-card gate-status-priority">
-          <div class="gate-card-kicker">
-            <div>
-              <div class="eyebrow">Run Status</div>
-              <h2 id="activePhaseTitle">Intake</h2>
-            </div>
-            <span class="gate-step-pill">Live</span>
-          </div>
+          <div class="gate-card-kicker"><div><div class="eyebrow">Run Status</div><h2 id="activePhaseTitle">Intake</h2></div><span class="gate-step-pill">Live</span></div>
           <p id="activePhaseText">Waiting for a public target URL or existing matter/run ID.</p>
           <div class="gate-run-monitor" aria-label="Live diligence run status">
-            <div class="gate-run-monitor-head">
-              <span class="gate-live-badge idle" id="runLiveBadge"><span class="gate-live-dot"></span>Idle</span>
-              <span class="gate-run-clock" id="runElapsedValue">Elapsed: 00:00</span>
-            </div>
-            <div class="gate-run-progress" id="runProgress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-              <span id="runProgressFill" style="width:0%"></span>
-            </div>
-            <div class="gate-run-monitor-foot">
-              <span id="runProgressText">Waiting for intake.</span>
-              <span id="lastCheckedValue">Last checked: —</span>
-            </div>
+            <div class="gate-run-monitor-head"><span class="gate-live-badge idle" id="runLiveBadge"><span class="gate-live-dot"></span>Idle</span><span class="gate-run-clock" id="runElapsedValue">Elapsed: 00:00</span></div>
+            <div class="gate-run-progress" id="runProgress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="runProgressFill" style="width:0%"></span></div>
+            <div class="gate-run-monitor-foot"><span id="runProgressText">Waiting for intake.</span><span id="lastCheckedValue">Last checked: —</span></div>
           </div>
-          <div class="meta-grid gate-meta-grid">
-            <div class="meta-tile"><div class="k">Matter / Run ID</div><div class="v" id="runIdValue">-</div></div>
-            <div class="meta-tile"><div class="k">Status</div><div class="v" id="statusValue">Idle</div></div>
-            <div class="meta-tile"><div class="k">Current phase</div><div class="v" id="phaseValue">-</div></div>
-            <div class="meta-tile"><div class="k">Artifacts</div><div class="v" id="artifactValue">0</div></div>
-          </div>
+          <div class="meta-grid gate-meta-grid"><div class="meta-tile"><div class="k">Matter / Run ID</div><div class="v" id="runIdValue">-</div></div><div class="meta-tile"><div class="k">Status</div><div class="v" id="statusValue">Idle</div></div><div class="meta-tile"><div class="k">Current phase</div><div class="v" id="phaseValue">-</div></div><div class="meta-tile"><div class="k">Artifacts</div><div class="v" id="artifactValue">0</div></div></div>
           <div class="notice gate-inline-notice" id="terminalNotice">The matter rail will update as the diligence workflow progresses. Keep this page open until the report opens automatically.</div>
           <p class="log-line" id="statusMessage">Idle. Enter a public URL or resume an existing matter/run ID.</p>
-          <details class="endpoint-panel gate-diagnostics" id="endpointPanel">
-            <summary>Operator Diagnostics</summary>
-            <p class="small-muted">Technical links for verification and debugging. Not required for the normal review workflow.</p>
-            <div class="endpoint-grid gate-endpoint-grid">
-              <a class="btn secondary hidden" id="statusApiLink" href="#" target="_blank" rel="noreferrer">Status JSON</a>
-              <a class="btn secondary hidden" id="reportPageLink" href="#">Report Page</a>
-              <a class="btn secondary hidden" id="reportApiLink" href="#" target="_blank" rel="noreferrer">Report API</a>
-              <a class="btn secondary hidden" id="qualifiedReviewPageLink" href="#">Qualified Review Page</a>
-              <a class="btn secondary hidden" id="qualifiedReviewApiLink" href="#" target="_blank" rel="noreferrer">Qualified Review API</a>
-            </div>
-          </details>
+          <details class="endpoint-panel gate-diagnostics" id="endpointPanel"><summary>Operator Diagnostics</summary><p class="small-muted">Technical links for verification and debugging. Not required for the normal review workflow.</p><div class="endpoint-grid gate-endpoint-grid"><a class="btn secondary hidden" id="statusApiLink" href="#" target="_blank" rel="noreferrer">Status JSON</a><a class="btn secondary hidden" id="reportPageLink" href="#">Report Page</a><a class="btn secondary hidden" id="reportApiLink" href="#" target="_blank" rel="noreferrer">Report API</a><a class="btn secondary hidden" id="qualifiedReviewPageLink" href="#">Qualified Review Page</a><a class="btn secondary hidden" id="qualifiedReviewApiLink" href="#" target="_blank" rel="noreferrer">Qualified Review API</a></div></details>
         </article>
-
         <section class="gate-workbench" aria-label="Diligence matter gate">
-          <div class="gate-left-stack">
-            <article class="card gate-card gate-primary-card">
-              <div class="gate-card-kicker">
-                <div>
-                  <div class="eyebrow">New Matter</div>
-                  <h2>Target source</h2>
-                </div>
-                <span class="gate-step-pill">01</span>
-              </div>
-              <form id="runForm" class="form-grid gate-form-grid">
-                <div>
-                  <label class="label" for="targetUrl">Public target URL</label>
-                  <input class="input" id="targetUrl" name="targetUrl" inputmode="url" autocomplete="url" placeholder="https://example.ai or https://sarvam.ai" required />
-                  <p class="small-muted">Enter the public URL of an AI company only.</p>
-                </div>
-                <div>
-                  <label class="label" for="targetLabel">Matter label <span class="small-muted">optional</span></label>
-                  <input class="input" id="targetLabel" name="targetLabel" autocomplete="off" placeholder="Example AI" />
-                </div>
-                <div>
-                  <label class="label" for="sourceDocuments">Approved source materials <span class="small-muted">optional · PDF, DOCX, TXT, MD, HTML · max 4</span></label>
-                  <input class="input" id="sourceDocuments" name="documents" type="file" multiple accept=".pdf,.docx,.txt,.md,.html,.htm,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/markdown,text/html" />
-                </div>
-                <div class="notice gate-inline-notice">Uploaded files become source material for this matter. Upload only public documents or materials already approved for review.</div>
-                <div class="actions gate-actions">
-                  <button class="btn" id="runButton" type="submit">Start Diligence Run</button>
-                  <a class="btn secondary hidden" id="openReportButton" href="#">Open Report</a>
-                  <a class="btn secondary hidden" id="qualifiedReviewPageButton" href="#">Qualified Review</a>
-                </div>
-              </form>
-            </article>
-          </div>
-
+          <div class="gate-left-stack"><article class="card gate-card gate-primary-card"><div class="gate-card-kicker"><div><div class="eyebrow">New Matter</div><h2>Target source</h2></div><span class="gate-step-pill">01</span></div><form id="runForm" class="form-grid gate-form-grid"><div><label class="label" for="targetUrl">Public target URL</label><input class="input" id="targetUrl" name="targetUrl" inputmode="url" autocomplete="url" placeholder="https://example.ai or https://sarvam.ai" required /><p class="small-muted">Enter the public URL of an AI company only.</p></div><div><label class="label" for="targetLabel">Matter label <span class="small-muted">optional</span></label><input class="input" id="targetLabel" name="targetLabel" autocomplete="off" placeholder="Example AI" /></div><div><label class="label" for="sourceDocuments">Approved source materials <span class="small-muted">optional · PDF, DOCX, TXT, MD, HTML · max 4</span></label><input class="input" id="sourceDocuments" name="documents" type="file" multiple accept=".pdf,.docx,.txt,.md,.html,.htm,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/markdown,text/html" /></div><div class="notice gate-inline-notice">Uploaded files become source material for this matter. Upload only public documents or materials already approved for review.</div><div class="actions gate-actions"><button class="btn" id="runButton" type="submit">Start Diligence Run</button><a class="btn secondary hidden" id="openReportButton" href="#">Open Report</a><a class="btn secondary hidden" id="qualifiedReviewPageButton" href="#">Qualified Review</a></div></form></article></div>
           <aside class="gate-side-stack" aria-label="Diligence workflow guidance">
-            <article class="card gate-card gate-resume-card">
-              <div class="gate-card-kicker">
-                <div>
-                  <div class="eyebrow">Resume Matter</div>
-                  <h2>Resume by matter/run ID</h2>
-                </div>
-                <span class="gate-step-pill">02</span>
-              </div>
-              <div class="form-grid" aria-label="Resume existing matter">
-                <div>
-                  <label class="label" for="attachRunId">Matter / Run ID</label>
-                  <input class="input mono" id="attachRunId" name="attachRunId" autocomplete="off" placeholder="LN-20260630-000118-SARVAM-AI-420920" />
-                </div>
-                <div class="actions gate-actions">
-                  <button class="btn secondary" id="attachRunButton" type="button">Resume Matter</button>
-                  <button class="btn secondary hidden" id="resumeRunButton" type="button">Continue Run</button>
-                </div>
-                <p class="small-muted">A URL containing <code>?run_id=LN-...</code> will attach automatically and continue watching the matter status.</p>
-              </div>
-            </article>
-            <article class="card gate-card gate-guidance-card">
-              <div class="eyebrow">Review Path</div>
-              <h2>What happens next</h2>
-              <ol class="gate-path-list">
-                <li><span>01</span><div><strong>Source capture</strong><p>Public and approved source materials are collected into the diligence run.</p></div></li>
-                <li><span>02</span><div><strong>Structured report</strong><p>The system assembles a public diligence report from the locked artifacts.</p></div></li>
-                <li><span>03</span><div><strong>Qualified Review</strong><p>The same matter/run ID moves into reviewer confirmation before any downstream drafting.</p></div></li>
-              </ol>
-            </article>
-            <article class="card gate-card gate-guidance-card">
-              <div class="eyebrow">Operating Rule</div>
-              <h2>Do not close during review</h2>
-              <p class="small-muted">Large source sets can take several minutes. The live badge, elapsed timer, progress bar, and last-checked signal show that the diligence workflow is still moving.</p>
-            </article>
+            <article class="card gate-card gate-resume-card"><div class="gate-card-kicker"><div><div class="eyebrow">Resume Matter</div><h2>Resume by matter/run ID</h2></div><span class="gate-step-pill">02</span></div><div class="form-grid" aria-label="Resume existing matter"><div><label class="label" for="attachRunId">Matter / Run ID</label><input class="input mono" id="attachRunId" name="attachRunId" autocomplete="off" placeholder="LN-20260630-000118-SARVAM-AI-420920" /></div><div class="actions gate-actions"><button class="btn secondary" id="attachRunButton" type="button">Resume Matter</button><button class="btn secondary hidden" id="resumeRunButton" type="button">Continue Run</button></div><p class="small-muted">A URL containing <code>?run_id=LN-...</code> will attach automatically and continue watching the matter status.</p></div></article>
+            <article class="card gate-card gate-guidance-card"><div class="eyebrow">Review Path</div><h2>What happens next</h2><ol class="gate-path-list"><li><span>01</span><div><strong>Source capture</strong><p>Public and approved source materials are collected into the diligence run.</p></div></li><li><span>02</span><div><strong>Structured report</strong><p>The system assembles a public diligence report from the locked artifacts.</p></div></li><li><span>03</span><div><strong>Qualified Review</strong><p>The same matter/run ID moves into reviewer confirmation before any downstream drafting.</p></div></li></ol></article>
+            <article class="card gate-card gate-guidance-card"><div class="eyebrow">Operating Rule</div><h2>Do not close during review</h2><p class="small-muted">Large source sets can take several minutes. The live badge, elapsed timer, progress bar, and last-checked signal show that the diligence workflow is still moving.</p></article>
           </aside>
         </section>
       </main>
     </div>
     <div class="footer-note">Public-footprint diligence system. Structured report generation followed by Qualified Review.</div>
   </div>
-  <script src="./diligence-system.js"></script>
-  <script src="./diligence-upload.js"></script>
-  <script src="./public-run-console.js?v=registry-selector-20260703"></script>
+  <script src="./interface-state-system.js?v=state-v1-20260713"></script>
+  <script src="./diligence-system.js"></script><script src="./diligence-upload.js"></script><script src="./public-run-console.js?v=registry-selector-20260703"></script>
 </body>
 </html>
