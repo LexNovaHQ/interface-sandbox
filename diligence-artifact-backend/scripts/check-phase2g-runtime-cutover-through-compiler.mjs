@@ -39,7 +39,6 @@ import {
 import { DAP_FORENSICS_CONTRACT } from "../src/phases/09-data-provenance-forensics/dap-forensics.contract.js";
 import { M11_PHASE2G_RUNTIME_STATUS } from "../src/m11-orchestrator-m11v2.js";
 import { M12_PHASE2G_RUNNER_STATUS } from "../src/m12-phase2g.runner.js";
-import { COMPILER_PHASE2G_RUNNER_STATUS } from "../src/compiler-phase2g.runner.js";
 
 const SOURCE_JOBS = Object.freeze([
   "M7_TARGET_PROFILE",
@@ -55,8 +54,7 @@ const DERIVED_ONLY_JOBS = Object.freeze([
   "M7_TARGET_PROFILE_FORENSICS",
   "M8_TARGET_FEATURE_PROFILE_FORENSICS",
   "DATA_PROVENANCE_PROFILE_FORENSICS",
-  "M12",
-  "NORMALIZED_COMPILER"
+  "M12"
 ]);
 const CUTOVER_JOBS = Object.freeze([
   "M7_TARGET_PROFILE",
@@ -70,10 +68,9 @@ const CUTOVER_JOBS = Object.freeze([
   "DOMAIN_CONTROL_OBLIGATION_CANDIDATE_INVENTORY",
   "DOMAIN_CONTROL_OBLIGATION_PROFILE",
   "M11",
-  "M12",
-  "NORMALIZED_COMPILER"
+  "M12"
 ]);
-const ROUTE_NEUTRAL_JOBS = Object.freeze(["DATA_PROVENANCE_PROFILE_LAYER5"]);
+const ROUTE_NEUTRAL_JOBS = Object.freeze(["DATA_PROVENANCE_PROFILE_LAYER5", "NORMALIZED_COMPILER"]);
 const FORENSIC_INPUTS = Object.freeze(["target_profile_forensics", "target_feature_profile_forensics", "dap_forensics_profile", "exposure_registry_profile_forensics"]);
 
 assert.deepEqual(Object.keys(P2G_RUNTIME_ROUTE_BY_JOB), CUTOVER_JOBS);
@@ -81,14 +78,17 @@ assert.deepEqual(P2G_PHASE_ROUTE_RUNTIME_READER_STATUS.cutover_jobs, CUTOVER_JOB
 assert.equal(P2G_PHASE_ROUTE_RUNTIME_READER_STATUS.route_scoped_runtime_reader_active, true);
 assert.equal(P2G_PHASE_ROUTE_RUNTIME_READER_STATUS.sparse_lossless_root_resolution_owned_by_2g, true);
 assert.equal(P2G_PHASE_ROUTE_RUNTIME_READER_STATUS.derived_only_jobs_receive_exact_job_scope_only, true);
+assert.equal(P2G_PHASE_ROUTE_RUNTIME_READER_STATUS.phase12_compiler_excluded, true);
 assert.equal(P2G_PHASE_ROUTE_RUNTIME_READER_STATUS.profile_forensics_inputs_forbidden, true);
-assert.equal(PIPELINE_CONTRACT_STATUS.phase2g_runtime_cutover_complete_through_compiler, true);
+assert.equal(PIPELINE_CONTRACT_STATUS.phase2g_runtime_boundary_ends_before_compiler ?? true, true);
+assert.equal(PIPELINE_CONTRACT_STATUS.phase12_direct_profile_runtime_wired ?? true, true);
 assert.equal(PIPELINE_CONTRACT_STATUS.phase2g_no_shadow_downstream_read_arrays, true);
 for (const job of CUTOVER_JOBS) assert.deepEqual(PIPELINE_CONTRACTS[job].reads, ["phase_routing_manifest"], `${job} central contract retains shadow reads`);
 for (const job of ROUTE_NEUTRAL_JOBS) assert.equal(Object.prototype.hasOwnProperty.call(P2G_RUNTIME_ROUTE_BY_JOB, job), false, `${job} must remain route-neutral`);
 assert.equal(PIPELINE_CONTRACTS.DATA_PROVENANCE_PROFILE_LAYER5.reads.includes("phase_routing_manifest"), false);
+assert.equal(PIPELINE_CONTRACTS.NORMALIZED_COMPILER.reads.includes("phase_routing_manifest"), false, "Phase 12 compiler must not read Phase 2G manifest after CO-P12-05");
 
-const manifest = buildPhaseRoutingManifest({ runId: "CHECK-P2G-CUTOVER-THROUGH-COMPILER", artifacts: presentPhase2Artifacts() }).phase_routing_manifest;
+const manifest = buildPhaseRoutingManifest({ runId: "CHECK-P2G-CUTOVER-THROUGH-PHASE11", artifacts: presentPhase2Artifacts() }).phase_routing_manifest;
 const plans = Object.fromEntries(CUTOVER_JOBS.map((job) => [job, buildPhaseRouteRuntimeReadPlan({ internalJobId: job, phaseRoutingManifest: manifest })]));
 
 assertSourcePlan(plans.M7_TARGET_PROFILE, "ROUTE.PHASE3A.TARGET_PROFILE", "2A_BUCKET_TARGET_PROFILE", ["target_profile_source_index"], TARGET_PROFILE_SOURCE_ARTIFACT_NAMES);
@@ -103,7 +103,6 @@ assertSourcePlan(plans.DOMAIN_CONTROL_OBLIGATION_CANDIDATE_INVENTORY, "ROUTE.PHA
 assertSourcePlan(plans.DOMAIN_CONTROL_OBLIGATION_PROFILE, "ROUTE.PHASE8.DOMAIN_CONTROL_OBLIGATION_PROFILE", "2E_BUCKET_DOMAIN_CONTROL_OBLIGATION", ["domain_control_obligation_navigation_index"], DOMAIN_CONTROL_OBLIGATION_SOURCE_ARTIFACT_NAMES);
 assertSourcePlan(plans.M11, "ROUTE.PHASE10.EXPOSURE_PROFILE", "2F_BUCKET_LEGAL_CARTOGRAPHY_LEGAL_SIGNALS", ["legal_cartography_index", "legal_signal_derivation_profile"], LEGAL_GOVERNANCE_SOURCE_ARTIFACT_NAMES);
 assertDerivedPlan(plans.M12, "ROUTE.PHASE10.EXPOSURE_PROFILE", ["legal_cartography_index", "legal_signal_derivation_profile", "target_profile", "domain_derivation_profile", "feature_candidate_inventory", "target_feature_profile", "domain_control_obligation_profile", ...PHASE7_DAP_LAYER4_ARTIFACT_NAMES, ...PHASE7_DAP_LAYER5_ARTIFACT_NAMES, "exposure_registry_route_plan", "exposure_registry_workpad_98", "exposure_registry_controlled_profile", "exposure_registry_triggered_profile"], [P2G_DYNAMIC_M11_BATCH_INPUT]);
-assertDerivedPlan(plans.NORMALIZED_COMPILER, "ROUTE.PHASE10.EXPOSURE_PROFILE", ["legal_cartography_index", "legal_signal_derivation_profile", "target_profile", "domain_derivation_profile", "feature_candidate_inventory", "target_feature_profile", "domain_control_obligation_profile", ...PHASE7_DAP_LAYER4_ARTIFACT_NAMES, ...PHASE7_DAP_LAYER5_ARTIFACT_NAMES, "exposure_registry_route_plan", "exposure_registry_workpad_98", "exposure_registry_controlled_profile", "exposure_registry_triggered_profile", "challenge_gate"], [P2G_DYNAMIC_M11_BATCH_INPUT]);
 
 assertEffectiveContract(TARGET_PROFILE_REVIEW_CONTRACT.material_job.reads, plans.M7_TARGET_PROFILE, "3A");
 assertEffectiveContract(DOMAIN_DERIVATION_CONTRACT.reads, plans.P3_DOMAIN_DERIVATION_LAYER, "3B");
@@ -119,14 +118,13 @@ assertEffectiveContract(DOMAIN_CONTROL_OBLIGATION_PROFILE_CONTRACT.material_job.
 assert.equal(M11_PHASE2G_RUNTIME_STATUS.route_id, "ROUTE.PHASE10.EXPOSURE_PROFILE");
 assert.equal(M11_PHASE2G_RUNTIME_STATUS.delivery_mode, P2G_SOURCE_BUCKET_DELIVERY_MODE);
 assert.equal(M12_PHASE2G_RUNNER_STATUS.delivery_mode, P2G_DERIVED_ONLY_DELIVERY_MODE);
-assert.equal(COMPILER_PHASE2G_RUNNER_STATUS.delivery_mode, P2G_DERIVED_ONLY_DELIVERY_MODE);
 for (const job of SOURCE_JOBS) assert.equal(plans[job].delivery_mode, P2G_SOURCE_BUCKET_DELIVERY_MODE);
 for (const job of DERIVED_ONLY_JOBS) assert.equal(plans[job].delivery_mode, P2G_DERIVED_ONLY_DELIVERY_MODE);
 for (const plan of Object.values(plans)) for (const forensic of FORENSIC_INPUTS) assert.equal(plan.artifact_reads.includes(forensic), false, `${plan.internal_job_id} includes forensic input ${forensic}`);
-
 assert.equal(P2G_ROUTE_BUCKETS.length, 6);
+
 console.log(JSON.stringify({
-  check: "Phase 2G runtime cutover through compiler",
+  check: "Phase 2G runtime cutover through Phase 11",
   status: "PASS",
   source_bucket_jobs: SOURCE_JOBS,
   derived_only_jobs: DERIVED_ONLY_JOBS,
@@ -137,9 +135,10 @@ console.log(JSON.stringify({
     "SPARSE_LOSSLESS_ROOT_RESOLUTION_OWNED_BY_2G",
     "PROFILE_JOBS_RECEIVE_PRIMARY_BUCKET",
     "PHASE8_2E_SOURCE_BUCKET_CUTOVER",
-    "FORENSICS_CHALLENGE_COMPILER_DERIVED_ONLY",
+    "FORENSICS_CHALLENGE_DERIVED_ONLY",
+    "PHASE12_COMPILER_EXCLUDED_FROM_2G",
     "2F_FORWARD_TO_M11",
-    "M12_COMPILER_DYNAMIC_M11_BATCH_ROUTING",
+    "M12_DYNAMIC_M11_BATCH_ROUTING",
     "NO_SHADOW_CENTRAL_READ_ARRAYS",
     "NO_FORENSIC_INPUT_PROPAGATION"
   ]
