@@ -32,7 +32,7 @@ export function buildPhase13DomainFieldResolutionArtifacts({
     run_mode
   });
 
-  const qr_registry_resolution_manifest = resolveQrRegistryActivation({
+  const rawRegistryResolution = resolveQrRegistryActivation({
     authority,
     domain_derivation_profile,
     active_run_package_manifest,
@@ -40,6 +40,7 @@ export function buildPhase13DomainFieldResolutionArtifacts({
     reviewer_values,
     phase12_field_resolutions: qr_phase12_value_resolution.field_resolutions
   });
+  const qr_registry_resolution_manifest = normalizeActivationSeverity(rawRegistryResolution);
 
   const qr_active_field_ledger = buildQrActiveFieldLedger({
     authority,
@@ -74,4 +75,9 @@ function summaryStatus({ authority, activation, values, ledger }) {
   if (authority?.status !== "PASS") return "CONTROLLED_FAILURE";
   if ([activation?.status, values?.status, ledger?.status].includes("LOCKED_WITH_LIMITATIONS")) return "LOCKED_WITH_LIMITATIONS";
   return "LOCKED";
+}
+
+function normalizeActivationSeverity(manifest = {}) {
+  if (!manifest?.unresolved_activation_probe_field_ids?.length || manifest.status === "LOCKED_WITH_LIMITATIONS") return manifest;
+  return Object.freeze({ ...manifest, status: "LOCKED_WITH_LIMITATIONS" });
 }
