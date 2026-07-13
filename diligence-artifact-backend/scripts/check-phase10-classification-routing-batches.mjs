@@ -29,17 +29,15 @@ function phase5(primaryPackage, primaryCodes, overlayBlocks = []) {
         activity_reference: "ACT-001",
         primary_classification: {
           package_id: primaryPackage,
-          archetype_codes: primaryCodes,
+          behavior_class_codes: primaryCodes,
           surface_context_tokens: ["Primary-Surface"],
-          archetype_derivation_basis: [],
           surface_derivation_basis: []
         },
         overlay_classifications: overlayBlocks.map((overlay) => ({
           overlay_id: overlay.overlay_id,
           package_id: overlay.package_id,
-          archetype_codes: overlay.archetype_codes,
+          behavior_class_codes: overlay.behavior_class_codes,
           surface_context_tokens: ["Overlay-Surface"],
-          archetype_derivation_basis: [],
           surface_derivation_basis: []
         }))
       }]
@@ -80,7 +78,7 @@ const overlayArtifacts = artifacts("fintech", "AI_OVERLAY_MOUNTED", ["PAY"], [{
   overlay_id: "ai-native",
   package_id: "ai-governance",
   key_version: "v4.0",
-  archetype_codes: ["DOE"]
+  behavior_class_codes: ["DOE"]
 }]);
 const selected = await resolveActiveThreatRegistryContext({ runId: "CO456", artifacts: overlayArtifacts });
 const context = finalizePhase10RoutingContext({
@@ -89,7 +87,7 @@ const context = finalizePhase10RoutingContext({
 });
 
 assert.equal(context.route_plan_compatibility.ok, true);
-assert.equal(context.semantic_layer_compatibility.ok, false);
+assert.equal(context.semantic_layer_compatibility.ok, true);
 assert.equal(context.artifact.execution_fingerprint_inputs.routing_rules_version, M11_PACKAGE_ROUTING_RULES_VERSION);
 assert.equal(context.artifact.execution_fingerprint_inputs.max_m11_batch_rows, 15);
 assert.equal(context.artifact.execution_fingerprint_inputs.max_m11_batch_packet_chars, MAX_M11_BATCH_PACKET_CHARS);
@@ -100,8 +98,8 @@ assert.equal(inventory.validation.status, "PASS");
 assert.deepEqual(inventory.stream_order, ["PRIMARY::fintech", "OVERLAY::ai-governance"]);
 const fintechInventory = inventory.streams.find((stream) => stream.stream_id === "PRIMARY::fintech");
 const aiOverlayInventory = inventory.streams.find((stream) => stream.stream_id === "OVERLAY::ai-governance");
-assert.deepEqual(fintechInventory.archetype_codes, ["PAY"]);
-assert.deepEqual(aiOverlayInventory.archetype_codes, ["DOE"]);
+assert.deepEqual(fintechInventory.behavior_class_codes, ["PAY"]);
+assert.deepEqual(aiOverlayInventory.behavior_class_codes, ["DOE"]);
 assert.deepEqual(fintechInventory.activity_references, ["ACT-001"]);
 assert.deepEqual(aiOverlayInventory.activity_references, ["ACT-001"]);
 
@@ -129,11 +127,11 @@ assert.ok(route.batch_plan.every((batch) => batch.stream_id === `${batch.stream_
 
 const fintechRows = route.route_rows.filter((row) => row.package_id === "fintech");
 const aiRows = route.route_rows.filter((row) => row.package_id === "ai-governance");
-assert.ok(fintechRows.filter((row) => row.Archetype === "PAY").every((row) => row.route === "EVALUATION_ROUTED"));
-assert.ok(fintechRows.filter((row) => !["PAY", "UNI"].includes(row.Archetype)).every((row) => row.route === "NOT_TRIGGERED_NOT_APPLICABLE"));
-assert.ok(aiRows.filter((row) => row.Archetype === "DOE").every((row) => row.route === "EVALUATION_ROUTED"));
-assert.ok(aiRows.filter((row) => !["DOE", "UNI"].includes(row.Archetype)).every((row) => row.route === "NOT_TRIGGERED_NOT_APPLICABLE"));
-assert.ok(route.route_rows.filter((row) => row.Archetype === "UNI").every((row) => row.route_reason === "UNI_ALWAYS_RUN"));
+assert.ok(fintechRows.filter((row) => row.Behavior_Class === "PAY").every((row) => row.route === "EVALUATION_ROUTED"));
+assert.ok(fintechRows.filter((row) => !["PAY", "UNI"].includes(row.Behavior_Class)).every((row) => row.route === "NOT_TRIGGERED_NOT_APPLICABLE"));
+assert.ok(aiRows.filter((row) => row.Behavior_Class === "DOE").every((row) => row.route === "EVALUATION_ROUTED"));
+assert.ok(aiRows.filter((row) => !["DOE", "UNI"].includes(row.Behavior_Class)).every((row) => row.route === "NOT_TRIGGERED_NOT_APPLICABLE"));
+assert.ok(route.route_rows.filter((row) => row.Behavior_Class === "UNI").every((row) => row.route_reason === "UNI_ALWAYS_RUN"));
 assert.ok(route.route_rows.every((row) => row.surface_routing_allowed === false));
 
 const collisionRows = route.route_rows.filter((row) => row.Threat_ID === "UNI_PRV_001");
@@ -155,7 +153,7 @@ const flatInventory = buildPhase5ClassificationInventory({
   manifest: { primary_package: "fintech", streams: [{ package_id: "fintech", stream_type: "PRIMARY" }] }
 });
 assert.equal(flatInventory.validation.status, "CONTROLLED_FAILURE");
-assert.ok(flatInventory.validation.failures.some((failure) => failure.includes("flat classification path forbidden")));
+assert.ok(flatInventory.validation.failures.some((failure) => failure.includes("retired Phase 5 key:archetype_codes")));
 
 const syntheticInventory = {
   stream_order: ["PRIMARY::fintech"],
@@ -165,7 +163,7 @@ const syntheticInventory = {
     package_id: "fintech",
     source_domain: "fintech",
     inventory_digest: "synthetic",
-    archetype_codes: ["PAY"],
+    behavior_class_codes: ["PAY"],
     surface_context_tokens: [],
     activity_references: ["ACT-SYN"]
   }]
@@ -177,13 +175,13 @@ const syntheticRows = Array.from({ length: 31 }, (_value, index) => ({
   source_domain: "fintech",
   stream_type: "PRIMARY",
   stream_id: "PRIMARY::fintech",
-  Archetype: "PAY",
+  Behavior_Class: "PAY",
   registry_order: index + 1,
   stream_registry_order: index + 1,
   route: "EVALUATION_ROUTED",
-  route_reason: "PACKAGE_ARCHETYPE_MATCH",
+  route_reason: "PACKAGE_BEHAVIOR_CLASS_MATCH",
   matched_activity_references: ["ACT-SYN"],
-  registry_row: { Threat_ID: `PAY_TEST_${String(index + 1).padStart(3, "0")}`, Archetype: "PAY", Hunter_Trigger: "CONDITION_1: test | TRIGGER_IF: CONDITION_1 = TRUE | EXCLUDE_IF: false" }
+  registry_row: { Threat_ID: `PAY_TEST_${String(index + 1).padStart(3, "0")}`, Behavior_Class: "PAY", Hunter_Trigger: "CONDITION_1: test | TRIGGER_IF: CONDITION_1 = TRUE | EXCLUDE_IF: false" }
 }));
 const exact15Plan = buildPackageScopedBatchPlan(syntheticRows, {
   inventory: syntheticInventory,
@@ -213,5 +211,5 @@ console.log(JSON.stringify({
   packet_ceiling_chars: MAX_M11_BATCH_PACKET_CHARS,
   exact_row_split_fixture: exact15Plan.map((batch) => batch.row_count),
   canonical_collision_preserved_with_compound_keys: true,
-  semantic_stage_blocked_pending_CO7_CO8: true
+  semantic_stage_package_scoped_behavior_class_ready: true
 }, null, 2));
