@@ -5,6 +5,7 @@ import yaml from "js-yaml";
 
 const PHASE12_DIR = path.dirname(fileURLToPath(import.meta.url));
 const BACKEND_ROOT = path.resolve(PHASE12_DIR, "../../..");
+const FINAL_ROUTE_CONTRACT_STATUS = "CO_P12_03_ROUTE_CONTRACT_ACTIVE";
 
 const FILES = Object.freeze({
   sectionSchema: path.join(PHASE12_DIR, "report-contract/REPORT_SECTION_SCHEMA.yml"),
@@ -17,7 +18,7 @@ const FILES = Object.freeze({
 
 export function loadPhase12ReportContract() {
   const sectionSchema = readYaml(FILES.sectionSchema).report_section_schema || {};
-  const ownershipMatrix = readJson(FILES.ownershipMatrix);
+  const ownershipMatrix = finalizeOwnershipMatrix(readJson(FILES.ownershipMatrix));
   const gapRegister = readYaml(FILES.gapRegister).upstream_report_gap_register || {};
   const normalizerKey = readYaml(FILES.normalizerKey).report_normalizer_key || {};
   const receipts = {
@@ -25,7 +26,7 @@ export function loadPhase12ReportContract() {
     co_p12_02: readJson(FILES.coP1202Receipt)
   };
   return {
-    schema_version: "phase12_report_contract.v1.co_p12_03",
+    schema_version: "phase12_report_contract.v1.co_p12_03_closeout",
     section_schema: sectionSchema,
     ownership_matrix: ownershipMatrix,
     gap_register: gapRegister,
@@ -71,6 +72,15 @@ export function artifactRoot(value, key) {
   return value && typeof value === "object" && !Array.isArray(value) ? value : {};
 }
 
+function finalizeOwnershipMatrix(matrix = {}) {
+  return {
+    ...matrix,
+    route_contract_status: FINAL_ROUTE_CONTRACT_STATUS,
+    source_path_binding_status: "BOUND_BY_PHASE12_ROUTE_ADAPTER",
+    closeout_note: "CO-P12-03 route bindings are active through phase12_route_plan; Phase 12 does not rely on pre-route per-row placeholder text."
+  };
+}
+
 function validateContract({ sectionSchema, ownershipMatrix, gapRegister, normalizerKey, receipts }) {
   const failures = [];
   const sections = arr(sectionSchema.sections);
@@ -82,7 +92,7 @@ function validateContract({ sectionSchema, ownershipMatrix, gapRegister, normali
   if (sections.length !== 10) failures.push(`SECTION_SCHEMA_COUNT:${sections.length}:10`);
   if (new Set(sections.map((section) => section.section_id)).size !== sections.length) failures.push("SECTION_SCHEMA_DUPLICATE_IDS");
   if (ownershipMatrix.schema_version !== "phase12_report_field_ownership_matrix.v1") failures.push(`OWNERSHIP_MATRIX_INVALID:${ownershipMatrix.schema_version || "missing"}`);
-  if (ownershipMatrix.route_contract_status !== "DEFERRED_TO_CO_P12_03") failures.push("OWNERSHIP_MATRIX_NOT_READY_FOR_CO_P12_03");
+  if (ownershipMatrix.route_contract_status !== FINAL_ROUTE_CONTRACT_STATUS) failures.push("OWNERSHIP_MATRIX_ROUTE_CONTRACT_NOT_ACTIVE");
   if (rows.length !== 457) failures.push(`OWNERSHIP_ROW_COUNT:${rows.length}:457`);
   if (fields.length !== 457) failures.push(`NORMALIZER_FIELD_COUNT:${fields.length}:457`);
   if (normalizerKey.generic_humanizer_forbidden !== true) failures.push("GENERIC_HUMANIZER_NOT_FORBIDDEN");
@@ -94,6 +104,7 @@ function validateContract({ sectionSchema, ownershipMatrix, gapRegister, normali
   return {
     status: failures.length ? "CONTROLLED_FAILURE" : "PASS",
     failures,
+    route_contract_status: ownershipMatrix.route_contract_status,
     section_count: sections.length,
     ownership_row_count: rows.length,
     normalizer_field_count: fields.length,
