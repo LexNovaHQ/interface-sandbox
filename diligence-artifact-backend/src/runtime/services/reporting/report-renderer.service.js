@@ -13,7 +13,7 @@ const PROFILE_METADATA_KEYS = new Set([
   "schema_version", "artifact_role", "renderable", "section_id", "section_key", "profile_id",
   "artifact_name", "title", "status", "summary", "findings", "rows", "limitations",
   "child_artifacts", "render_order", "renderer_instruction", "stream_scope", "material_status",
-  "public_status_label", "status_definitions"
+  "public_status_label", "status_definitions", "activity_register"
 ]);
 
 export function buildRendererPayload({ run = {}, artifacts = {}, final_output_handoff = null } = {}) {
@@ -162,6 +162,20 @@ function buildPublicSection({ entry, index, bundle }) {
       fields: [{ field_id: `${entry.section_id}.SUMMARY`, label: "Summary", value: cleanPublic(parent.summary), presentation: "DEFINITION_ROW" }]
     });
   }
+  if (entry.section_id === "04" && Array.isArray(parent.activity_register?.rows)) {
+    subsections.push({
+      subsection_id: "04.activity_register",
+      subsection_title: "Activity Register",
+      artifact_name: entry.artifact_name,
+      profile_id: "activity_register",
+      fields: [{
+        field_id: "PA.ACTIVITY_REGISTER",
+        label: "Activity Register",
+        value: cleanPublic(parent.activity_register.rows),
+        presentation: "REGISTER_ROWS"
+      }]
+    });
+  }
   const children = Array.isArray(entry.child_artifacts) ? entry.child_artifacts : [];
   if (children.length) {
     for (const childName of children) subsections.push(profileToSubsection(unwrapArtifact(bundle[childName]), childName));
@@ -224,7 +238,7 @@ function profileToSubsection(profile, artifactName) {
     subsection_title: profile.title || artifactName,
     artifact_name: artifactName,
     profile_id: profile.profile_id || null,
-    stream_scope: profile.stream_scope || null,
+    stream_scope: publicStreamScope(profile.stream_scope),
     material_status: profile.material_status || null,
     public_status_label: profile.public_status_label || null,
     fields
@@ -323,6 +337,12 @@ function cleanPublic(value) {
   return out;
 }
 
+function publicStreamScope(value) {
+  const normalized = String(value || "").toUpperCase();
+  if (normalized === "PRIMARY" || normalized === "PRIMARY SECTOR") return "Primary Sector";
+  if (normalized === "OVERLAY" || normalized === "CAPABILITY OVERLAY") return "Capability Overlay";
+  return value || null;
+}
 function scalarCode(value) {
   if (value === undefined || value === null) return "";
   if (typeof value === "object") return String(value.code ?? value.value ?? value.tier ?? value.token ?? "").trim();
