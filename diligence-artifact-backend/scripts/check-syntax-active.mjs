@@ -38,7 +38,7 @@ console.log(JSON.stringify({
 
 function discoverActiveScriptEntrypoints(scripts) {
   const files = [];
-  const pattern = /(?:^|[;&|]\s*)node\s+(?!--check\b)([^\s;&|]+\.mjs)(?=\s|$|[;&|])/g;
+  const pattern = /(?:^|(?:&&|\|\||;)\s*)node\s+(?!--check\b)([^\s;&|]+\.mjs)(?=\s|$|[;&|])/g;
   for (const command of Object.values(scripts)) {
     let match;
     while ((match = pattern.exec(command)) !== null) files.push(normalize(match[1]));
