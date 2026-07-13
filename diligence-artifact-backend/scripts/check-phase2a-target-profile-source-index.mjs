@@ -72,8 +72,9 @@ for (const forbidden of P2A_TARGET_PROFILE_FORBIDDEN_CONCLUSIONS) {
   assert.ok(contractText.includes(forbidden), `contract must preserve forbidden conclusion ${forbidden}`);
   assert.ok(validatorText.includes(forbidden) || validatorText.includes("P2A_TARGET_PROFILE_FORBIDDEN_CONCLUSIONS"), `semantic validator must block forbidden conclusion ${forbidden}`);
 }
+const materialFieldKeys = P2A_TARGET_PROFILE_MATERIAL_FIELD_INVENTORY.map((row) => row.field_key);
 for (const forbidden of ["business_context.license_status", "business_context.regulatory_compliance_status", "business_context.grievance_compliance_status", "applicable_regulator"]) {
-  assert.equal(contractText.includes(forbidden), false, `2A contract must not add bad material field ${forbidden}`);
+  assert.equal(materialFieldKeys.includes(forbidden), false, `2A material inventory must not add bad material field ${forbidden}`);
 }
 assert.ok(builderText.includes("phase1_v5_source_contract_required: true"));
 assert.ok(builderText.includes("governing_law_from_regulatory_or_grievance_roots_forbidden: true"));
