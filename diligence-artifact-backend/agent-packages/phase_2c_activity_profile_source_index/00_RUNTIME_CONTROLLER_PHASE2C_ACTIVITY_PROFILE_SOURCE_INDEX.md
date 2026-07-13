@@ -4,7 +4,9 @@
 
 This controller applies only to `P2C_ACTIVITY_PROFILE_SOURCE_INDEX`.
 
-2C builds the domain-agnostic source-navigation substrate for Phase 5 Activity Profile Review. It locates public activity evidence. It does not interpret that evidence through any domain-specific package taxonomy.
+Phase 2C exists only to build a pointer-only source index for Phase 5 Activity Profile Review.
+
+2C builds the domain-agnostic source-navigation substrate for Phase 5. It locates public activity evidence. It does not interpret that evidence through any domain-specific package taxonomy.
 
 The only final artifact owned by 2C is:
 
@@ -22,17 +24,21 @@ activity_profile_source_index
 
 ## 2. Current Wiring Status
 
-This package is contract-only at creation.
+This package is runtime-wired.
 
 ```yaml
-runtime_wiring_changed: false
-artifact_permissions_registered: false
-pipeline_contract_registered: false
-pipeline_service_dispatch_registered: false
-save_order_gates_registered: false
+runtime_wiring_changed: true
+artifact_permissions_registered: true
+pipeline_contract_registered: true
+central_phase_registered: true
+pipeline_service_dispatch_registered: true
+save_order_gates_registered: true
+compiler_built: true
+final_validator_built: true
+orchestrator_built: true
 ```
 
-No runtime claim may be made until the backend integration step registers 2C in artifact permissions, central phase outputs, the pipeline contract, pipeline service dispatch, and save-order gates.
+The runtime may proceed from P2B to P2C, from P2C to P2D, from P2D to P2E, and from P2E to P2G. P2G remains required before the P2 Index compiler/validation step.
 
 ## 3. Phase 1 Source Authority
 
@@ -179,4 +185,14 @@ No downstream Phase 5 job should be allowed to run from the new source-index con
 
 ## 10. Stop Condition
 
-Stop after the semantic profile is validated for this package step. Compiler, final validator, orchestrator, runtime wiring, and Phase 5 sync are separate steps and must not be implied by this package.
+Stop after `activity_profile_source_index` is saved and validated.
+
+Do not continue to:
+
+```text
+ACTIVITY_PROFILE_REVIEW
+M8_FEATURE_CANDIDATE_INVENTORY
+M8_TARGET_FEATURE_PROFILE
+M8_ACTIVITY_PROFILE_FORENSICS
+DATA_PROVENANCE_PROFILE_LAYER4
+```
