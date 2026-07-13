@@ -1,7 +1,8 @@
-import { loadAndValidateQrRegistryAuthority } from "../src/phases/13-qualified-review/registry/index.js";
+import { buildQrRegistryAuthorityArtifacts } from "../src/phases/13-qualified-review/registry/index.js";
 
 try {
-  const { validation } = loadAndValidateQrRegistryAuthority();
+  const artifacts = buildQrRegistryAuthorityArtifacts();
+  const validation = artifacts.qr_registry_structural_validation;
   console.log("Phase 13 QR authority validation: PASS");
   console.log(JSON.stringify(validation.counts, null, 2));
   if (validation.warnings.length) {
