@@ -1,2 +1,2 @@
 Validate Step 3 consolidated tests against domain-gate-v0-preflight.
-Attempt 5 includes synchronized Phase 10 behavior-class, Agent 5, complete report-row, and v2 forensic reconciliation fixtures.
+Attempt 6 includes synchronized Phase 10 behavior-class, Agent 5, complete report-row, v2 forensic, and mounted route-scenario fixtures.
