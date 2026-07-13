@@ -2,19 +2,33 @@
 
 ## 1. Receipt Purpose
 
-The Phase 2C terminal receipt proves that the Activity Profile Source Index package has completed its assigned package-stage work and stopped at the correct boundary.
+The Phase 2C terminal receipt proves that the Activity Profile Source Index package has completed its assigned runtime-wired package-stage work and stopped at the correct boundary.
 
-For this step, the package may prove only the following backend surfaces exist:
+For this step, the package proves these backend surfaces exist:
 
 ```text
 activity-profile-source-index.contract.js
 activity-profile-deterministic-map.builder.js
 activity-profile-semantic-profile.validator.js
+activity-profile-source-index.compiler.js
+activity-profile-source-index.validator.js
+activity-profile-source-index.orchestrator.js
+artifact permissions
+pipeline contract registration
+central phase registration
+pipeline service dispatch
+save-order gates
 ```
 
-Compiler, final validator, orchestrator, runtime wiring, package audit, implementation check, cartography sync, and Phase 5 sync are separate steps.
+The package is still an evidence-navigation layer only. It does not execute Activity Profile Review and does not derive package-specific activity values.
 
-## 2. Exact Package Membership
+## 2. Strict Response Mode
+
+Backend execution must return strict JSON only.
+
+No markdown. No prose. No report text. No renderer payload. No same-chat next-phase instructions.
+
+## 3. Exact Package Membership
 
 The package must contain exactly seven files:
 
@@ -30,7 +44,7 @@ P2C_PACKET_MANIFEST.json
 
 No extra prompt-stack, reinvestigation, hybrid-compiler, or packet-validation documents are allowed for this lean package stage.
 
-## 3. Required Identity Receipt
+## 4. Required Identity Receipt
 
 The package must prove:
 
@@ -38,13 +52,13 @@ The package must prove:
 active_phase_id: P2C_ACTIVITY_PROFILE_SOURCE_INDEX
 active_phase_scope: P2C_ACTIVITY_PROFILE_SOURCE_INDEX_ONLY
 final_downstream_required_artifact: activity_profile_source_index
-runtime_wiring_changed: false
-package_status: LEAN_PACKAGE_CONTRACT_ONLY
+runtime_wiring_changed: true
+package_status: LEAN_PACKAGE_RUNTIME_WIRED
 ```
 
-## 4. Required Artifact Receipt
+## 5. Required Artifact Receipt
 
-The package must prove the write order:
+The package may save only these roots, in this order:
 
 ```text
 activity_profile_deterministic_map
@@ -52,9 +66,9 @@ activity_profile_semantic_profile
 activity_profile_source_index
 ```
 
-The package must not claim that the final compiler, final validator, or orchestrator is built until Steps 4-6 are completed.
+Each save event must have one top-level root only.
 
-## 5. Required Read Receipt
+## 6. Required Read Receipt
 
 The package must prove the allowed control inputs:
 
@@ -81,7 +95,7 @@ lossless_root__support_help_resources
 lossless_root__ai_safety_transparency
 ```
 
-## 6. Candidate-Creation Receipt
+## 7. Candidate-Creation Receipt
 
 The package must prove:
 
@@ -101,7 +115,7 @@ context_only_roots:
 
 Context-only roots must be marked as non-candidate-creating.
 
-## 7. Domain-Agnostic Receipt
+## 8. Domain-Agnostic Receipt
 
 The package must prove:
 
@@ -113,7 +127,7 @@ archetype_surface_and_package_field_derivation_forbidden: true
 phase_5_derives_profile_values_later: true
 ```
 
-## 8. Pointer-Only Receipt
+## 9. Pointer-Only Receipt
 
 The package must prove:
 
@@ -127,7 +141,7 @@ mechanics_proof_forbidden_in_2c: true
 feature_candidate_inventory_forbidden_in_2c: true
 ```
 
-## 9. Forbidden Output Receipt
+## 10. Forbidden Output Receipt
 
 The package must prove it does not emit or instruct the model to emit:
 
@@ -146,7 +160,7 @@ final_output_handoff
 renderer_payload
 ```
 
-## 10. Forbidden Classification Receipt
+## 11. Forbidden Classification Receipt
 
 The package must prove it forbids:
 
@@ -165,19 +179,18 @@ FIELD_DERIVATION_REGISTRY
 retired_standalone_product_activity_matrix
 ```
 
-## 11. Stop Receipt
+## 12. Stop Receipt
 
-Terminal receipt is successful only if the package stops before:
+Stop after `activity_profile_source_index` is saved and validated.
+
+Do not continue to:
 
 ```text
-compiler build
-final validator build
-orchestrator build
-runtime pipeline wiring
-artifact permissions
-cartography master contract sync
-Phase 5 sync
-local validation
+ACTIVITY_PROFILE_REVIEW
+M8_FEATURE_CANDIDATE_INVENTORY
+M8_TARGET_FEATURE_PROFILE
+M8_ACTIVITY_PROFILE_FORENSICS
+DATA_PROVENANCE_PROFILE_LAYER4
 ```
 
-This prevents the package stage from silently claiming work that has not been built.
+Phase 5 then derives package-specific activity values later using the mounted domain package and the `activity_profile_source_index`.
