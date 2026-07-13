@@ -1,0 +1,1 @@
+Validate consolidated Phase 2G, Phase 12 direct compiler, and clean renderer authority boundaries.
