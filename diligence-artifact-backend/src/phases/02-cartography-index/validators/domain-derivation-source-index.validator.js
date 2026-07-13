@@ -103,10 +103,16 @@ function validateDownstreamRules(rules = {}, errors) {
 }
 
 function validateNoForbiddenMarkers(value, errors) {
-  const text = JSON.stringify(value || {});
   for (const marker of [...P2B_DOMAIN_DERIVATION_FORBIDDEN_CONCLUSIONS, ...P2B_DOMAIN_DERIVATION_RETIRED_ROOTS_FORBIDDEN]) {
-    if (text.includes(marker)) errors.push(`final index includes forbidden marker ${marker}`);
+    if (containsExactMarker(value, marker)) errors.push(`final index includes forbidden marker ${marker}`);
   }
+}
+
+function containsExactMarker(value, marker) {
+  if (typeof value === "string") return value === marker;
+  if (!value || typeof value !== "object") return false;
+  if (Array.isArray(value)) return value.some((item) => containsExactMarker(item, marker));
+  return Object.entries(value).some(([key, item]) => key === marker || containsExactMarker(item, marker));
 }
 
 function ensureArray(value) {
