@@ -1,1 +1,2 @@
 Validate Step 3 consolidated tests against domain-gate-v0-preflight.
+Attempt 2 includes the synchronized Phase 10 behavior-class fixture.
