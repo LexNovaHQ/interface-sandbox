@@ -4,7 +4,9 @@ Version: `PHASE11_PRODUCTION_RUNTIME_CONTRACT_v1`
 
 ## Governing doctrine
 
-Phase 11 blocks only for deterministically confirmed critical systemic failure. Material field defects receive no more than two targeted reinvestigation attempts. A field that remains unresolved after two attempts proceeds as `PASS_WITH_LIMITATION` with an explicit warning.
+Phase 11 blocks only for deterministically confirmed critical systemic failure. Material field defects receive no more than two targeted substantive reinvestigation attempts. A field that remains unresolved after two substantive attempts proceeds as `PASS_WITH_LIMITATION` with an explicit warning.
+
+Technical provider or infrastructure failures are not substantive attempts. They use the bounded technical-retry policy and, when still unresolved, produce a non-substantive retry receipt rather than consuming one of the two field-reinvestigation attempts.
 
 ## Independent artifacts
 
@@ -16,41 +18,46 @@ Phase 11 must persist five independent artifacts in this order:
 4. `operator_challenge_dispatch_checkpoint`
 5. `challenge_gate`
 
-The compiler may treat only `challenge_gate` as authority. The inventory and ledgers remain audit and recovery artifacts.
+The compiler may treat only `challenge_gate` as Phase 11 authority. The inventory and ledgers remain audit and recovery artifacts.
 
 ## Mutation boundary
 
-A reinvestigation owner may change only the exact field paths identified in the directive plus mechanically necessary status, validation, version and execution metadata. Any unrelated mutation must be rejected and the challenged canonical artifact restored from the pre-dispatch snapshot.
+A reinvestigation owner may propose changes only to the exact field paths identified in the directive plus mechanically necessary status, validation, version and execution metadata. The proposal is not persisted by the owner runtime.
 
-The owner phase may not broaden the field scope, alter unaffected rows, rerun its normal downstream chain or decide that its own output resolved the challenge.
+Phase 11 must read the current canonical artifacts, validate the proposed mutation, reject any unrelated change, and only then commit the approved targeted proposal. Any unauthorized or failed commit must leave or restore the challenged canonical artifacts to their pre-dispatch state.
+
+The owner phase may not broaden the field scope, alter unaffected rows, rerun its normal downstream chain, lock its own phase, or decide that its own output resolved the challenge.
 
 ## Durable checkpoint sequence
 
-Every dispatch must persist these stages:
+Every dispatch follows the v2 attempt-safe state machine:
 
 - `DISPATCH_CREATED`
-- `OWNER_RUNNING`
-- `OWNER_RETURNED`
-- `RETURN_VALIDATED`
+- `OWNER_PROPOSAL_RUNNING`
+- `OWNER_PROPOSAL_CREATED`
+- `PROPOSAL_COMMITTED`
+- `NON_SUBSTANTIVE_RETRY_REQUIRED` when a technical or non-committed outcome must not consume a substantive attempt
 - `ATTEMPT_RECORDED`
 - `COMPLETE`
 
-A restarted worker must resume a matching dispatch from the latest durable checkpoint. It must not issue a duplicate model call when the challenged artifact version already advanced after `OWNER_RUNNING`.
+A restarted worker must resume a matching dispatch from the latest durable checkpoint. It must not issue a duplicate owner call after a proposal has been created, and it must not reapply a proposal after a commit receipt has been persisted.
 
 ## Lease
 
-A run-scoped Firestore lease must bind `run_id`, `dispatch_id`, `challenge_candidate_id`, `attempt_number`, `worker_id` and expiry. A second live worker must not execute the same attempt.
+A run-scoped Firestore lease must bind `run_id`, `dispatch_id`, `challenge_candidate_id`, `attempt_number`, `worker_id`, `lease_token` and expiry. A second live worker must not execute the same dispatch attempt. Renew and release operations require both the worker identity and lease token.
 
 ## Resolution authority
 
-An attempt is `RESOLVED` only when:
+A substantive attempt is `RESOLVED` only when:
 
-- the owning runtime completed without error;
+- an owner proposal was committed through the Phase 11 mutation boundary;
 - at least one challenged artifact version advanced;
 - the mutation guard passed;
 - the exact deterministic Layer 1 candidate condition disappeared from the rebuilt inventory.
 
-Otherwise the attempt is `UNRESOLVED`.
+Otherwise the substantive attempt is `UNRESOLVED`.
+
+An owner runtime failure, malformed proposal, mutation rejection, or uncommitted proposal is classified separately. It must not be recorded as a substantive field attempt merely because a dispatch occurred.
 
 ## Phase 10 special rule
 
@@ -60,7 +67,7 @@ Phase 10 reinvestigation must rerun only the package-scoped batch containing the
 
 - `PASS` → compiler handoff allowed.
 - `PASS_WITH_LIMITATION` → compiler handoff allowed with warnings.
-- `REINVESTIGATION_REQUIRED` → execute the next targeted dispatch inside Phase 11.
-- `CONTROLLED_FAILURE` → block the run.
+- `REINVESTIGATION_REQUIRED` → execute the next targeted substantive dispatch inside Phase 11.
+- `CONTROLLED_FAILURE` → block the run only for a deterministically confirmed critical failure.
 
 A third substantive attempt is forbidden.
