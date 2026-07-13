@@ -10,10 +10,10 @@ const phaseRoutingManifest = buildPhaseRoutingManifest({
 }).phase_routing_manifest;
 
 await smokeForensicRunnerLockedOrLimited();
-await smokeUnexpectedRoutedArtifactFails();
+await smokeUndeclaredRoutedArtifactFails();
 await smokeManifestReadMissingFails();
 
-console.log(JSON.stringify({ check: "Target Profile Forensics runtime smoke", status: "PASS", enforced_gates: ["REAL_PHASE2G_MANIFEST", "DERIVED_ONLY_RUNTIME_PACKET", "UNEXPECTED_ARTIFACT_FAILS", "MANIFEST_READ_REQUIRED", "DETERMINISTIC_FORENSIC_OUTPUT"] }, null, 2));
+console.log(JSON.stringify({ check: "Target Profile Forensics runtime smoke", status: "PASS", enforced_gates: ["REAL_PHASE2G_MANIFEST", "DERIVED_ONLY_RUNTIME_PACKET", "UNDECLARED_ARTIFACT_FAILS", "MANIFEST_READ_REQUIRED", "DETERMINISTIC_FORENSIC_OUTPUT"] }, null, 2));
 
 async function smokeForensicRunnerLockedOrLimited() {
   const calls = makeRuntimeCalls();
@@ -45,14 +45,14 @@ async function smokeForensicRunnerLockedOrLimited() {
   assert.equal(artifact.runtime_trace_m7_only.phase, "M7_TARGET_PROFILE_FORENSICS");
 }
 
-async function smokeUnexpectedRoutedArtifactFails() {
+async function smokeUndeclaredRoutedArtifactFails() {
   const calls = makeRuntimeCalls({ extraRuntimeArtifact: { legal_cartography_index: {} } });
   await expectFailure(() => runTargetProfileForensicsPhase({
     run: { run_id: "TPF-RUNTIME-SMOKE-FORBIDDEN" },
     internalJobId: "M7_TARGET_PROFILE_FORENSICS",
     contract,
     ...calls.callbacks
-  }), "P2G_RUNTIME_UNEXPECTED_ARTIFACT");
+  }), "P2G_RUNTIME_UNDECLARED_ARTIFACT_DELIVERED");
   assert.equal(calls.saved.length, 0);
 }
 
