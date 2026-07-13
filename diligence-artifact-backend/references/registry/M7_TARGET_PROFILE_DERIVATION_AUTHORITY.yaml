@@ -1,13 +1,15 @@
-schema: TARGET_PROFILE_REVIEW_DERIVATION_AUTHORITY_v7_PHASE1_V5_17_ROOT_REGULATORY_GRIEVANCE_SYNC
-purpose: Target Profile Review derivation authority aligned to Phase 1 v5 17-root scoped target-profile lossless evidence, bounded legal_signal_derivation_profile compatibility use, public regulatory/grievance operating-context signals, and no Lane/domain-package derivation.
+schema: TARGET_PROFILE_REVIEW_DERIVATION_AUTHORITY_v7_PHASE2G_ROUTED_SOURCE_BOUNDARY
+purpose: Target Profile Review derivation authority aligned to Phase 2G-routed 2A Target Profile source bucket, scoped target-profile lossless evidence, bounded legal_signal_derivation_profile use, public regulatory/grievance operating-context signals, and no Lane/domain-package derivation.
 phase: TARGET_PROFILE_REVIEW
 active_agent: agent_3_target_feature
-compatibility_note: File name retained for backend compatibility. Governing phase name is Target Profile Review.
+compatibility_note: File name retained for backend compatibility. Governing phase name is Target Profile Review, and the live source boundary is Phase 2G-routed.
 
 source_boundary:
+  routing_authority: P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY
+  route_id: ROUTE.PHASE3A.TARGET_PROFILE
+  bucket_id: 2A_BUCKET_TARGET_PROFILE
   allowed_model_sources:
-    - source_discovery_handoff
-    - cartography_index
+    - phase_route_runtime_packet
     - target_profile_source_index
     - lossless_root__homepage_landing
     - lossless_root__company_identity
@@ -16,11 +18,8 @@ source_boundary:
     - lossless_root__regulatory_licensing_status
     - lossless_root__grievance_complaints
     - legal_signal_derivation_profile
-    - domain_selection_profile
-    - active_run_package_manifest
   navigation_only_sources:
-    - source_discovery_handoff
-    - cartography_index
+    - phase_route_runtime_packet
     - target_profile_source_index
   evidence_sources:
     - lossless_root__homepage_landing
@@ -36,6 +35,10 @@ source_boundary:
     - Diligence_Field_Derivation_Registry.yml
     - FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
   forbidden_model_sources:
+    - source_discovery_handoff
+    - cartography_index
+    - domain_selection_profile
+    - active_run_package_manifest
     - legal_cartography_index
     - legal_doc_inventory
     - legal_doc_extraction_index
@@ -62,7 +65,7 @@ lane_policy:
 
 direct_legal_signal_policy:
   artifact: legal_signal_derivation_profile
-  compatibility_status: COMPATIBILITY_PRESERVED_UNTIL_2A_TARGET_LEGAL_SIGNAL_LOCATOR_CUTOVER
+  compatibility_status: PHASE2G_ROUTED_BOUNDED_SECONDARY_SIGNAL
   model_may_use_supported_field_rows_only: true
   model_must_not_read_raw_legal_sources: true
   direct_signal_is_not_legal_advice: true
@@ -149,11 +152,11 @@ selected_fields:
     unsupported_behavior: controlled_status_plus_limitation
   target_identity.reviewed_website:
     field_id: TP.ID.003
-    source_basis: source_discovery_handoff_or_scoped_target_lossless_evidence
+    source_basis: phase_route_runtime_packet_target_or_scoped_target_lossless_evidence
     unsupported_behavior: controlled_status_plus_limitation
   target_identity.primary_domain:
     field_id: TP.ID.004
-    source_basis: reviewed_website_or_source_discovery_handoff
+    source_basis: reviewed_website_or_phase_route_runtime_packet_target
     unsupported_behavior: controlled_status_plus_limitation
   jurisdiction_notice.registered_notice_location:
     field_id: TP.JUR.001
@@ -234,6 +237,8 @@ selected_fields:
     unsupported_behavior: array_required
 
 hard_rules:
+  - Target Profile Review must enter through Phase 2G routed 2A source bucket only.
+  - Target Profile Review must not directly request source_discovery_handoff, cartography_index, domain_selection_profile, or active_run_package_manifest as model sources.
   - Target Profile Review must not request legal/governance family artifacts.
   - Target Profile Review must not request legal_cartography_index.
   - Target Profile Review must not request legal documents or legal lossless text.
