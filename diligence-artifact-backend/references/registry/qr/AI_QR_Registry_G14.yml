@@ -1,0 +1,85 @@
+registry_section:
+  id: G14
+  parent: AI_QR_REGISTRY_LANE_A
+  version: v1.0
+  lane: A
+  title: Cookies and SLA metrics
+  display_order: 14
+  record_count: 2
+  atomic_value_count: 5
+  rows:
+  - id: A27
+    key: ai.lane_a.cookie_configuration
+    section: G14
+    lane: A
+    shape: OBJECT
+    leaves:
+    - cookie_categories
+    - marketing_or_advertising_cookies
+    materiality: MATERIAL
+    required: true
+    effects:
+    - POPULATE
+    - SELECT_CLAUSE
+    documents:
+    - DOC_AI_A_PP
+    mapping_key: QR.A27
+    upstream:
+      artifacts:
+      - legal_cartography_index
+      - dap_semantic_batch_ctrl_artifact
+      selectors:
+      - cookie/privacy notice signals
+      - DAP.CTRL
+      coverage: PARTIAL_INPUT
+    resolve: COMPLETE
+    ui:
+      label: Cookie configuration
+      prompt: Confirm the cookies or tracking technologies used by the website or service and their purposes.
+      input: object_form
+      mode: PREFILLED_COMPLETION
+      when:
+        all:
+        - lane_a_active == true
+    demo: Essential; analytics | No marketing cookies
+    threats:
+    - UNI_CNS_IN1
+    - UNI_CNS_IN2
+  - id: A28
+    key: ai.lane_a.sla.performance_metrics
+    section: G14
+    lane: A
+    shape: OBJECT
+    leaves:
+    - availability_target
+    - ttft_target
+    - credit_cap
+    materiality: STANDARD
+    required: true
+    effects:
+    - POPULATE
+    documents:
+    - DOC_AI_A_SLA
+    - DOC_AI_A_TOS
+    mapping_key: QR.A28
+    upstream:
+      artifacts:
+      - legal_cartography_index
+      selectors:
+      - Existing public SLA may be visible
+      - template has defaults
+      coverage: DEFAULT_OVERRIDE
+    resolve: OVERRIDE_IF_NEEDED
+    ui:
+      label: SLA performance metrics
+      prompt: Review or override the default uptime, support, response-time, latency, service-credit, and exclusion metrics.
+      input: sla_metrics_object
+      mode: OPTIONAL_OVERRIDE
+      when:
+        all:
+        - U19 == true
+    demo: 99.9% | <3 seconds for 99% | 30%
+    threats:
+    - ORC_LIA_001
+    - SHD_LIA_003
+    - SHD_LIA_004
