@@ -90,9 +90,11 @@ const forensics = buildDomainAgnosticForensics({
 assert.equal(forensics.schema_version, "M11_DOMAIN_AGNOSTIC_FORENSICS_v2_COMPLETE_REPORT_ROW");
 assert.equal(forensics.expected_registry_row_key_count, 5);
 assert.equal(forensics.forensic_lock_gate_result.status, "PASS");
-assert.equal(forensics.forensic_lock_gate_result.fixed_98_row_assumption, false);
-assert.equal(forensics.forensic_lock_gate_result.fixed_ai_subcategory_assumption, false);
-assert.equal(forensics.stream_trace.length, 2);
+assert.equal(forensics.forensic_lock_gate_result.dynamic_registry_count_verified, true);
+assert.equal(forensics.forensic_lock_gate_result.compound_identity_reconciled, true);
+assert.equal(forensics.forensic_lock_gate_result.complete_registry_spine_preserved, true);
+assert.equal(forensics.forensic_lock_gate_result.primary_overlay_trace_separate, true);
+assert.equal(forensics.row_trace.length, 5);
 
 assert.equal(deriveFinalMaterialStatus(inputs({ exclude_if_met: "yes" })), "CONTROLLED_BY_EXCLUSION");
 assert.equal(deriveFinalMaterialStatus(inputs({ public_evidence_limitation: "yes", evidence_sufficient: "partial" })), "CONTROLLED_BY_PUBLIC_EVIDENCE_LIMITATION");
