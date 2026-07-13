@@ -4,21 +4,21 @@ export function assertSetEqual(actual, expected, label = "set") {
   assert.deepEqual(new Set(actual), new Set(expected), `${label} mismatch`);
 }
 
-export function findForbiddenKeys(value, forbiddenKeys, path = "artifact", found = []) {
+export function findForbiddenKeys(value, forbiddenKeys, path = "artifact", found = [], isAllowedPath = () => false) {
   if (!value || typeof value !== "object") return found;
   if (Array.isArray(value)) {
-    value.forEach((item, index) => findForbiddenKeys(item, forbiddenKeys, `${path}[${index}]`, found));
+    value.forEach((item, index) => findForbiddenKeys(item, forbiddenKeys, `${path}[${index}]`, found, isAllowedPath));
     return found;
   }
   for (const [key, nested] of Object.entries(value)) {
-    if (forbiddenKeys.has(key)) found.push(`${path}.${key}`);
-    findForbiddenKeys(nested, forbiddenKeys, `${path}.${key}`, found);
+    if (forbiddenKeys.has(key) && !isAllowedPath(path, key)) found.push(`${path}.${key}`);
+    findForbiddenKeys(nested, forbiddenKeys, `${path}.${key}`, found, isAllowedPath);
   }
   return found;
 }
 
-export function assertNoForbiddenKeys(value, forbiddenKeys, label = "artifact") {
-  const found = findForbiddenKeys(value, forbiddenKeys, label);
+export function assertNoForbiddenKeys(value, forbiddenKeys, label = "artifact", isAllowedPath = () => false) {
+  const found = findForbiddenKeys(value, forbiddenKeys, label, [], isAllowedPath);
   assert.deepEqual(found, [], `${label}:${found.join(",")}`);
 }
 

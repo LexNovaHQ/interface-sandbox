@@ -1,5 +1,8 @@
 import { artifactRoot } from "./phase12-report-contract.js";
-import { FORBIDDEN_REPORT_KEYS } from "./phase12-artifact-family.contract.js";
+import {
+  FORBIDDEN_REPORT_KEYS,
+  isAllowedReportKeyPath
+} from "./phase12-artifact-family.contract.js";
 import { normalizeRegistryCode, normalizeSectorPackage } from "./phase12-taxonomy-normalizer.js";
 
 export function projectFdrFinding({ route = {}, artifacts = {}, reportArtifactName, custodyManifest } = {}) {
@@ -109,7 +112,7 @@ export function assertNoForbiddenReportKeys(value, path = "artifact", failures =
     return failures;
   }
   for (const [key, nested] of Object.entries(value)) {
-    if (FORBIDDEN_REPORT_KEYS.has(key)) failures.push(`REPORT_ARTIFACT_FORBIDDEN_KEY:${path}.${key}`);
+    if (FORBIDDEN_REPORT_KEYS.has(key) && !isAllowedReportKeyPath(path, key)) failures.push(`REPORT_ARTIFACT_FORBIDDEN_KEY:${path}.${key}`);
     assertNoForbiddenReportKeys(nested, `${path}.${key}`, failures);
   }
   return failures;

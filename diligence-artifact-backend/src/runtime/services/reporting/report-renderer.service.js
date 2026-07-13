@@ -1,5 +1,6 @@
 import {
   FORBIDDEN_REPORT_KEYS,
+  isAllowedReportKeyPath,
   REPORT_FACING_ARTIFACTS
 } from "../../../phases/12-normalized-compiler/phase12-artifact-family.contract.js";
 
@@ -321,7 +322,7 @@ function assertNoForbiddenKeys(value, path) {
     return;
   }
   for (const [key, nested] of Object.entries(value)) {
-    if (FORBIDDEN_REPORT_KEYS.has(key)) throw new Error(`REPORT_RENDERER_FORBIDDEN_KEY:${path}.${key}`);
+    if (FORBIDDEN_REPORT_KEYS.has(key) && !isAllowedReportKeyPath(path, key)) throw new Error(`REPORT_RENDERER_FORBIDDEN_KEY:${path}.${key}`);
     assertNoForbiddenKeys(nested, `${path}.${key}`);
   }
 }

@@ -89,6 +89,11 @@ export const FORBIDDEN_REPORT_KEYS = Object.freeze(new Set([
   "warnings"
 ]));
 
+export function isAllowedReportKeyPath(path, key) {
+  if (key !== "package_id") return false;
+  return /^report_section__04_product_activity_architecture\.activity_register\.rows\[\d+\]\.(primary_classification|overlay_classifications\[\d+\])$/.test(path);
+}
+
 export const EXPOSURE_MATERIAL_FIELDS = Object.freeze([
   "Threat_ID", "Threat_Name", "Lane", "Behavior_Class", "Surface", "Subcategory",
   "Compliance_Framework", "Authority_IN", "Authority_EU", "Authority_US", "Velocity",

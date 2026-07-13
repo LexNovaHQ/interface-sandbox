@@ -85,7 +85,11 @@ export function assertPhase12ActivityPresentation(section = {}) {
 
 function projectActivityRow(activity = {}) {
   const row = {};
-  for (const key of ACTIVITY_PRESENTATION_FIELDS) row[key] = cleanMaterialValue(activity[key]);
+  for (const key of ACTIVITY_PRESENTATION_FIELDS) {
+    row[key] = key === "primary_classification" || key === "overlay_classifications"
+      ? activity[key]
+      : cleanMaterialValue(activity[key]);
+  }
   row.primary_classification = normalizePrimaryClassification(row.primary_classification);
   row.overlay_classifications = normalizeOverlayClassifications(row.overlay_classifications);
   return row;

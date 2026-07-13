@@ -43,7 +43,7 @@ validateScripts();
 
 assert.equal(files.packageJson.scripts["check:interface-report-ui-contract"], "node scripts/check-interface-report-ui-contract.mjs");
 assert.equal(files.packageJson.scripts["check:interface-report-visual-regression"], "node scripts/check-interface-report-visual-regression.mjs");
-assert.equal(files.packageJson.scripts["check:interface-ui"], "node scripts/check-interface-ui-contract.mjs && node scripts/check-interface-report-visual-regression.mjs");
+assert.equal(files.packageJson.scripts["check:interface-ui"], "node scripts/check-interface-ui-universal.mjs && node scripts/check-interface-report-ui-contract.mjs && node scripts/check-interface-annex-qr-contract.mjs && node scripts/check-interface-assembly-signals-contract.mjs && node scripts/check-interface-report-visual-regression.mjs");
 
 console.log(JSON.stringify({
   check: "interface-report-ui-contract",

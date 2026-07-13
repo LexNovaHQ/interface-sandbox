@@ -22,7 +22,10 @@ import {
   OBLIGATION_TABLE_PAGE_SIZE,
   PHASE12_OBLIGATION_PRESENTATION_SCHEMA
 } from "../src/phases/12-normalized-compiler/phase12-obligation-presentation.js";
-import { FORBIDDEN_REPORT_KEYS } from "../src/phases/12-normalized-compiler/phase12-artifact-family.contract.js";
+import {
+  FORBIDDEN_REPORT_KEYS,
+  isAllowedReportKeyPath
+} from "../src/phases/12-normalized-compiler/phase12-artifact-family.contract.js";
 import {
   assertIncludesFailure,
   assertNoForbiddenKeys,
@@ -121,7 +124,7 @@ function validateProductionProjection(projected) {
   for (const artifactName of REPORT_FACING_ARTIFACTS) {
     const artifact = projected[artifactName];
     assert.equal(artifact.renderable, true, artifactName);
-    assertNoForbiddenKeys(artifact, FORBIDDEN_REPORT_KEYS, artifactName);
+    assertNoForbiddenKeys(artifact, FORBIDDEN_REPORT_KEYS, artifactName, isAllowedReportKeyPath);
   }
 }
 

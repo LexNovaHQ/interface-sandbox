@@ -31,6 +31,11 @@ const EXPECTED_PACKAGE_SCRIPTS = Object.freeze([
   "check:phase12-production",
   "check:phase12-post-clean",
   "check:interface-ui",
+  "check:interface-report-ui-contract",
+  "check:interface-report-visual-regression",
+  "check:interface-annex-qr",
+  "check:interface-assembly-signals",
+  "check:interface-sector-state",
   "check:runtime-authority-boundaries",
   "check:domain-registry-assembled",
   "smoke:health",
@@ -64,7 +69,7 @@ assert.equal(pkg.scripts.check, "npm run check:critical");
 assert.equal(pkg.scripts["check:critical"], "node scripts/run-production-gate.mjs");
 assert.equal(pkg.scripts["check:phase12-production"], "node scripts/check-phase12-production.mjs");
 assert.equal(pkg.scripts["check:phase12-post-clean"], "node scripts/check-phase12-post-clean-production.mjs");
-assert.equal(pkg.scripts["check:interface-ui"], "node scripts/check-interface-ui-contract.mjs");
+assert.equal(pkg.scripts["check:interface-ui"], "node scripts/check-interface-ui-universal.mjs && node scripts/check-interface-report-ui-contract.mjs && node scripts/check-interface-annex-qr-contract.mjs && node scripts/check-interface-assembly-signals-contract.mjs && node scripts/check-interface-report-visual-regression.mjs");
 assert.equal(pkg.dependencies.cors, "^2.8.5", "cors dependency must remain on the real cors package line, not Express version drift");
 
 for (const forbiddenScript of ["check:p12:co1", "check:p12:co2", "check:p12:co3", "check:p12:co4", "check:p12:co5", "check:runtime-cleanup", "audit:migration-receipts"]) {
@@ -74,6 +79,7 @@ for (const forbiddenScript of ["check:p12:co1", "check:p12:co2", "check:p12:co3"
 const gateManifest = read("scripts/production-gate.manifest.mjs");
 assert.ok(gateManifest.includes('gate("phase12-production", "Phase 12 production compiler and renderer", "check:phase12-production"'));
 assert.ok(gateManifest.includes('gate("phase12-post-clean", "Phase 12 post-clean production hygiene", "check:phase12-post-clean"'));
+assert.ok(gateManifest.includes('gate("interface-ui", "Universal Interface UI contract", "check:interface-ui"'));
 
 const coClean02 = assertNoUnreferencedCleaningArtifacts();
 
