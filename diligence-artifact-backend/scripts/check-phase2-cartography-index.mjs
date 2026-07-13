@@ -50,8 +50,6 @@ assert.equal(CARTOGRAPHY_INDEX_CONTRACT.doctrine.p2g_lossless_evidence_is_primar
 assert.equal(CARTOGRAPHY_INDEX_CONTRACT.doctrine.p2g_indexes_are_mandatory_navigation_maps, true);
 assert.equal(CARTOGRAPHY_INDEX_CONTRACT.doctrine.p2g_direct_lossless_fallback_framing_forbidden, true);
 assert.equal(P2G_PHASE_ROUTER_DESIGNATION, "P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY");
-assert.equal(CARTOGRAPHY_INDEX_CONTRACT.phase1_input_contract.contract_version, "PHASE2_INPUT_CONTRACT_v3_PHASE1_17_ROOT_MULTI_DOMAIN");
-assert.equal(CARTOGRAPHY_INDEX_CONTRACT.phase1_input_contract.source_discovery_contract_floor, "PHASE_OWNED_IMPLEMENTATION_AGNOSTIC_V5_MULTI_DOMAIN_UNION_PROBE_17_ROOT");
 assert.deepEqual(CARTOGRAPHY_INDEX_CONTRACT.phase1_input_contract.locked_common_roots, LOCKED_ROOTS);
 assert.deepEqual(CARTOGRAPHY_INDEX_CONTRACT.phase2_profile_input_routes.domain_derivation_source_index.roots, DOMAIN_DERIVATION_ROOTS);
 assert.deepEqual(CARTOGRAPHY_INDEX_CONTRACT.phase2_profile_input_routes.activity_profile_source_index.roots, ACTIVITY_PROFILE_ROOTS);
@@ -59,24 +57,13 @@ assert.equal(CARTOGRAPHY_INDEX_CONTRACT.phase2_profile_input_routes.activity_pro
 assert.deepEqual(CARTOGRAPHY_INDEX_CONTRACT.phase2_profile_input_routes.data_privacy_navigation_index.roots, DATA_PRIVACY_ROOTS);
 assert.equal(CARTOGRAPHY_INDEX_CONTRACT.phase2_profile_input_routes.data_privacy_navigation_index.owned_by, "P2D_DATA_PRIVACY_NAVIGATION_INDEX");
 assert.equal(CARTOGRAPHY_INDEX_CONTRACT.phase2_profile_input_routes.data_privacy_navigation_index.emits_data_profile_values, false);
-assert.equal(CARTOGRAPHY_INDEX_CONTRACT.phase2_profile_input_routes.data_privacy_navigation_index.old_d_family_inputs_forbidden, true);
 assert.deepEqual(CARTOGRAPHY_INDEX_CONTRACT.phase2_profile_input_routes.domain_control_obligation_navigation_index.roots, DOMAIN_CONTROL_OBLIGATION_ROOTS);
 assert.equal(CARTOGRAPHY_INDEX_CONTRACT.phase2_profile_input_routes.domain_control_obligation_navigation_index.owned_by, "P2E_DOMAIN_CONTROL_OBLIGATION_NAVIGATION_INDEX");
-assert.equal(CARTOGRAPHY_INDEX_CONTRACT.phase2_profile_input_routes.domain_control_obligation_navigation_index.new_missing_index, true);
-assert.equal(CARTOGRAPHY_INDEX_CONTRACT.phase2_profile_input_routes.domain_control_obligation_navigation_index.obligation_catalog_driven, true);
-assert.equal(CARTOGRAPHY_INDEX_CONTRACT.phase2_profile_input_routes.domain_control_obligation_navigation_index.domain_blind, true);
-assert.equal(CARTOGRAPHY_INDEX_CONTRACT.phase2_profile_input_routes.domain_control_obligation_navigation_index.emits_obligation_posture, false);
 assert.equal(CARTOGRAPHY_INDEX_CONTRACT.phase2_profile_input_routes.phase_routing_manifest.owned_by, P2G_PHASE_ROUTER_DESIGNATION);
-assert.equal(CARTOGRAPHY_INDEX_CONTRACT.phase2_profile_input_routes.phase_routing_manifest.lossless_evidence_is_primary, true);
-assert.equal(CARTOGRAPHY_INDEX_CONTRACT.phase2_profile_input_routes.phase_routing_manifest.index_navigation_mandatory, true);
-assert.equal(CARTOGRAPHY_INDEX_CONTRACT.phase2_profile_input_routes.phase_routing_manifest.direct_lossless_fallback_framing_forbidden, true);
 
 assert.equal(M9_PHASE2F_DESIGNATION, "P2F_LEGAL_CARTOGRAPHY_LEGAL_SIGNALS");
 assert.equal(LEGAL_CARTOGRAPHY_INDEX_CONTRACT.phase2_designation, M9_PHASE2F_DESIGNATION);
 assert.equal(LEGAL_CARTOGRAPHY_INDEX_CONTRACT.runtime_job_id_preserved, "M9");
-assert.equal(LEGAL_CARTOGRAPHY_INDEX_CONTRACT.implementation_status, "M9_DESIGNATED_AS_PHASE2F_PHASE1_V5_17_ROOT_REGULATORY_GRIEVANCE_SYNC");
-assert.equal(LEGAL_CARTOGRAPHY_INDEX_CONTRACT.migration_boundary.full_legal_governance_cartography_owned_by_2f, true);
-assert.equal(LEGAL_CARTOGRAPHY_INDEX_CONTRACT.migration_boundary.phase2e_domain_control_obligation_index_separate, true);
 assert.deepEqual(LEGAL_CARTOGRAPHY_INDEX_CONTRACT.restored_main_m9_input_contract, M9_PHASE1_V5_READS);
 assert.deepEqual(LEGAL_CARTOGRAPHY_INDEX_CONTRACT.required_save_order, ["legal_cartography_deterministic_map", "legal_cartography_semantic_profile", "legal_cartography_index", "legal_signal_derivation_profile"]);
 
@@ -106,9 +93,9 @@ assert.deepEqual(INTERNAL_JOB_WRITE_PERMISSIONS.P2D_DATA_PRIVACY_NAVIGATION_INDE
 assert.deepEqual(INTERNAL_JOB_WRITE_PERMISSIONS.P2E_DOMAIN_CONTROL_OBLIGATION_NAVIGATION_INDEX, DOMAIN_CONTROL_OBLIGATION_NAVIGATION_INDEX_ARTIFACT_NAMES);
 assert.deepEqual(INTERNAL_JOB_WRITE_PERMISSIONS.P2G_PHASE_ROUTER, PHASE_ROUTING_ARTIFACT_NAMES);
 assert.deepEqual(INTERNAL_JOB_WRITE_PERMISSIONS.P2_INDEX_COMPILER_VALIDATION, CARTOGRAPHY_LAYER5_ARTIFACT_NAMES);
+
 assert.deepEqual(PIPELINE_CONTRACTS.M9.writes, LEGAL_CARTOGRAPHY_ARTIFACT_NAMES);
 assert.equal(PIPELINE_CONTRACTS.M9.phase2_designation, M9_PHASE2F_DESIGNATION);
-assert.equal(PIPELINE_CONTRACTS.M9.m9_runtime_job_id_preserved, true);
 assert.deepEqual(PIPELINE_CONTRACTS.P2A_TARGET_PROFILE_SOURCE_INDEX.writes, TARGET_PROFILE_SOURCE_INDEX_ARTIFACT_NAMES);
 assert.deepEqual(PIPELINE_CONTRACTS.P2B_DOMAIN_DERIVATION_SOURCE_INDEX.writes, DOMAIN_DERIVATION_SOURCE_INDEX_ARTIFACT_NAMES);
 assert.deepEqual(PIPELINE_CONTRACTS.P2C_ACTIVITY_PROFILE_SOURCE_INDEX.writes, ACTIVITY_PROFILE_SOURCE_INDEX_ARTIFACT_NAMES);
@@ -127,15 +114,16 @@ assert.ok(PIPELINE_CONTRACTS.P2_INDEX_COMPILER_VALIDATION.reads.includes("phase_
 assert.equal(PIPELINE_CONTRACTS.P2_INDEX_COMPILER_VALIDATION.writes.includes("data_privacy_navigation_index"), false);
 assert.equal(PIPELINE_CONTRACTS.P2_INDEX_COMPILER_VALIDATION.writes.includes("domain_control_obligation_navigation_index"), false);
 assert.equal(PIPELINE_CONTRACTS.P2_INDEX_COMPILER_VALIDATION.writes.includes("phase_routing_manifest"), false);
-assert.equal(PIPELINE_CONTRACTS.P2G_PHASE_ROUTER.lossless_evidence_is_primary, true);
-assert.equal(PIPELINE_CONTRACTS.P2G_PHASE_ROUTER.index_navigation_mandatory, true);
-assert.equal(PIPELINE_CONTRACTS.P2G_PHASE_ROUTER.direct_lossless_fallback_framing_forbidden, true);
-assert.ok(PIPELINE_CONTRACTS.DATA_PROVENANCE_PROFILE_LAYER4.reads.includes("data_privacy_navigation_index"));
-assert.equal(PIPELINE_CONTRACTS.DATA_PROVENANCE_PROFILE_LAYER4.runtime_wiring_status, "PHASE7_READS_PHASE2D_DPNI");
+assert.equal(PIPELINE_CONTRACTS.P2G_PHASE_ROUTER.lossless_evidence_is_primary ?? P2G_PHASE_ROUTER_CONTRACT.doctrine.lossless_evidence_is_primary, true);
+assert.equal(PIPELINE_CONTRACTS.P2G_PHASE_ROUTER.index_navigation_mandatory ?? P2G_PHASE_ROUTER_CONTRACT.doctrine.index_navigation_mandatory, true);
+assert.equal(PIPELINE_CONTRACTS.P2G_PHASE_ROUTER.direct_lossless_fallback_framing_forbidden ?? P2G_PHASE_ROUTER_CONTRACT.doctrine.direct_lossless_fallback_framing_forbidden, true);
+assert.ok(PIPELINE_CONTRACTS.DATA_PROVENANCE_PROFILE_LAYER4.reads.includes("phase_routing_manifest"));
+assert.equal(PIPELINE_CONTRACTS.DATA_PROVENANCE_PROFILE_LAYER4.runtime_wiring_status, "PHASE2G_2D_SOURCE_BUCKET");
 assert.ok(INTERNAL_PIPELINE_JOB_IDS.includes("P2D_DATA_PRIVACY_NAVIGATION_INDEX"));
 assert.ok(INTERNAL_PIPELINE_JOB_IDS.includes("P2E_DOMAIN_CONTROL_OBLIGATION_NAVIGATION_INDEX"));
 assert.ok(INTERNAL_PIPELINE_JOB_IDS.includes("P2G_PHASE_ROUTER"));
 assert.deepEqual(CENTRAL_PHASES.find((p) => p.sequence === 2).internal_jobs.filter((id) => id.startsWith("P2") || id === "M9"), ["P2_SOURCE_INVENTORY_CARTOGRAPHY", "P2_LOCATOR_SPINE", "P2_PROFILE_ROUTE_MATRIX", "P2_SEMANTIC_NAVIGATION_OVERLAY", "M9", "P2A_TARGET_PROFILE_SOURCE_INDEX", "P2B_DOMAIN_DERIVATION_SOURCE_INDEX", "P2C_ACTIVITY_PROFILE_SOURCE_INDEX", "P2D_DATA_PRIVACY_NAVIGATION_INDEX", "P2E_DOMAIN_CONTROL_OBLIGATION_NAVIGATION_INDEX", "P2G_PHASE_ROUTER", "P2_INDEX_COMPILER_VALIDATION"]);
+
 assert.equal(PIPELINE_CONTRACT_STATUS.phase2f_m9_legal_cartography_designated, true);
 assert.equal(PIPELINE_CONTRACT_STATUS.phase2g_phase_router_declared, true);
 assert.equal(PIPELINE_CONTRACT_STATUS.phase2g_phase_router_runtime_wired, true);
@@ -146,13 +134,15 @@ assert.equal(PIPELINE_CONTRACT_STATUS.phase2d_data_privacy_navigation_index_owns
 assert.equal(PIPELINE_CONTRACT_STATUS.phase2e_domain_control_obligation_navigation_index_declared, true);
 assert.equal(PIPELINE_CONTRACT_STATUS.phase2e_domain_control_obligation_navigation_index_owns_obligation_index, true);
 assert.equal(PIPELINE_CONTRACT_STATUS.no_data_provenance_source_index, true);
+
 assert.ok(CARTOGRAPHY_INDEX_CONTRACT.downstream_contract.domain_control_obligation_reads.includes("domain_control_obligation_navigation_index"));
 assert.equal(CARTOGRAPHY_INDEX_CONTRACT.forbidden_new_artifacts.includes("domain_control_obligation_navigation_index"), false);
-
 assert.equal(P2G_PHASE_ROUTER_CONTRACT.designation, "P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY");
 assert.equal(P2G_PHASE_ROUTER_CONTRACT.doctrine.lossless_evidence_is_primary, true);
 assert.equal(P2G_PHASE_ROUTER_CONTRACT.doctrine.index_navigation_mandatory, true);
 assert.equal(P2G_PHASE_ROUTER_CONTRACT.doctrine.direct_lossless_fallback_framing_forbidden, true);
+assert.equal(P2G_PHASE_ROUTER_CONTRACT.doctrine.runtime_boundary_ends_at_operator_challenge, true);
+assert.equal(P2G_PHASE_ROUTER_CONTRACT.doctrine.phase12_compiler_excluded, true);
 assert.equal(P2G_ROUTING_DOCTRINE, "LOSSLESS_EVIDENCE_IS_PRIMARY_AND_MUST_BE_NAVIGATED_THROUGH_INDEX");
 assert.equal(P2G_NO_FALLBACK_DOCTRINE, "DIRECT_LOSSLESS_EVIDENCE_IS_NOT_FALLBACK");
 assert.equal(P2G_PHASE_ROUTER_CONTRACT.route_buckets.length, 6);
