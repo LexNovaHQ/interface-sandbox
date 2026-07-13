@@ -1,1 +1,1 @@
-Temporary CO-P12-05 atomic finalize trigger after Phase 2 cartography routed-read sync. Do not merge.
+Temporary CO-P12-05 atomic finalize trigger after Phase 2 legacy shim scan sync. Do not merge.
