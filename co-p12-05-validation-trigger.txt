@@ -1,2 +1,2 @@
 Trigger the one-time Phase 12 direct compiler and clean renderer authority cutover.
-Attempt 3 preserves the active Phase 3A six-root runtime binding and validator rules.
+Attempt 4 includes the active Phase 3A six-root runtime binding and synchronized validator rules.
