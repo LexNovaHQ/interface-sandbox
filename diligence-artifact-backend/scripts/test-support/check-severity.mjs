@@ -43,11 +43,15 @@ export function parseCheckResults(output = "") {
 
 export function resolveChildCheckStatus({ exitCode, signal = null, output = "", allowedNonBlockingStatuses = [] }) {
   const markers = parseCheckResults(output);
-  if (signal || Number(exitCode) !== 0) {
+  if (signal || exitCode === null || exitCode === undefined || Number(exitCode) !== 0) {
     return {
       status: CHECK_STATUSES.CRITICAL_FAILURE,
       markers,
-      reason: signal ? `CHILD_SIGNAL:${signal}` : `CHILD_EXIT_NONZERO:${exitCode}`
+      reason: signal
+        ? `CHILD_SIGNAL:${signal}`
+        : exitCode === null || exitCode === undefined
+          ? "CHILD_EXIT_MISSING"
+          : `CHILD_EXIT_NONZERO:${exitCode}`
     };
   }
 
