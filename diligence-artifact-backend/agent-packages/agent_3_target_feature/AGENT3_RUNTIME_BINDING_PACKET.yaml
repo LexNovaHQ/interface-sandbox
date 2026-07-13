@@ -68,7 +68,13 @@ read_artifacts:
       - target_profile_source_index
     derived_context_artifacts:
       - legal_signal_derivation_profile
-    lossless_evidence_artifacts: FROM_PHASE_2G_RUNTIME_PACKET_ONLY
+    lossless_evidence_artifacts:
+      - lossless_root__homepage_landing
+      - lossless_root__company_identity
+      - lossless_root__contact_notice
+      - lossless_root__pricing_commercial_availability
+      - lossless_root__regulatory_licensing_status
+      - lossless_root__grievance_complaints
   P3_DOMAIN_DERIVATION_LAYER:
     route_id: ROUTE.PHASE3B.DOMAIN_DERIVATION
     bucket_id: 2B_BUCKET_DOMAIN_DERIVATION
@@ -218,72 +224,3 @@ activity_profile_material_schema:
     - NO_PRIMARY_ARCHETYPE_MATCH:<activity_reference>
     - OVERLAY_HAS_NO_TAXONOMY_KEY:<overlay_id>
     - DECLARED_ACTIVITY_EVIDENCE_ROOT_NOT_ROUTED:<root>
-
-phase5_agnostic_prompt_bundle_lock:
-  runtime_contract_version: v18_phase5_agnostic_deterministic_led_semantic_supported
-  phase_scope: ACTIVITY_PROFILE_REVIEW_ONLY
-  phase2g_routing_authority_preserved: true
-  phase2e_modified: false
-  phase7_modified: false
-  phase9_modified: false
-  layer1_activity_candidate_inventory:
-    inventory_version: m8_feature_candidate_inventory_index_v4_deterministic_led_semantic_supported
-    derivation_mode: DETERMINISTIC_LED_SEMANTIC_SUPPORTED_FROM_INDEX_MAPPED_LOSSLESS_UNITS_NO_TEXT_COPY
-    deterministic_baseline_first: true
-    source_index_authority: activity_profile_source_index
-    lossless_evidence_role: PRIMARY_EVIDENCE
-    index_navigation_mandatory: true
-    index_mapped_lossless_units_opened_as_primary_evidence: true
-    evidence_text_copy_forbidden: true
-    package_taxonomy_forbidden: true
-    semantic_support_attempt_required: true
-    semantic_output_non_authoritative: true
-    deterministic_reconciliation_required: true
-    semantic_packet_top_level_key: semantic_candidate_support_proposal
-  layer2_activity_profile_material:
-    runtime_contract_version: m8_phase5_agnostic_taxonomy_v8
-    candidate_universe_authority: feature_candidate_inventory
-    taxonomy_authority: mounted_registry_keys_from_active_run_package_manifest
-    taxonomy_resolver: resolveActivityTaxonomy
-    primary_taxonomy_source: mounted_primary_package_key
-    overlay_taxonomy_source: mounted_capability_overlay_keys
-    regulatory_overlays_excluded_from_activity_classification: true
-    hardcoded_registry_key_list_forbidden: true
-    hardcoded_ai_registry_key_universal_authority_forbidden: true
-    hardcoded_ai_activity_evidence_root_forbidden: true
-    mounted_taxonomy_ref_stamped_by_backend: true
-    model_may_not_override_mounted_taxonomy_ref: true
-
-write_artifacts_in_order:
-  TARGET_PROFILE_REVIEW:
-    MATERIAL_SAVE_EVENT:
-      - target_profile
-  P3_DOMAIN_DERIVATION_LAYER:
-    MATERIAL_SAVE_EVENT:
-      - domain_derivation_profile
-      - active_run_package_manifest
-  TARGET_PROFILE_FORENSICS:
-    FORENSIC_SAVE_EVENT:
-      - target_profile_forensics
-  ACTIVITY_PROFILE_REVIEW:
-    DETERMINISTIC_LED_SEMANTIC_SUPPORTED_INVENTORY_SAVE_EVENT:
-      - feature_candidate_inventory
-    MATERIAL_SAVE_EVENT:
-      - target_feature_profile
-  ACTIVITY_PROFILE_FORENSICS:
-    FORENSIC_SAVE_EVENT:
-      - target_feature_profile_forensics
-
-phase_gate_rules:
-  - Target Profile Review returns and saves only target_profile.
-  - Domain Derivation Layer returns only domain_derivation_profile from the model; the compiler writes active_run_package_manifest.
-  - Activity Candidate Inventory first builds a deterministic baseline from index-mapped routed lossless units.
-  - Activity Candidate Inventory then attempts one non-authoritative semantic proposal pass and deterministically validates and reconciles accepted proposals.
-  - Semantic unavailability or wholly rejected output preserves the deterministic baseline and produces LOCKED_WITH_LIMITATIONS.
-  - Activity Candidate Inventory must not apply package taxonomy.
-  - Activity Profile Review uses activity_profile_source_index and candidate pointers to navigate the primary activity evidence routed by Phase 2G.
-  - Activity Profile Review resolves primary and capability-overlay taxonomy only from Registry Keys mounted by active_run_package_manifest.
-  - Regulatory overlays do not create activity classification blocks.
-  - No material profile job may read forensic profiles.
-  - Forensics are sidecars and do not expand material read authority.
-</RUNTIME_BINDING_PACKET>
