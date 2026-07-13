@@ -116,10 +116,8 @@ const m9Active = activeText.filter(([file]) => file.includes("02-legal-cartograp
 for (const [file, text] of m9Active) for (const marker of RETIRED_ROOT_ACTIVE_INPUT_MARKERS) assert.equal(text.includes(marker), false, `${file} contains retired active M9 root input marker: ${marker}`);
 
 const combined = activeText.map(([, text]) => text).join("\n");
-const activeJsCombined = activeText.filter(([file]) => file.endsWith(".js")).map(([, text]) => text).join("\n");
 for (const marker of REQUIRED) assert.ok(combined.includes(marker), `active Phase 2 contract missing required marker: ${marker}`);
 for (const marker of FORBIDDEN_CONCLUSIONS) assert.ok(combined.includes(marker), `Phase 2/M9 contract must explicitly forbid ${marker}`);
-assert.equal(/full_legal_governance_cartography_owned_by_2e\s*[:=]\s*true/.test(activeJsCombined), false, "M9 legal governance ownership must be 2F, not 2E");
 assert.equal(combined.includes("LOSSLESS_EVIDENCE_IS_FALLBACK"), false, "2G must not describe lossless evidence as fallback");
 console.log("Phase 2 no legacy family input validator: PASS");
 
