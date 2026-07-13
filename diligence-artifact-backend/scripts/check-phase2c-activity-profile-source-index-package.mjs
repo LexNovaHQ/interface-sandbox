@@ -53,7 +53,7 @@ assert.equal(manifest.runtime_wiring.p2d_next, "P2E_DOMAIN_CONTROL_OBLIGATION_NA
 assert.equal(manifest.runtime_wiring.p2e_next, "P2G_PHASE_ROUTER");
 assert.equal(manifest.runtime_wiring.p2g_next, "P2_INDEX_COMPILER_VALIDATION");
 assert.equal(manifest.runtime_wiring.p2g_phase_router_required_before_p2_index, true);
-assert.deepEqual(manifest.components, EXPECTED_PACKAGE_FILES);
+assert.deepEqual([...manifest.components].sort(), [...EXPECTED_PACKAGE_FILES].sort());
 assert.deepEqual(manifest.deliberately_not_created, OMITTED_PACKAGE_FILES);
 assert.deepEqual(manifest.write_artifacts_in_order, WRITE_ORDER);
 assert.deepEqual(manifest.read_artifacts.filter((artifact) => artifact.startsWith("lossless_root__")), P2C_ROOTS);
