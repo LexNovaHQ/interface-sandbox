@@ -87,12 +87,12 @@ for (const marker of ["TP.BIZ.009", "TP.BIZ.010", "phase_2a_action: LOCATE_ONLY"
 assert.equal((referenceMap.match(/field_id:\s*TP\.BIZ\.009/g) || []).length, 1, "TP.BIZ.009 must appear as a field row exactly once");
 assert.equal((referenceMap.match(/field_id:\s*TP\.BIZ\.010/g) || []).length, 1, "TP.BIZ.010 must appear as a field row exactly once");
 
-for (const marker of ["Phase 2A locates", "Phase 3A Target Profile Review owns", "Phase 2E / M9 owns", "not a profile derivation layer"]) assert.ok(moduleText.includes(marker), `module missing boundary marker ${marker}`);
+for (const marker of ["Phase 2A owns Target Profile Source Index", "Phase 3A Target Profile Review owns material target-profile value derivation", "Phase 2E / M9 owns full legal/governance cartography", "not a profile derivation layer"]) assert.ok(moduleText.includes(marker), `module missing boundary marker ${marker}`);
 for (const marker of ["P2A_TARGET_PROFILE_FORBIDDEN_OUTPUTS", "P2A_TARGET_PROFILE_FORBIDDEN_CONCLUSIONS", "P2A_TARGET_PROFILE_RETIRED_ROOTS_FORBIDDEN"]) assert.ok(validator.includes(marker), `validator overlay missing ${marker}`);
 for (const marker of ["strict JSON", "No markdown", "Do not instruct the backend to advance", "Do not run Target Profile Review"]) assert.ok(terminal.includes(marker), `terminal missing ${marker}`);
 assert.ok(controller.includes("Phase 2A executes only Target Profile Source Index work"));
 
-const runtimeText = ["src/phase-contracts.js", "src/runtime/contracts/pipeline.contract.js", "src/runtime/contracts/artifact-permissions.contract.js", "src/runtime/contracts/central-phase.contract.js", "src/runtime/services/pipeline.service.js", "src/runtime/services/artifacts.service.js"].map(read).join("\n");
+const runtimeText = ["src/runtime/contracts/pipeline.contract.js", "src/runtime/contracts/artifact-permissions.contract.js", "src/runtime/contracts/central-phase.contract.js", "src/runtime/services/pipeline.service.js", "src/runtime/services/artifacts.service.js"].map(read).join("\n");
 for (const marker of [PACKAGE_DIR, "P2A_TARGET_PROFILE_SOURCE_INDEX", "target_profile_deterministic_map", "target_profile_semantic_profile", "target_profile_source_index"]) assert.ok(runtimeText.includes(marker), `runtime wiring missing ${marker}`);
 
 console.log("Phase 2A target source lean package runtime wiring audit: PASS");
