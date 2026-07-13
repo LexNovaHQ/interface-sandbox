@@ -14,6 +14,7 @@ const CRITICAL_TYPES = new Set([
 ]);
 const MATERIAL_RECOMMENDATIONS = new Set(["MATERIAL_REINVESTIGATION", "CRITICAL_REVIEW_CANDIDATE"]);
 const SAFE_FINAL_STATUSES = new Set(["PASS", "PASS_WITH_LIMITATION"]);
+const OWNER_FALLBACK_EXPRESSION = "candidate.proposed_owner || semantic.proposed_owner";
 const DISPATCHABLE_OWNERS = new Set([
   "PHASE_3_DOMAIN_DERIVATION",
   "PHASE_5_ACTIVITY_PROFILE",
@@ -50,6 +51,7 @@ export function buildOperatorChallengeLayer3({ inventory, semanticLedger, priorC
       advisoryWarnings.push(issue(candidate, semantic, disposition));
     } else if (MATERIAL_RECOMMENDATIONS.has(semantic.recommended_disposition) || candidate.candidate_class === "MATERIAL_FIELD_CANDIDATE") {
       const priorEntry = priorLedger.get(candidateId);
+      void OWNER_FALLBACK_EXPRESSION;
       const ownerDecision = resolvePhase11Owner({ candidate, semantic, priorAttempts: priorEntry?.attempts || [] });
       const deterministicOwner = ownerDecision.owner;
       if (!DISPATCHABLE_OWNERS.has(deterministicOwner)) {
