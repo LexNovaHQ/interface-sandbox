@@ -23,7 +23,7 @@ export function validateDataPrivacyDeterministicMap(root = {}) {
   if (map?.artifact_type !== DETERMINISTIC_ARTIFACT) errors.push(`wrong_deterministic_artifact_type:${map?.artifact_type || "missing"}`);
   if (!Array.isArray(map?.data_source_routes) || map.data_source_routes.length !== 5) errors.push(`data_source_route_count_not_5:${map?.data_source_routes?.length || 0}`);
   if (!Array.isArray(map?.legal_index_routes) || map.legal_index_routes.length !== 2) errors.push(`legal_index_route_count_not_2:${map?.legal_index_routes?.length || 0}`);
-  scanForbiddenInputs(JSON.stringify(map || {}), errors);
+  scanForbiddenInputs(map, errors);
   scanForbiddenRootKeys(map, errors);
   return result(errors);
 }
@@ -36,7 +36,7 @@ export function validateDataPrivacySemanticProfile(root = {}) {
   const pointers = profile?.semantic_navigation_overlay?.batch_navigation_pointers || [];
   if (!Array.isArray(pointers) || !pointers.length) errors.push("missing_batch_navigation_pointers");
   for (const pointer of pointers) validateBatchPointer(pointer, errors);
-  scanForbiddenInputs(JSON.stringify(profile || {}), errors);
+  scanForbiddenInputs(profile, errors);
   scanForbiddenRootKeys(profile, errors);
   return result(errors);
 }
@@ -58,7 +58,7 @@ export function validateDataPrivacyNavigationIndex(root = {}) {
   if (index?.navigation_policy?.no_legacy_family_inputs !== true) errors.push("navigation_policy_no_legacy_family_inputs_missing");
   if (index?.navigation_policy?.no_compiler_output !== true) errors.push("navigation_policy_no_compiler_output_missing");
   if (index?.navigation_policy?.no_forensics_output !== true) errors.push("navigation_policy_no_forensics_output_missing");
-  scanForbiddenInputs(JSON.stringify(index || {}), errors);
+  scanForbiddenInputs(index, errors);
   scanForbiddenRootKeys(index, errors);
   return result(errors);
 }
@@ -72,9 +72,9 @@ function validateBatchPointer(pointer = {}, errors) {
   if (!Array.isArray(pointer.selective_l_family_route_ids) || !pointer.selective_l_family_route_ids.length) errors.push(`batch_pointer_missing_legacy_l_routes:${pointer.batch_id || "missing"}`);
 }
 
-function scanForbiddenInputs(serialized, errors) {
+function scanForbiddenInputs(value, errors) {
   for (const token of P2D_DATA_PRIVACY_FORBIDDEN_INPUTS) {
-    if (serialized.includes(token)) errors.push(`forbidden_input_token:${token}`);
+    if (containsExactMarker(value, token)) errors.push(`forbidden_input_token:${token}`);
   }
 }
 
@@ -83,6 +83,13 @@ function scanForbiddenRootKeys(value, errors) {
   for (const key of Object.keys(value)) {
     if (FORBIDDEN_OUTPUT_ROOT_KEYS.includes(key)) errors.push(`forbidden_output_root:${key}`);
   }
+}
+
+function containsExactMarker(value, marker) {
+  if (typeof value === "string") return value === marker;
+  if (!value || typeof value !== "object") return false;
+  if (Array.isArray(value)) return value.some((item) => containsExactMarker(item, marker));
+  return Object.entries(value).some(([key, item]) => key === marker || containsExactMarker(item, marker));
 }
 
 function unwrap(value, artifactName) {
