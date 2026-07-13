@@ -1,2 +1,2 @@
 Trigger the one-time Phase 12 direct compiler and clean renderer authority cutover.
-Attempt 9 validates Phase 4 through a real Phase 2G derived-only runtime packet.
+Attempt 10 aligns the Phase 4 negative smoke with the actual Phase 2G undeclared-artifact rejection.
