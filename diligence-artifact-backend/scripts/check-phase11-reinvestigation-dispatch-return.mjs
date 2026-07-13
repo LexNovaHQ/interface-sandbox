@@ -107,7 +107,9 @@ for (const marker of [
   "returned_directly_to_phase11: true",
   "buildOperatorChallengeInventory",
   "recordOperatorChallengeReinvestigationAttempt",
-  "runPhase11RegisteredOwnerAdapter"
+  "runPhase11RegisteredOwnerAdapter",
+  "NON_SUBSTANTIVE_RETRY_REQUIRED",
+  "commitPhase11TargetedMutationProposal"
 ]) assert.ok(runtime.includes(marker), `dispatch runtime missing ${marker}`);
 for (const marker of [
   "buildPackageScopedSemanticPacket",
@@ -123,11 +125,13 @@ for (const marker of [
   "NON_DISPATCHABLE_OWNER_WARNING"
 ]) assert.ok(adjudication.includes(marker), `deterministic owner authority missing ${marker}`);
 for (const marker of [
-  "runtime_contract_version: v4_reinvestigation_dispatch_return",
+  "runtime_contract_version: v6_attempt_safe_staged_mutation",
   "status: ACTIVE",
   "resolved_only_if_exact_candidate_disappears: true",
   "artifact_version_advance_required: true",
-  "maximum_dispatches_per_candidate: 2"
+  "maximum_substantive_attempts_per_candidate: 2",
+  "technical_failure_consumes_substantive_attempt: false",
+  "third_substantive_attempt_forbidden: true"
 ]) assert.ok(binding.includes(marker), `binding missing ${marker}`);
 for (const marker of [
   "Preserve every unaffected field and row",
@@ -145,5 +149,7 @@ console.log(JSON.stringify({
   deterministic_return_validation: true,
   targeted_owner_adapter_registry: true,
   targeted_phase10_batch_reinvestigation: true,
-  maximum_attempts_per_candidate: 2
+  staged_mutation_proposals: true,
+  technical_failures_consume_substantive_attempts: false,
+  maximum_substantive_attempts_per_candidate: 2
 }, null, 2));
