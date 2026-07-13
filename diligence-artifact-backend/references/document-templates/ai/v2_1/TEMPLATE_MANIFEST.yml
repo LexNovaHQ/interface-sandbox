@@ -3,7 +3,7 @@ template_manifest:
   version: v2.1
   status: QR_PLACEHOLDERS_INSERTED_AND_VALIDATED_RUNTIME_NOT_YET_WIRED
   registry_version: v2.1
-  template_root: diligence-artifact-backend/references/document-templates/ai/v2_1
+  template_root: references/document-templates/ai/v2_1
   review_ready_boundary:
     legal_architect_not_law_firm: true
     local_counsel_review_required: true
