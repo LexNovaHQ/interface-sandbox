@@ -107,7 +107,7 @@ for (const marker of [
   "returned_directly_to_phase11: true",
   "buildOperatorChallengeInventory",
   "recordOperatorChallengeReinvestigationAttempt",
-  "runPhase10TargetedReinvestigation"
+  "runPhase11RegisteredOwnerAdapter"
 ]) assert.ok(runtime.includes(marker), `dispatch runtime missing ${marker}`);
 for (const marker of [
   "buildPackageScopedSemanticPacket",
@@ -143,6 +143,7 @@ console.log(JSON.stringify({
   owner_phase_locking_performed: false,
   normal_downstream_cascade_allowed: false,
   deterministic_return_validation: true,
+  targeted_owner_adapter_registry: true,
   targeted_phase10_batch_reinvestigation: true,
   maximum_attempts_per_candidate: 2
 }, null, 2));
