@@ -21,6 +21,8 @@ const REQUIRED_PHASE10_ARTIFACTS = Object.freeze([
   "challenge_gate"
 ]);
 
+const PHASE12_COMPILER_CUTOVER_STATUS = "PRODUCTION_DIRECT_PROFILE_COMPILER_ACTIVE";
+
 export function buildPhase12AdmissionAdapter({ run = {}, artifacts = {}, contract = loadPhase12ReportContract() } = {}) {
   const reportContract = assertPhase12ReportContract(contract);
   const failures = [];
@@ -47,7 +49,7 @@ export function buildPhase12AdmissionAdapter({ run = {}, artifacts = {}, contrac
       run_id: run.run_id || run.id || "",
       doctrine: "Upstream phases decide. Phase 12 arranges.",
       route_contract_status: "CO_P12_03_ACTIVE",
-      compiler_runtime_cutover_status: "ADAPTER_READY_NOT_COMPILER_SWAPPED",
+      compiler_runtime_cutover_status: PHASE12_COMPILER_CUTOVER_STATUS,
       phase2g_inputs_forbidden: true,
       phase2g_inputs_present: FORBIDDEN_PHASE2G_INPUTS.filter((key) => Object.prototype.hasOwnProperty.call(artifacts, key)),
       required_phase10_artifacts: REQUIRED_PHASE10_ARTIFACTS,
@@ -73,7 +75,7 @@ export function assertPhase12Admission(value) {
   return admission;
 }
 
-export { FORBIDDEN_PHASE2G_INPUTS, REQUIRED_PHASE10_ARTIFACTS };
+export { FORBIDDEN_PHASE2G_INPUTS, REQUIRED_PHASE10_ARTIFACTS, PHASE12_COMPILER_CUTOVER_STATUS };
 
 function hasArtifact(artifacts, key) {
   if (!Object.prototype.hasOwnProperty.call(artifacts, key)) return false;
