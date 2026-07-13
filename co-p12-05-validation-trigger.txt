@@ -1,1 +1,1 @@
-Temporary CO-P12-05 atomic finalize trigger after Phase 1 persistence assertion sync. Do not merge.
+Temporary CO-P12-05 atomic finalize trigger after Phase 1 retired-root assertion sync. Do not merge.
