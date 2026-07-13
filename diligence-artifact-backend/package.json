@@ -57,12 +57,7 @@
     "check:phase5-layer2-code": "npm run check:phase5:behavior-class-cutover",
     "check:phase5:behavior-class-cutover": "node scripts/check-activity-taxonomy-resolver.mjs",
     "check:phase10:report-row-custody": "npm run check:phase10-full",
-    "check:phase11:compiler-exact-gate": "node scripts/check-co-p12-01.mjs",
-    "check:p12:co1": "npm run check:phase5:behavior-class-cutover && npm run check:phase10-full && npm run check:phase11:compiler-exact-gate",
-    "check:p12:co2": "node scripts/build-co-p12-02-report-authority.mjs --check && node scripts/check-co-p12-02.mjs",
-    "check:p12:co3": "npm run check:phase12-production",
-    "check:p12:co4": "npm run check:phase12-production",
-    "check:p12:co5": "npm run check:runtime-authority-boundaries",
+    "audit:migration-receipts": "node scripts/audit-migration-receipts.mjs",
     "smoke:health": "node scripts/smoke-health.mjs",
     "smoke:reviewer": "node scripts/smoke-reviewer-run.mjs"
   },
