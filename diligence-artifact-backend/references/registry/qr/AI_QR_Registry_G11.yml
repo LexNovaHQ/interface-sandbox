@@ -1,0 +1,182 @@
+registry_section:
+  id: G11
+  parent: AI_QR_REGISTRY_LANE_A
+  version: v1.0
+  lane: A
+  title: Regulated and high-impact use
+  display_order: 11
+  record_count: 4
+  atomic_value_count: 7
+  rows:
+  - id: A12
+    key: ai.lane_a.regulated_use_contexts
+    section: G11
+    lane: A
+    shape: MULTI-SELECT
+    leaves:
+    - healthcare
+    - financial_advice_or_trading
+    - legal_content
+    - employment_decisions
+    materiality: MATERIAL
+    required: true
+    effects:
+    - SELECT_CLAUSE
+    documents:
+    - DOC_AI_A_AUP
+    - DOC_AI_A_TOS
+    - DOC_AI_A_DPA
+    mapping_key: QR.A12
+    upstream:
+      artifacts:
+      - target_profile
+      - target_feature_profile
+      - domain_control_obligation_profile
+      selectors:
+      - TP.BIZ.005
+      - AI behavior/surface classifications
+      - domain-control obligation rows
+      coverage: PREFILLED_CONFIRM
+    resolve: CONFIRM
+    ui:
+      label: Regulated-use contexts
+      prompt: Confirm every regulated-use context in which customers may deploy the service.
+      input: multi_select
+      mode: CONFIRM_OR_CORRECT
+      when:
+        all:
+        - active_scope == true
+    demo: Financial services
+    threats:
+    - JDG_DEC_003
+    - JDG_DEC_004
+    - JDG_DEC_005
+    - JDG_DEC_006
+    - JDG_DEC_007
+    - JDG_DEC_008
+    - JDG_DEC_009
+    - JDG_DEC_010
+    - OPT_TRD_001
+    - OPT_TRD_002
+  - id: A13
+    key: ai.lane_a.person_affecting_decisions
+    section: G11
+    lane: A
+    shape: BOOLEAN
+    leaves:
+    - consequential_decision_use
+    materiality: MATERIAL
+    required: true
+    effects:
+    - SELECT_CLAUSE
+    documents:
+    - DOC_AI_A_TOS
+    - DOC_AI_A_AUP
+    - DOC_AI_A_PP
+    - DOC_AI_A_DPA
+    mapping_key: QR.A13
+    upstream:
+      artifacts:
+      - target_feature_profile
+      selectors:
+      - AI behavior JDG
+      - PA.MECH.007/009
+      - affected-party signals
+      coverage: PREFILLED_CONFIRM
+    resolve: CONFIRM
+    ui:
+      label: Consequential or automated person-affecting decisions
+      prompt: Does the service make, score, rank, recommend, or materially influence decisions about identifiable people?
+      input: boolean
+      mode: CONFIRM_OR_CORRECT
+      when:
+        all:
+        - active_scope == true
+    demo: 'No'
+    threats:
+    - JDG_DEC_001
+    - JDG_DEC_002
+    - JDG_DEC_004
+    - JDG_DEC_005
+    - JDG_DEC_006
+    - JDG_DEC_008
+    - JDG_DEC_009
+    - JDG_DEC_010
+  - id: A14
+    key: ai.lane_a.biometric_or_human_signal_processing
+    section: G11
+    lane: A
+    shape: BOOLEAN
+    leaves:
+    - biometric_processing
+    materiality: MATERIAL
+    required: true
+    effects:
+    - SELECT_CLAUSE
+    documents:
+    - DOC_AI_A_AUP
+    - DOC_AI_A_DPA
+    - DOC_AI_A_PP
+    mapping_key: QR.A14
+    upstream:
+      artifacts:
+      - target_feature_profile
+      - dap_semantic_batch_sens_artifact
+      selectors:
+      - AI behavior TRN
+      - PA.SURF Sensitive/Biometric
+      - DAP.SENS
+      coverage: PREFILLED_CONFIRM
+    resolve: CONFIRM
+    ui:
+      label: Biometric or human-signal processing
+      prompt: Does the service process voice, face, gait, emotion, biometric identifiers, or other human signals?
+      input: boolean
+      mode: CONFIRM_OR_CORRECT
+      when:
+        all:
+        - active_scope == true
+    demo: 'No'
+    threats:
+    - TRN_BIO_001
+    - TRN_BIO_002
+    - TRN_BIO_003
+    - TRN_BIO_004
+    - JDG_DEC_009
+    - CRT_INF_005
+  - id: A15
+    key: ai.lane_a.financial_reliance_threshold
+    section: G11
+    lane: A
+    shape: SCALAR
+    leaves:
+    - financial_impact_threshold
+    materiality: STANDARD
+    required: true
+    effects:
+    - POPULATE
+    documents:
+    - DOC_AI_A_TOS
+    - DOC_AI_A_PBK
+    mapping_key: QR.A15
+    upstream:
+      artifacts: []
+      selectors:
+      - No current upstream numeric business-decision field
+      coverage: DEFAULT_OVERRIDE
+    resolve: OVERRIDE_IF_NEEDED
+    ui:
+      label: Financial reliance threshold
+      prompt: Review or override the maximum amount on which a user may rely without independent verification.
+      input: currency
+      mode: OPTIONAL_OVERRIDE
+      when:
+        any:
+        - A06 == true
+        - A07 == true
+        - A12 contains FINANCIAL_TRADING
+        - A13 == true
+    demo: USD 10,000
+    threats:
+    - UNI_HAL_003
+    - OPT_TRD_003
