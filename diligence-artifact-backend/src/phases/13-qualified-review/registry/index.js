@@ -11,3 +11,8 @@ export {
   loadAndValidateQrRegistryAuthority,
   validateQrRegistryAuthority
 } from "./qr-registry-structural-validator.js";
+
+export {
+  QR_REGISTRY_AUTHORITY_BUILDER_VERSION,
+  buildQrRegistryAuthorityArtifacts
+} from "./qr-registry-authority.builder.js";
