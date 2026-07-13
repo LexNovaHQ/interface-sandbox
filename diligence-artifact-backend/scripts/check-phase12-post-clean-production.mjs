@@ -2,6 +2,11 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 
+import {
+  assertNoUnreferencedCleaningArtifacts,
+  CO_CLEAN_02_ABSENT_FILES
+} from "./check-no-unreferenced-cleaning-artifacts.mjs";
+
 const ROOT = process.cwd();
 
 const EXPECTED_PACKAGE_SCRIPTS = Object.freeze([
@@ -68,6 +73,8 @@ const gateManifest = read("scripts/production-gate.manifest.mjs");
 assert.ok(gateManifest.includes('gate("phase12-production", "Phase 12 production compiler and renderer", "check:phase12-production"'));
 assert.ok(gateManifest.includes('gate("phase12-post-clean", "Phase 12 post-clean production hygiene", "check:phase12-post-clean"'));
 
+const coClean02 = assertNoUnreferencedCleaningArtifacts();
+
 const co5 = JSON.parse(read("receipts/CO_P12_05_CERTIFIED.json"));
 assert.equal(co5.status, "PASS");
 assert.equal(co5.compiler_runtime_cutover_status, "PRODUCTION_DIRECT_PROFILE_COMPILER_ACTIVE");
@@ -118,12 +125,15 @@ console.log(JSON.stringify({
   status: "PASS",
   package_script_count: EXPECTED_PACKAGE_SCRIPTS.length,
   retired_files_asserted_absent: ABSENT_RETIRED_FILES.length,
+  co_clean_02_absent_files_asserted: CO_CLEAN_02_ABSENT_FILES.length,
+  co_clean_02_guard: coClean02.status,
   phase12_compiler: "DIRECT_PROFILE_COMPILER_ACTIVE",
   phase12_renderer: "CLEAN_PROFILE_RENDERER_ACTIVE",
   route_contract_status: "CO_P12_03_ROUTE_CONTRACT_ACTIVE",
   closeout_stale_markers: "ABSENT",
   legacy_normalized_aliases: "ABSENT",
-  one_time_applicators: "ABSENT"
+  one_time_applicators: "ABSENT",
+  unreferenced_cleaning_artifacts: "ABSENT"
 }, null, 2));
 
 function read(relativePath) {
