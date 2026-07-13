@@ -1,0 +1,824 @@
+registry:
+  id: UNIVERSAL_QR_REGISTRY
+  version: v1.0
+  status: LOCKED_FOR_PHASE_13_BUILD
+  scope: UNIVERSAL
+  record_count: 19
+  atomic_value_count: 44
+  schema: qr_assembly_registry.v1
+  phase_owner: PHASE_13_ASSEMBLY_QR_RESOLUTION
+  boundary:
+    document_consequence_required: true
+    raw_evidence_reads_forbidden: true
+    threats_traceability_only: true
+    optional_full_review_forbidden: true
+    execution_fields_forbidden: true
+    completed_operational_records_forbidden: true
+    document_generation_forbidden: true
+    demo_values_labelled: true
+    review_ready_only: true
+    local_counsel_required: true
+    role: LEGAL_ARCHITECT_NOT_LAW_FIRM
+  enums:
+    coverage:
+    - PREFILLED_EXACT
+    - PREFILLED_CONFIRM
+    - PARTIAL_INPUT
+    - INPUT_REQUIRED
+    - DEFAULT_OVERRIDE
+    resolve:
+    - AUTO_FILL
+    - CONFIRM
+    - COMPLETE
+    - ANSWER
+    - OVERRIDE_IF_NEEDED
+    effects:
+    - POPULATE
+    - ACTIVATE_DOCUMENT
+    - SELECT_CLAUSE
+    - SELECT_VARIANT
+    - SET_CLAUSE_FLAG
+  activation: ALWAYS_WHEN_PHASE_13_RUNS
+  load_order: 1
+  ownership: Universal fields are defined once; domain registries may consume but not redefine.
+  sections:
+  - section_id: G01
+    title: Entity and public identity
+    field_ids:
+    - U01
+    - U02
+    - U03
+    - U04
+    display_order: 1
+  - section_id: G02
+    title: Notice and privacy contacts
+    field_ids:
+    - U05
+    - U06
+    display_order: 2
+  - section_id: G03
+    title: Governed services
+    field_ids:
+    - U07
+    - U08
+    - U09
+    - U10
+    display_order: 3
+  - section_id: G04
+    title: Market and legal anchor
+    field_ids:
+    - U11
+    - U12
+    - U13
+    display_order: 4
+  - section_id: G05
+    title: Revenue, liability and pricing
+    field_ids:
+    - U14
+    - U15
+    display_order: 5
+  - section_id: G06
+    title: Term, refund and free-tier posture
+    field_ids:
+    - U16
+    - U17
+    display_order: 6
+  - section_id: G07
+    title: Output rights and SLA election
+    field_ids:
+    - U18
+    - U19
+    display_order: 7
+  rows:
+  - id: U01
+    key: organization.legal_name
+    section: G01
+    lane: SHARED
+    shape: SCALAR
+    leaves:
+    - legal_entity_name
+    materiality: STANDARD
+    required: true
+    effects:
+    - POPULATE
+    documents:
+    - DOC_AI_A_TOS
+    - DOC_AI_A_AUP
+    - DOC_AI_A_AGT
+    - DOC_AI_A_DPA
+    - DOC_AI_A_PP
+    - DOC_AI_A_SLA
+    - DOC_AI_B_IP
+    mapping_key: QR.U01
+    upstream:
+      artifacts:
+      - target_profile
+      selectors:
+      - TP.ID.002 → target_identity.legal_entity_name
+      coverage: PREFILLED_EXACT
+    resolve: AUTO_FILL
+    ui:
+      label: Legal entity name
+      prompt: Confirm the full legal entity name that must appear as the contracting party.
+      input: text
+      mode: COLLAPSED_REVIEW
+      when:
+        all:
+        - active_scope == true
+    demo: Demo AI Systems, Inc.
+    threats: []
+  - id: U02
+    key: organization.entity_type
+    section: G01
+    lane: SHARED
+    shape: SCALAR
+    leaves:
+    - entity_type
+    materiality: STANDARD
+    required: true
+    effects:
+    - POPULATE
+    documents:
+    - DOC_AI_A_TOS
+    - DOC_AI_A_AUP
+    - DOC_AI_A_AGT
+    - DOC_AI_A_DPA
+    mapping_key: QR.U02
+    upstream:
+      artifacts:
+      - target_profile
+      selectors:
+      - TP.ID.005 → target_identity.entity_type
+      coverage: PREFILLED_EXACT
+    resolve: AUTO_FILL
+    ui:
+      label: Entity type
+      prompt: Confirm the entity type that must appear in the document set.
+      input: text
+      mode: COLLAPSED_REVIEW
+      when:
+        all:
+        - active_scope == true
+    demo: Delaware C-Corporation
+    threats: []
+  - id: U03
+    key: organization.registered_address_and_jurisdiction
+    section: G01
+    lane: SHARED
+    shape: OBJECT
+    leaves:
+    - street_address
+    - country
+    - state_or_province
+    materiality: MATERIAL
+    required: true
+    effects:
+    - POPULATE
+    - SELECT_VARIANT
+    documents:
+    - DOC_AI_A_TOS
+    - DOC_AI_A_AUP
+    - DOC_AI_A_AGT
+    - DOC_AI_A_DPA
+    - DOC_AI_A_PP
+    - DOC_AI_B_IP
+    mapping_key: QR.U03
+    upstream:
+      artifacts:
+      - target_profile
+      - legal_signal_derivation_profile
+      selectors:
+      - TP.JUR.001
+      - TP.JUR.002
+      - registered_notice_location
+      coverage: PARTIAL_INPUT
+    resolve: COMPLETE
+    ui:
+      label: Registered address and incorporation jurisdiction
+      prompt: Provide the registered address and incorporation jurisdiction for the contracting entity.
+      input: object_form
+      mode: PREFILLED_COMPLETION
+      when:
+        all:
+        - active_scope == true
+    demo: 251 Little Falls Drive, Wilmington, Delaware 19808, United States
+    threats: []
+  - id: U04
+    key: organization.website_url
+    section: G01
+    lane: SHARED
+    shape: SCALAR
+    leaves:
+    - website_url
+    materiality: STANDARD
+    required: true
+    effects:
+    - POPULATE
+    documents:
+    - DOC_AI_A_PP
+    - DOC_AI_A_TOS
+    mapping_key: QR.U04
+    upstream:
+      artifacts:
+      - target_profile
+      selectors:
+      - TP.ID.003 → target_identity.reviewed_website
+      coverage: PREFILLED_EXACT
+    resolve: AUTO_FILL
+    ui:
+      label: Official website URL
+      prompt: Confirm the official website URL governed by this document set.
+      input: url
+      mode: COLLAPSED_REVIEW
+      when:
+        all:
+        - active_scope == true
+    demo: https://demo.example
+    threats: []
+  - id: U05
+    key: contacts.legal_notice_email
+    section: G02
+    lane: SHARED
+    shape: SCALAR
+    leaves:
+    - legal_notice_email
+    materiality: STANDARD
+    required: true
+    effects:
+    - POPULATE
+    documents:
+    - DOC_AI_A_TOS
+    - DOC_AI_A_AUP
+    - DOC_AI_A_AGT
+    - DOC_AI_A_DPA
+    mapping_key: QR.U05
+    upstream:
+      artifacts:
+      - legal_signal_derivation_profile
+      selectors:
+      - LGC.NOT.010 legal_notice_email
+      - LGC.NOT.011 contact route
+      coverage: PREFILLED_EXACT
+    resolve: AUTO_FILL
+    ui:
+      label: Legal notice / contract contact email
+      prompt: Confirm the email address for legal notices and contract communications.
+      input: email
+      mode: COLLAPSED_REVIEW
+      when:
+        all:
+        - active_scope == true
+    demo: legal@demo.example
+    threats: []
+  - id: U06
+    key: contacts.privacy_contact
+    section: G02
+    lane: SHARED
+    shape: OBJECT
+    leaves:
+    - name
+    - title_or_role
+    - email
+    materiality: STANDARD
+    required: true
+    effects:
+    - POPULATE
+    documents:
+    - DOC_AI_A_PP
+    - DOC_AI_A_DPA
+    mapping_key: QR.U06
+    upstream:
+      artifacts:
+      - legal_signal_derivation_profile
+      - dap_semantic_batch_contact_cm_artifact
+      selectors:
+      - privacy_grievance_contact_signal_map
+      - DAP.CONTACT_CM family
+      coverage: PARTIAL_INPUT
+    resolve: COMPLETE
+    ui:
+      label: Privacy contact
+      prompt: Provide the privacy contact’s name, role, and email address.
+      input: contact_form
+      mode: PREFILLED_COMPLETION
+      when:
+        all:
+        - active_scope == true
+    demo: Maya Rao | Privacy Lead | privacy@demo.example
+    threats:
+    - UNI_CNS_IN1
+    - UNI_PRV_IN2
+    - UNI_PRV_IN4
+  - id: U07
+    key: services.catalog
+    section: G03
+    lane: SHARED
+    shape: REPEATABLE_OBJECT
+    leaves:
+    - service_name
+    - service_description
+    materiality: STANDARD
+    required: true
+    effects:
+    - POPULATE
+    documents:
+    - DOC_AI_A_TOS
+    - DOC_AI_A_AUP
+    - DOC_AI_A_AGT
+    - DOC_AI_A_DPA
+    - DOC_AI_A_PP
+    - DOC_AI_A_SLA
+    mapping_key: QR.U07
+    upstream:
+      artifacts:
+      - target_profile
+      selectors:
+      - TP.WRAP.003
+      - TP.WRAP.004
+      - product_service_wrapper_names
+      coverage: PREFILLED_CONFIRM
+    resolve: CONFIRM
+    ui:
+      label: Service catalog
+      prompt: Confirm each product or service governed by this document set and provide a short description.
+      input: repeatable_table
+      mode: CONFIRM_OR_CORRECT
+      when:
+        all:
+        - active_scope == true
+    demo: Demo Agent Platform | AI workflow automation platform
+    threats: []
+  - id: U08
+    key: services.intended_customer_use_case
+    section: G03
+    lane: SHARED
+    shape: SCALAR
+    leaves:
+    - intended_use_case
+    materiality: STANDARD
+    required: true
+    effects:
+    - POPULATE
+    documents:
+    - DOC_AI_A_TOS
+    - DOC_AI_A_AUP
+    - DOC_AI_A_DPA
+    mapping_key: QR.U08
+    upstream:
+      artifacts:
+      - target_profile
+      - target_feature_profile
+      selectors:
+      - TP.WRAP.001/004
+      - PA.INV.004
+      - PA.MECH.005
+      coverage: PREFILLED_CONFIRM
+    resolve: CONFIRM
+    ui:
+      label: Intended customer use case
+      prompt: Confirm the intended customer use case that the documents should permit.
+      input: text
+      mode: CONFIRM_OR_CORRECT
+      when:
+        all:
+        - active_scope == true
+    demo: Customer-support workflow automation
+    threats:
+    - UNI_FRD_001
+    - UNI_HAL_003
+  - id: U09
+    key: services.output_type
+    section: G03
+    lane: SHARED
+    shape: LIST
+    leaves:
+    - output_types[]
+    materiality: MATERIAL
+    required: true
+    effects:
+    - POPULATE
+    - SELECT_VARIANT
+    documents:
+    - DOC_AI_A_TOS
+    - DOC_AI_A_AUP
+    - DOC_AI_B_SOP
+    mapping_key: QR.U09
+    upstream:
+      artifacts:
+      - target_feature_profile
+      selectors:
+      - PA.MECH.006
+      - PA.MECH.007
+      - PA.BEH.001
+      coverage: PREFILLED_CONFIRM
+    resolve: CONFIRM
+    ui:
+      label: Output type
+      prompt: Confirm the principal output types produced by the service.
+      input: multi_value
+      mode: CONFIRM_OR_CORRECT
+      when:
+        all:
+        - active_scope == true
+    demo: Text; structured data; tool actions
+    threats:
+    - UNI_HAL_001
+    - UNI_HAL_002
+    - UNI_HAL_003
+    - CRT_INF_001
+  - id: U10
+    key: services.delivery_channels
+    section: G03
+    lane: SHARED
+    shape: LIST
+    leaves:
+    - web_app
+    - mobile_or_desktop
+    - api_sdk
+    - white_label_or_partner
+    materiality: MATERIAL
+    required: true
+    effects:
+    - SELECT_CLAUSE
+    documents:
+    - DOC_AI_A_TOS
+    - DOC_AI_A_AUP
+    - DOC_AI_A_DPA
+    mapping_key: QR.U10
+    upstream:
+      artifacts:
+      - target_profile
+      - target_feature_profile
+      selectors:
+      - TP.WRAP.005–008
+      - PA.MECH.010
+      coverage: PREFILLED_CONFIRM
+    resolve: CONFIRM
+    ui:
+      label: Delivery channels
+      prompt: Confirm every delivery channel through which customers access the service.
+      input: multi_value
+      mode: CONFIRM_OR_CORRECT
+      when:
+        all:
+        - active_scope == true
+    demo: Web application; API
+    threats:
+    - UNI_CNS_001
+    - UNI_CNS_002
+  - id: U11
+    key: commercial.customer_and_market_posture
+    section: G04
+    lane: SHARED
+    shape: ENUM
+    leaves:
+    - b2b
+    - b2c
+    - hybrid
+    materiality: MATERIAL
+    required: true
+    effects:
+    - SELECT_VARIANT
+    documents:
+    - DOC_AI_A_TOS
+    - DOC_AI_A_AUP
+    - DOC_AI_A_PP
+    - DOC_AI_A_PBK
+    mapping_key: QR.U11
+    upstream:
+      artifacts:
+      - target_profile
+      selectors:
+      - TP.BIZ.002 primary_customer_type
+      - TP.BIZ.003 market_type_candidate
+      coverage: PREFILLED_CONFIRM
+    resolve: CONFIRM
+    ui:
+      label: Customer and market posture
+      prompt: Confirm whether the service is B2B, B2C, or hybrid and identify the principal customer groups.
+      input: select
+      mode: CONFIRM_OR_CORRECT
+      when:
+        all:
+        - active_scope == true
+    demo: B2B
+    threats:
+    - UNI_CNS_004
+    - UNI_CNS_IN2
+  - id: U12
+    key: jurisdiction.governing_law
+    section: G04
+    lane: SHARED
+    shape: OBJECT
+    leaves:
+    - country
+    - state_or_province
+    materiality: MATERIAL
+    required: true
+    effects:
+    - POPULATE
+    - SELECT_VARIANT
+    documents:
+    - DOC_AI_A_TOS
+    - DOC_AI_A_AUP
+    - DOC_AI_A_AGT
+    - DOC_AI_A_DPA
+    - DOC_AI_B_IP
+    mapping_key: QR.U12
+    upstream:
+      artifacts:
+      - target_profile
+      - legal_signal_derivation_profile
+      selectors:
+      - TP.JUR.003
+      - TP.JUR.004
+      coverage: PREFILLED_CONFIRM
+    resolve: CONFIRM
+    ui:
+      label: Governing law
+      prompt: Confirm the governing-law country and state or province.
+      input: object_form
+      mode: CONFIRM_OR_CORRECT
+      when:
+        all:
+        - active_scope == true
+    demo: United States | Delaware
+    threats: []
+  - id: U13
+    key: jurisdiction.dispute_forum
+    section: G04
+    lane: SHARED
+    shape: SCALAR
+    leaves:
+    - courts_or_arbitration_forum
+    materiality: STANDARD
+    required: true
+    effects:
+    - POPULATE
+    documents:
+    - DOC_AI_A_TOS
+    - DOC_AI_A_AUP
+    - DOC_AI_A_AGT
+    - DOC_AI_A_DPA
+    mapping_key: QR.U13
+    upstream:
+      artifacts:
+      - target_profile
+      - legal_signal_derivation_profile
+      selectors:
+      - TP.JUR.005 courts_venue
+      coverage: PREFILLED_CONFIRM
+    resolve: CONFIRM
+    ui:
+      label: Dispute forum / venue
+      prompt: Confirm the court, arbitration, or other dispute forum.
+      input: text
+      mode: CONFIRM_OR_CORRECT
+      when:
+        all:
+        - active_scope == true
+    demo: State and federal courts located in Delaware
+    threats:
+    - UNI_CNS_003
+  - id: U14
+    key: commercial.revenue_and_liability_floor
+    section: G05
+    lane: SHARED
+    shape: OBJECT
+    leaves:
+    - revenue_model
+    - maximum_annual_contract_value
+    - liability_floor_amount
+    materiality: MATERIAL
+    required: true
+    effects:
+    - POPULATE
+    - SELECT_VARIANT
+    documents:
+    - DOC_AI_A_TOS
+    - DOC_AI_A_AGT
+    - DOC_AI_A_SLA
+    - DOC_AI_A_PBK
+    mapping_key: QR.U14
+    upstream:
+      artifacts:
+      - target_profile
+      - legal_cartography_index
+      selectors:
+      - commercial_availability_posture
+      - public pricing/plan signals
+      - existing liability-cap language
+      coverage: PARTIAL_INPUT
+    resolve: COMPLETE
+    ui:
+      label: Revenue model and liability-floor basis
+      prompt: Provide the revenue model, maximum annual contract value, and selected liability-floor amount.
+      input: commercial_object
+      mode: PREFILLED_COMPLETION
+      when:
+        all:
+        - active_scope == true
+    demo: Enterprise contracts | USD 25,000 ACV | USD 5,000 floor
+    threats:
+    - DOE_LIA_003
+    - UNI_LIA_004
+    - UNI_LIA_006
+  - id: U15
+    key: commercial.pricing_and_payment_terms
+    section: G05
+    lane: SHARED
+    shape: OBJECT
+    leaves:
+    - pricing_tier
+    - fee_amount
+    - currency
+    - billing_frequency
+    - payment_terms
+    - payment_methods
+    materiality: STANDARD
+    required: true
+    effects:
+    - POPULATE
+    documents:
+    - DOC_AI_A_TOS
+    - DOC_AI_A_SLA
+    mapping_key: QR.U15
+    upstream:
+      artifacts:
+      - target_profile
+      selectors:
+      - pricing_commercial_availability signals
+      - commercial_availability_posture
+      coverage: PARTIAL_INPUT
+    resolve: COMPLETE
+    ui:
+      label: Pricing and payment terms
+      prompt: Provide the pricing structure, billing cadence, payment due period, taxes, and late-payment terms.
+      input: commercial_object
+      mode: PREFILLED_COMPLETION
+      when:
+        all:
+        - active_scope == true
+    demo: Enterprise | 2,400 | USD | Annual | Net 30 | ACH/Wire
+    threats:
+    - UNI_CNS_004
+    - UNI_CNS_005
+    - UNI_CNS_006
+    - UNI_CNS_IN2
+  - id: U16
+    key: commercial.term_and_renewal
+    section: G06
+    lane: SHARED
+    shape: OBJECT
+    leaves:
+    - initial_term
+    - auto_renewal
+    - renewal_notice_period
+    - nonpayment_grace_period
+    materiality: MATERIAL
+    required: true
+    effects:
+    - POPULATE
+    - SELECT_CLAUSE
+    documents:
+    - DOC_AI_A_TOS
+    mapping_key: QR.U16
+    upstream:
+      artifacts:
+      - legal_cartography_index
+      selectors:
+      - Existing public terms may expose current term/renewal language
+      coverage: PARTIAL_INPUT
+    resolve: COMPLETE
+    ui:
+      label: Initial term and renewal terms
+      prompt: Provide the initial term, renewal method, renewal period, and non-renewal notice period.
+      input: term_object
+      mode: PREFILLED_COMPLETION
+      when:
+        all:
+        - active_scope == true
+    demo: 12 months | Auto-renew | 30 days | 10 days
+    threats:
+    - UNI_CNS_004
+    - UNI_CNS_005
+    - UNI_CNS_006
+  - id: U17
+    key: commercial.refund_and_free_tier
+    section: G06
+    lane: SHARED
+    shape: OBJECT
+    leaves:
+    - refund_policy
+    - free_trial_or_freemium_terms
+    materiality: MATERIAL
+    required: true
+    effects:
+    - POPULATE
+    - SELECT_CLAUSE
+    documents:
+    - DOC_AI_A_TOS
+    mapping_key: QR.U17
+    upstream:
+      artifacts:
+      - target_profile
+      - legal_cartography_index
+      selectors:
+      - commercial_availability_posture
+      - current refund/free-tier signals
+      coverage: PARTIAL_INPUT
+    resolve: COMPLETE
+    ui:
+      label: Refund and free-tier terms
+      prompt: Confirm the refund posture, free-trial terms, and free-tier limitations.
+      input: policy_object
+      mode: PREFILLED_COMPLETION
+      when:
+        all:
+        - active_scope == true
+    demo: No convenience refunds; 14-day free trial
+    threats:
+    - UNI_CNS_004
+    - UNI_CNS_006
+    - UNI_CNS_IN2
+  - id: U18
+    key: commercial.output_rights_and_verification
+    section: G07
+    lane: SHARED
+    shape: OBJECT
+    leaves:
+    - output_license_scope
+    - verification_service_tier
+    materiality: MATERIAL
+    required: true
+    effects:
+    - POPULATE
+    - SELECT_VARIANT
+    documents:
+    - DOC_AI_A_TOS
+    - DOC_AI_A_PBK
+    mapping_key: QR.U18
+    upstream:
+      artifacts:
+      - target_feature_profile
+      - legal_cartography_index
+      selectors:
+      - PA.MECH.006/007
+      - public output-rights and verification signals
+      coverage: PARTIAL_INPUT
+    resolve: COMPLETE
+    ui:
+      label: Output-rights and verification posture
+      prompt: Select the output-rights position and the customer verification obligations.
+      input: object_form
+      mode: PREFILLED_COMPLETION
+      when:
+        all:
+        - active_scope == true
+    demo: Commercial-use licence | No verification service
+    threats:
+    - CRT_INF_001
+    - UNI_INF_001
+    - UNI_LIA_001
+  - id: U19
+    key: commercial.sla_election
+    section: G07
+    lane: SHARED
+    shape: ENUM
+    leaves:
+    - none
+    - standard
+    - custom
+    materiality: CRITICAL
+    required: true
+    effects:
+    - ACTIVATE_DOCUMENT
+    documents:
+    - DOC_AI_A_TOS
+    - DOC_AI_A_SLA
+    - DOC_AI_A_PBK
+    mapping_key: QR.U19
+    upstream:
+      artifacts:
+      - target_profile
+      - legal_cartography_index
+      selectors:
+      - public SLA/support commitment signals
+      coverage: PARTIAL_INPUT
+    resolve: COMPLETE
+    ui:
+      label: SLA election
+      prompt: Should the AI service be delivered with a contractual SLA?
+      input: boolean
+      mode: PREFILLED_COMPLETION
+      when:
+        all:
+        - active_scope == true
+    demo: Standard
+    threats:
+    - ORC_LIA_001
+  validation:
+    unique_ids: true
+    unique_keys: true
+    expected_record_count: 19
+    expected_atomic_value_count: 44
