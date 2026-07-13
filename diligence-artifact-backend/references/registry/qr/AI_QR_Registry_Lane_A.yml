@@ -1,0 +1,43 @@
+registry_part:
+  id: AI_QR_REGISTRY_LANE_A
+  parent: AI_QR_REGISTRY
+  version: v1.0
+  lane: A
+  record_count: 28
+  atomic_value_count: 57
+  sections:
+  - section_id: G08
+    title: Model stack and integrations
+    display_order: 8
+    record_count: 2
+    path: AI_QR_Registry_G08.yml
+  - section_id: G09
+    title: Agentic capability and controls
+    display_order: 9
+    record_count: 5
+    path: AI_QR_Registry_G09.yml
+  - section_id: G10
+    title: Interface and audience
+    display_order: 10
+    record_count: 4
+    path: AI_QR_Registry_G10.yml
+  - section_id: G11
+    title: Regulated and high-impact use
+    display_order: 11
+    record_count: 4
+    path: AI_QR_Registry_G11.yml
+  - section_id: G12
+    title: Training and data architecture
+    display_order: 12
+    record_count: 5
+    path: AI_QR_Registry_G12.yml
+  - section_id: G13
+    title: Subprocessors, transfers and resilience
+    display_order: 13
+    record_count: 6
+    path: AI_QR_Registry_G13.yml
+  - section_id: G14
+    title: Cookies and SLA metrics
+    display_order: 14
+    record_count: 2
+    path: AI_QR_Registry_G14.yml
