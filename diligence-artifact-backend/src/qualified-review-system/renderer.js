@@ -1,4 +1,4 @@
-export const QUALIFIED_REVIEW_RENDERER_VERSION = "qualified_review_renderer_matrix_artifacts_v1";
+export const QUALIFIED_REVIEW_RENDERER_VERSION = "qualified_review_renderer_matrix_artifacts_v2.separate_workspace";
 
 export function buildQualifiedReviewRendererPayload({ run = {}, qualified_review_handoff = {} } = {}) {
   const questionHandoff = qualified_review_handoff.question_handoff || {};
@@ -16,6 +16,9 @@ export function buildQualifiedReviewRendererPayload({ run = {}, qualified_review
     source_handoff_ref: "qualified_review_handoff",
     handoff_version: qualified_review_handoff.handoff_version || "",
     matrix_version: qualified_review_handoff.matrix_version || bridge.map_version || "",
+    qualified_review_is_separate_system: true,
+    shares_pipeline_run_id: true,
+    no_document_assembly: true,
     question_count: questions.length,
     section_count: sectionPages.length,
     bridge_contract: bridge,
@@ -27,13 +30,20 @@ export function buildQualifiedReviewRendererPayload({ run = {}, qualified_review
       matrix_source: "qualified-review-matrix.yml",
       section_wizard: true,
       editable_answers: true,
+      limitation_notes: true,
+      save_response_state: true,
+      submission_receipt: true,
       final_review_gate: true,
       evidence_badges: true,
       demo_disclaimers: true,
       document_impact_chips: true,
       answer_type_controls: true,
-      forbidden_public_actions: ["Download JSON"],
+      allowed_server_answer_states: ["confirmed", "edited", "not_applicable"],
+      reviewer_decisions: ["confirm", "correct", "limitation", "not_applicable"],
+      forbidden_public_actions: ["Download JSON", "Assemble Document", "Proceed to Drafting"],
       no_legal_advice: true,
+      qualified_review_is_separate_system: true,
+      shares_pipeline_run_id: true,
       no_document_assembly: true
     },
     summary_counts: buildSummaryCounts({ questions, bridge }),
@@ -44,10 +54,11 @@ export function buildQualifiedReviewRendererPayload({ run = {}, qualified_review
     final_review_gate: qualified_review_handoff.final_review_gate || {},
     confirmation_policy: qualified_review_handoff.confirmation_policy || {},
     ui_copy: {
-      boundary_notice: qualified_review_handoff.intake_boundary || "All answers require reviewer confirmation before draft preparation.",
+      boundary_notice: qualified_review_handoff.intake_boundary || "All answers require reviewer confirmation before Qualified Review submission.",
       backend_badge: "Diligence prefill — confirm",
       demo_badge: "Demo prefill — confirm",
-      confirm_hint: "Confirm or edit before draft preparation."
+      confirm_hint: "Confirm, correct or qualify before Qualified Review submission.",
+      receipt_notice: "Submission records the Qualified Review state for the shared run ID. It does not assemble a document."
     }
   };
 }
