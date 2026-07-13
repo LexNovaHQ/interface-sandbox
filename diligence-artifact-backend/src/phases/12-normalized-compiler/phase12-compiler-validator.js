@@ -5,6 +5,7 @@ import {
   SECTION8_CHILD_PROFILES
 } from "./phase12-artifact-family.contract.js";
 import { assertPhase12ActivityPresentation } from "./phase12-activity-presentation.js";
+import { assertPhase12ObligationPresentation } from "./phase12-obligation-presentation.js";
 import { assertNoForbiddenReportKeys } from "./phase12-profile-normalizer.js";
 
 const EXPOSURE_DISPLAY_PATHS = Object.freeze({
@@ -65,6 +66,7 @@ export function validatePhase12CompilerOutput({ output = {}, contract = null } =
   validateWrappers(output, failures);
   validateSection4(output, failures);
   validateSection5(output, route, failures);
+  validateSection6(output, failures);
   validateSection8(output, admission, failures);
   validateManifestAndHandoff(output, failures);
 
@@ -91,6 +93,7 @@ export function validatePhase12CompilerOutput({ output = {}, contract = null } =
         forensic_payloads_forbidden: true,
         section4_activity_presentation_enforced: true,
         section5_family_split_enforced: true,
+        section6_obligation_presentation_enforced: true,
         section8_stream_status_split_enforced: true,
         phase2g_dependency_forbidden: true,
         p12_new_substantive_derivation_forbidden: true
@@ -140,6 +143,18 @@ function validateSection5(output, route, failures) {
   const expectedIds = (route.route_rows || []).filter((row) => String(row.field_id || "").startsWith("DAP.")).map((row) => row.field_id);
   if (!sameSet(projectedIds, expectedIds)) failures.push(`SECTION5_MATERIAL_FIELD_SET_INVALID:${projectedIds.length}:${expectedIds.length}`);
   if (new Set(projectedIds).size !== projectedIds.length) failures.push("SECTION5_MATERIAL_FIELD_DUPLICATION");
+}
+
+function validateSection6(output, failures) {
+  const section = output.report_section__06_sector_control_obligations || {};
+  try {
+    const register = assertPhase12ObligationPresentation(section);
+    if (register.row_count !== register.rows.length) failures.push(`SECTION6_OBLIGATION_ROW_COUNT_INVALID:${register.row_count}:${register.rows.length}`);
+    if (section.summary?.obligation_row_count !== register.rows.length) failures.push(`SECTION6_OBLIGATION_SUMMARY_COUNT_INVALID:${section.summary?.obligation_row_count}:${register.rows.length}`);
+    if (section.summary?.legal_applicability_conclusion_forbidden !== true) failures.push("SECTION6_LEGAL_APPLICABILITY_BOUNDARY_NOT_PRESERVED");
+  } catch (error) {
+    failures.push(error?.message || String(error));
+  }
 }
 
 function validateSection8(output, admission, failures) {
