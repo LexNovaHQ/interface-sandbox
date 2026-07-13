@@ -23,15 +23,13 @@ assert.deepEqual(contract.reads, ["phase_routing_manifest"]);
 assert.deepEqual(contract.writes, ["target_profile_forensics"]);
 assert.equal(contract.route_delivery_mode, "DERIVED_ONLY");
 
-assert.ok(pipelineSource.includes("runTargetProfileForensicsPhase"), "pipeline.service.js must import/use Target Profile Forensics phase runner");
-assert.ok(pipelineSource.includes("target_profile_forensics_phase_runner_wired: true"), "pipeline.service.js status must mark Target Profile Forensics runner wired");
-assert.ok(pipelineSource.includes("internalJobId === JOB.targetProfileForensics) await runTargetProfileForensicsRuntimeJob"), "pipeline.service.js dispatch must route Target Profile Forensics to phase runner");
-assert.ok(pipelineSource.includes("async function runTargetProfileForensicsRuntimeJob"), "pipeline.service.js must contain Target Profile Forensics runtime wrapper");
-assert.ok(pipelineSource.includes("TARGET_PROFILE_FORENSICS_PHASE_RUNNER_COMPLETED"), "pipeline.service.js must log Target Profile Forensics phase runner completion");
-assert.ok(pipelineSource.includes("target_profile_forensics_phase_runner_used: true"), "pipeline.service.js must log Target Profile Forensics runner usage flag");
-assert.ok(pipelineSource.indexOf("internalJobId === JOB.targetProfileForensics) await runTargetProfileForensicsRuntimeJob") < pipelineSource.indexOf("DETERMINISTIC_PROFILE_FORENSIC_JOBS.has(internalJobId)"), "Target Profile Forensics dispatch must happen before generic deterministic forensics fallback");
+assert.ok(pipelineSource.includes('import { runTargetProfileForensicsPhase } from "../../phases/04-target-profile-forensics/target-profile-forensics.runner.js";'), "pipeline.service.js must import the phase-owned Target Profile Forensics runner");
+assert.ok(pipelineSource.includes("internalJobId === JOB.targetProfileForensics) await runTargetProfileForensicsRuntimeJob"), "pipeline.service.js dispatch must route Target Profile Forensics to its phase wrapper");
+assert.ok(pipelineSource.includes("async function runTargetProfileForensicsRuntimeJob"), "pipeline.service.js must contain the Target Profile Forensics runtime wrapper");
+assert.ok(pipelineSource.includes("await runTargetProfileForensicsPhase({ run, internalJobId, contract"), "Target Profile Forensics wrapper must invoke the phase-owned runner with the live contract");
+assert.equal(pipelineSource.includes("DETERMINISTIC_PROFILE_FORENSIC_JOBS"), false, "retired generic deterministic forensics dispatch must not return");
 
-console.log(JSON.stringify({ check: "Target Profile Forensics runner cutover", status: "PASS", enforced_gates: ["PHASE_OWNED_RUNNER", "PHASE2G_DERIVED_ONLY_RUNTIME", "CENTRAL_DISPATCH_PRECEDENCE", "NO_SOURCE_BUCKET_DELIVERY", "FORENSIC_INPUTS_FORBIDDEN"] }, null, 2));
+console.log(JSON.stringify({ check: "Target Profile Forensics runner cutover", status: "PASS", enforced_gates: ["PHASE_OWNED_RUNNER", "PHASE2G_DERIVED_ONLY_RUNTIME", "DIRECT_CENTRAL_DISPATCH", "NO_GENERIC_FORENSICS_FALLBACK", "NO_SOURCE_BUCKET_DELIVERY", "FORENSIC_INPUTS_FORBIDDEN"] }, null, 2));
 
 function read(relativePath) {
   return fs.readFileSync(path.join(backendRoot, relativePath), "utf8");
