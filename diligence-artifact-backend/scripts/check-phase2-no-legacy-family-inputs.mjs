@@ -8,7 +8,6 @@ const ACTIVE_PHASE2_INPUT_FILES = Object.freeze([
   "src/runtime/contracts/pipeline.contract.js",
   "src/runtime/contracts/central-phase.contract.js",
   "src/runtime/contracts/artifacts.contract.js",
-  "src/phase-contracts.js",
   "src/phases/02-cartography-index/cartography-index.contract.js",
   "src/phases/02-cartography-index/cartography-index.runner.js",
   "src/phases/02-cartography-index/phase-routing.contract.js",
@@ -104,6 +103,8 @@ const REQUIRED = Object.freeze([
 ]);
 const FORBIDDEN_CONCLUSIONS = Object.freeze(["license_validity", "license_requirement", "applicable_regulator", "regulatory_compliance_status", "grievance_sufficiency", "grievance_compliance_status", "ombudsman_requirement"]);
 const SECTOR_VOCAB_FORBIDDEN_IN_PHASE2_JS = Object.freeze(["sponsor_bank", "kyc", "aml", "custody_safeguarding", "human_oversight_locator"]);
+
+assert.equal(fs.existsSync(path.join(ROOT, "src/phase-contracts.js")), false, "retired phase-contracts shim must not return");
 
 const activeText = ACTIVE_PHASE2_INPUT_FILES.map((file) => [file, fs.readFileSync(path.join(ROOT, file), "utf8")]);
 for (const [file, text] of activeText) {
