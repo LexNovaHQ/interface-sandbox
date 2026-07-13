@@ -38,7 +38,6 @@ export async function runPhase10TargetedReinvestigation({ run, dispatch, contrac
     validation = validateSemanticLedger({ semanticOutput, batch: targetBatch, routePlan });
   }
   const unaffected_batch_count_reused = Math.max(0, array(routePlan.batch_plan).length - 1);
-  const full_phase_batch_rerun_performed = false;
   if (validation.exposure_registry_batch_validation.status !== "PASS") {
     return buildPhase11TargetedMutationProposal({
       dispatch,
@@ -49,7 +48,7 @@ export async function runPhase10TargetedReinvestigation({ run, dispatch, contrac
       provider_call_count: providerCallCount,
       output_repair_count: outputRepairCount,
       unaffected_batch_count_reused,
-      full_phase_batch_rerun_performed,
+      full_phase_batch_rerun_performed: false,
       substantive_reinvestigation_performed: false,
       owner_notes: `Phase 10 targeted batch output failed validation: ${array(validation.exposure_registry_batch_validation.failures).join("|")}`
     });
@@ -104,7 +103,7 @@ export async function runPhase10TargetedReinvestigation({ run, dispatch, contrac
     output_repair_count: outputRepairCount,
     technical_retry_count: 0,
     unaffected_batch_count_reused,
-    full_phase_batch_rerun_performed,
+    full_phase_batch_rerun_performed: false,
     substantive_reinvestigation_performed: true,
     owner_notes: `Phase 10 targeted batch ${targetBatch.batch_id}; unaffected batches reused: ${unaffected_batch_count_reused}.`
   });
