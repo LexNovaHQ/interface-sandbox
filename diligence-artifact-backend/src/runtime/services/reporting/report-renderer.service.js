@@ -3,9 +3,12 @@ import {
   REPORT_FACING_ARTIFACTS
 } from "../../../phases/12-normalized-compiler/phase12-artifact-family.contract.js";
 
-const PUBLIC_RENDERER_VERSION = "phase12_clean_report_renderer_v1_co_p12_05";
+const PUBLIC_RENDERER_VERSION = "phase12_clean_report_renderer_v2_report_document";
 const RENDERER_SOURCE = "report_manifest_clean_profiles";
 const EXPECTED_SECTION_IDS = Object.freeze(["01", "02", "03", "04", "05", "06", "07", "08", "09", "10"]);
+const TABLE_ROWS_PER_PAGE = 10;
+const DECK_CARDS_PER_PAGE = 5;
+const PAIN_TIER_RANK = Object.freeze({ T1: 1, T2: 2, T3: 3, T4: 4, T5: 5 });
 const PROFILE_METADATA_KEYS = new Set([
   "schema_version", "artifact_role", "renderable", "section_id", "section_key", "profile_id",
   "artifact_name", "title", "status", "summary", "findings", "rows", "limitations",
@@ -34,7 +37,7 @@ export function buildRendererPayload({ run = {}, artifacts = {}, final_output_ha
       schema_version: "renderer_payload.v14.co_p12_05",
       renderer_version: PUBLIC_RENDERER_VERSION,
       renderer_source: RENDERER_SOURCE,
-      renderer_design: "ten_section_clean_profile_report",
+      renderer_design: "senior_partner_section_aware_document",
       run_id: runId,
       target,
       target_url: targetUrl,
@@ -43,8 +46,8 @@ export function buildRendererPayload({ run = {}, artifacts = {}, final_output_ha
       validation_status: status,
       status_label: statusLabel(status),
       report_shell: {
-        report_title: "Lex Nova Diligence Report",
-        report_subtitle: "Review-Ready Public-Footprint Legal Architecture",
+        report_title: "Diligence Report",
+        report_subtitle: "Review-Ready Public-Footprint Legal Exposure Review",
         target_display_name: target,
         target_domain: targetUrl,
         run_id: runId,
@@ -59,8 +62,35 @@ export function buildRendererPayload({ run = {}, artifacts = {}, final_output_ha
         boundary_notice: "This is a Review-Ready Draft prepared from public and uploaded source materials. It is not legal advice, a compliance certification, or a final legal opinion. Local counsel review is required before reliance."
       },
       dashboard_tiles: buildDashboardTiles({ sections, bundle, status }),
+      presentation_contract: {
+        schema_version: "interface_report_presentation.v1",
+        document_mode: "CONTINUOUS_WARM_PAPER_IN_DARK_INTERFACE_SHELL",
+        section_renderer: "SECTION_AWARE",
+        table_rows_per_page: TABLE_ROWS_PER_PAGE,
+        deck_cards_per_page: DECK_CARDS_PER_PAGE,
+        show_all_forbidden: true,
+        print_full_dataset: true,
+        browser_pagination_is_visibility_only: true,
+        activity_classification_paths: {
+          primary_behavior_class: "primary_classification.behavior_class_codes",
+          primary_surface: "primary_classification.surface_context_tokens",
+          overlay_behavior_class: "overlay_classifications[].behavior_class_codes",
+          overlay_surface: "overlay_classifications[].surface_context_tokens",
+          collapse_primary_and_overlay_forbidden: true
+        },
+        exposure_presentation_order: [
+          "presentation_order.pain_category_rank",
+          "presentation_order.pain_category_label",
+          "presentation_order.subcategory_order",
+          "presentation_order.pain_depth_rank",
+          "presentation_order.velocity_rank",
+          "identity.threat_id"
+        ],
+        exposure_grouping: ["identity.stream_scope", "identity.material_status", "severity.pain_category", "classification.subcategory"],
+        p12_substantive_derivation_forbidden: true
+      },
       public_report_ui: {
-        product_name: "Lex Nova Diligence Engine",
+        product_name: "Interface Diligence Engine",
         primary_actions: [
           { id: "download_pdf", label: "Download PDF", action_type: "download_pdf" },
           { id: "open_public_technical_annexure", label: "Open Public Technical Annexure", action_type: "public_technical_annexure", layer_ref: "layer_2_public_technical_annexure" },
@@ -127,7 +157,9 @@ function buildPublicSection({ entry, index, bundle }) {
     subsections.push({
       subsection_id: `${entry.section_id}.00`,
       subsection_title: "Section Summary",
-      fields: [{ label: "Summary", value: cleanPublic(parent.summary) }]
+      artifact_name: entry.artifact_name,
+      profile_id: "section_summary",
+      fields: [{ field_id: `${entry.section_id}.SUMMARY`, label: "Summary", value: cleanPublic(parent.summary), presentation: "DEFINITION_ROW" }]
     });
   }
   const children = Array.isArray(entry.child_artifacts) ? entry.child_artifacts : [];
@@ -145,6 +177,7 @@ function buildPublicSection({ entry, index, bundle }) {
     artifact_role: parent.artifact_role,
     source_profile_artifacts: children.length ? children : [entry.artifact_name],
     reviewer_summary: sectionReviewerSummary(parent),
+    presentation_role: sectionPresentationRole(entry.section_id),
     subsections: subsections.filter((subsection) => subsection.fields.length)
   };
 }
@@ -154,6 +187,7 @@ function profileToSubsection(profile, artifactName) {
   if (Array.isArray(profile.findings)) {
     for (const finding of profile.findings) {
       fields.push({
+        field_id: finding.field_id,
         label: finding.label || finding.field_id || "Finding",
         value: cleanPublic(finding.value),
         value_status: finding.value_status,
@@ -163,39 +197,107 @@ function profileToSubsection(profile, artifactName) {
     }
   }
   if (Array.isArray(profile.rows)) {
-    fields.push({ label: "Material Rows", value: cleanPublic(profile.rows) });
+    const rows = profile.rows.map(withExposurePresentationOrder).sort(compareExposurePresentationOrder);
+    fields.push({
+      field_id: `${profile.profile_id || artifactName}.material_rows`,
+      label: "Material Rows",
+      value: cleanPublic(rows),
+      presentation: "REGISTER_ROWS"
+    });
   }
   if (Array.isArray(profile.limitations) && profile.limitations.length) {
-    fields.push({ label: "Upstream Limitations", value: cleanPublic(profile.limitations) });
+    fields.push({
+      field_id: `${profile.profile_id || artifactName}.limitations`,
+      label: "Upstream Limitations",
+      value: cleanPublic(profile.limitations),
+      report_importance: "LIMITATION",
+      presentation: "LIMITATION_ITEM"
+    });
   }
   for (const [key, value] of Object.entries(profile || {})) {
     if (PROFILE_METADATA_KEYS.has(key) || key.startsWith("p12_")) continue;
     if (value === undefined || value === null || value === "" || (Array.isArray(value) && !value.length)) continue;
-    fields.push({ label: publicLabel(key), value: cleanPublic(value) });
+    fields.push({ field_id: `${profile.profile_id || artifactName}.${key}`, label: publicLabel(key), value: cleanPublic(value), presentation: "DEFINITION_ROW" });
   }
   return {
     subsection_id: profile.profile_id || profile.section_key || artifactName,
     subsection_title: profile.title || artifactName,
+    artifact_name: artifactName,
+    profile_id: profile.profile_id || null,
+    stream_scope: profile.stream_scope || null,
+    material_status: profile.material_status || null,
+    public_status_label: profile.public_status_label || null,
     fields
   };
 }
 
 function sectionReviewerSummary(parent) {
   if (parent.artifact_role === "SECTION_WRAPPER") {
-    return "This section is rendered from separately validated child profiles. The renderer does not merge or reinterpret them.";
+    return "This section is rendered from separately validated child profiles. The renderer preserves their boundaries and does not merge or reinterpret them.";
   }
   return "Material fields are projected from upstream-owned profiles without Phase 12 substantive re-evaluation.";
+}
+
+function sectionPresentationRole(sectionId) {
+  return ({
+    "01": "MATTER_BOUNDARY",
+    "02": "EXECUTIVE_OVERVIEW",
+    "03": "TARGET_SECTOR_PROFILE",
+    "04": "ACTIVITY_ARCHITECTURE",
+    "05": "DATA_PRIVACY_ARCHITECTURE",
+    "06": "SECTOR_CONTROL_OBLIGATIONS",
+    "07": "LEGAL_GOVERNANCE_ARCHITECTURE",
+    "08": "EXPOSURE_REGISTER",
+    "09": "OPEN_REVIEW_HANDOFF",
+    "10": "METHODOLOGY_LIMITATIONS"
+  })[sectionId] || "EDITORIAL_SECTION";
 }
 
 function buildDashboardTiles({ sections, bundle, status }) {
   const exposure = unwrapArtifact(bundle.report_section__08_exposure_register);
   const data = unwrapArtifact(bundle.report_section__05_data_provenance_privacy_architecture);
+  const openReview = unwrapArtifact(bundle.report_section__09_open_review_items_handoff);
   return [
     { label: "Review status", value: statusLabel(status), detail: status },
     { label: "Report sections", value: String(sections.length), detail: "Canonical ten-section report" },
-    { label: "Exposure rows", value: String(exposure.summary?.total_exposure_row_count || 0), detail: "Triggered and controlled profiles" },
+    { label: "Exposure rows", value: String(exposure.summary?.total_exposure_row_count || 0), detail: "Primary Sector and Capability Overlay profiles" },
+    { label: "Open review items", value: String(openReview.summary?.open_item_count || 0), detail: "Carried upstream warnings and review routes" },
     { label: "Data/privacy material fields", value: String(data.summary?.material_field_count || 0), detail: "Preserved across eleven clean profiles" }
   ];
+}
+
+function withExposurePresentationOrder(row = {}) {
+  const painTier = scalarCode(row.severity?.pain_tier);
+  const painCategory = scalarLabel(row.severity?.pain_category) || scalarLabel(row.severity?.pain_tier) || "Unspecified Pain Category";
+  const subcategory = scalarCode(row.classification?.subcategory) || scalarLabel(row.classification?.subcategory) || "UNSPECIFIED";
+  const painDepth = scalarCode(row.severity?.pain_depth);
+  const velocity = scalarCode(row.severity?.velocity);
+  const painCategoryRank = PAIN_TIER_RANK[painTier] || 999;
+  const painDepthRank = codeRank(painDepth);
+  const velocityRank = codeRank(velocity);
+  const threatId = String(row.identity?.threat_id || "");
+  return {
+    ...row,
+    presentation_order: {
+      pain_category_rank: painCategoryRank,
+      pain_category_label: painCategory,
+      subcategory_order: String(subcategory).toUpperCase(),
+      pain_depth_rank: painDepthRank,
+      velocity_rank: velocityRank,
+      exposure_sort_rank: [pad(painCategoryRank), String(subcategory).toUpperCase(), pad(painDepthRank), pad(velocityRank), threatId].join("|")
+    }
+  };
+}
+
+function compareExposurePresentationOrder(left = {}, right = {}) {
+  const a = left.presentation_order || {};
+  const b = right.presentation_order || {};
+  return compareNumber(a.pain_category_rank, b.pain_category_rank)
+    || compareText(a.pain_category_label, b.pain_category_label)
+    || compareText(a.subcategory_order, b.subcategory_order)
+    || compareNumber(a.pain_depth_rank, b.pain_depth_rank)
+    || compareNumber(a.velocity_rank, b.velocity_rank)
+    || compareText(left.identity?.threat_id, right.identity?.threat_id);
 }
 
 function assertNoForbiddenKeys(value, path) {
@@ -221,9 +323,24 @@ function cleanPublic(value) {
   return out;
 }
 
-function publicLabel(value) {
-  return String(value || "").replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+function scalarCode(value) {
+  if (value === undefined || value === null) return "";
+  if (typeof value === "object") return String(value.code ?? value.value ?? value.tier ?? value.token ?? "").trim();
+  return String(value).trim();
 }
+function scalarLabel(value) {
+  if (value === undefined || value === null) return "";
+  if (typeof value === "object") return String(value.label ?? value.normalized_name ?? value.public_name ?? value.name ?? value.code ?? value.value ?? "").trim();
+  return String(value).trim();
+}
+function codeRank(value) {
+  const match = String(value || "").match(/(\d+)/);
+  return match ? Number(match[1]) : 999;
+}
+function compareNumber(left, right) { return Number(left ?? 999) - Number(right ?? 999); }
+function compareText(left, right) { return String(left || "").localeCompare(String(right || "")); }
+function pad(value) { return String(Number(value ?? 999)).padStart(3, "0"); }
+function publicLabel(value) { return String(value || "").replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase()); }
 function statusLabel(status) {
   if (status === "PASS") return "Pass";
   if (status === "PASS_WITH_LIMITATION") return "Pass with limitation";
@@ -240,6 +357,4 @@ function unwrapArtifact(value) {
 function sameSet(left = [], right = []) {
   return JSON.stringify([...new Set(left)].sort()) === JSON.stringify([...new Set(right)].sort());
 }
-function sameArray(left = [], right = []) {
-  return JSON.stringify(left) === JSON.stringify(right);
-}
+function sameArray(left = [], right = []) { return JSON.stringify(left) === JSON.stringify(right); }
