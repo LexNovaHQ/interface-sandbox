@@ -1,0 +1,222 @@
+/* INTERFACE_REPORT_PRINT_V1
+   Browser print-to-PDF contract for the full ten-section report.
+*/
+:root { --interface-report-print-version: "interface_report_print.v1"; }
+
+@page {
+  size: A4;
+  margin: 15mm 14mm 17mm;
+}
+
+@media print {
+  html,
+  body,
+  .report-page {
+    width: 100%;
+    min-width: 0;
+    color: #111 !important;
+    background: #fff !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  body::before,
+  body::after,
+  .no-print,
+  .report-utility-bar,
+  .report-left-rail,
+  .report-mobile-section-select,
+  .report-pagination,
+  .report-closing-actions,
+  .footer-note,
+  .progress-line,
+  .skip-link {
+    display: none !important;
+  }
+
+  .report-page .page-shell.report-shell-page {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .report-document-layout,
+  .report-main-workspace {
+    display: block;
+    width: 100%;
+  }
+
+  .report-paper {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    overflow: visible;
+    background: #fff !important;
+  }
+
+  .report-cover {
+    min-height: 252mm;
+    padding: 22mm 18mm;
+    border-bottom: 0;
+    break-after: page;
+    page-break-after: always;
+    background: #fff !important;
+  }
+
+  .report-cover::after { display: none; }
+
+  .report-matter-caption,
+  .report-status-strip {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .report-document-section {
+    padding: 0;
+    border-bottom: 0;
+    scroll-margin-top: 0;
+    break-before: page;
+    page-break-before: always;
+  }
+
+  .report-document-section:first-child {
+    break-before: auto;
+    page-break-before: auto;
+  }
+
+  .report-section-heading {
+    padding-top: 2mm;
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  .report-part,
+  .report-subsection,
+  .report-callout,
+  .report-definition-row,
+  .report-detail-card,
+  .report-exposure-profile-heading,
+  .report-stream-heading {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .report-part h3,
+  .report-subsection h3,
+  .report-subcategory-group > h4,
+  .report-pain-category > h3 {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  .report-table-shell,
+  .report-deck-shell {
+    overflow: visible;
+  }
+
+  .report-document-table {
+    width: 100%;
+    min-width: 0;
+    table-layout: fixed;
+    font-size: 7.1pt;
+    line-height: 1.35;
+  }
+
+  .report-document-table thead {
+    display: table-header-group;
+  }
+
+  .report-document-table tfoot {
+    display: table-footer-group;
+  }
+
+  .report-document-table tr,
+  .report-document-table td,
+  .report-document-table th {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .report-document-table th,
+  .report-document-table td {
+    padding: 5pt 4pt;
+    overflow-wrap: anywhere;
+    word-break: normal;
+  }
+
+  .report-detail-card {
+    padding: 10pt 0;
+  }
+
+  .report-detail-card + .report-detail-card {
+    margin-top: 6pt;
+  }
+
+  .report-detail-deck {
+    display: block;
+  }
+
+  .is-page-hidden,
+  .report-print-expanded .is-page-hidden {
+    display: table-row !important;
+  }
+
+  .report-detail-card.is-page-hidden,
+  .report-print-expanded .report-detail-card.is-page-hidden {
+    display: block !important;
+  }
+
+  .report-cover h1,
+  .report-cover-target,
+  .report-document-section h2,
+  .report-part h3,
+  .report-subsection h3,
+  .report-detail-card h4,
+  .report-pain-category > h3,
+  .report-stream-heading h3 {
+    color: #111 !important;
+  }
+
+  .report-definition-term,
+  .report-section-summary,
+  .report-cover-subtitle,
+  .report-cover-boundary,
+  .report-table-caption,
+  .report-exposure-legend-copy {
+    color: #444 !important;
+  }
+
+  .report-callout,
+  .report-callout.is-limitation,
+  .report-callout.is-critical,
+  .report-callout.is-action {
+    color: #111 !important;
+    border-left-color: #555 !important;
+    background: #f6f6f6 !important;
+  }
+
+  .report-executive-ledger,
+  .report-layer-flow,
+  .report-exposure-legend {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .report-layer-arrow { color: #555 !important; }
+
+  a {
+    color: inherit !important;
+    text-decoration: none !important;
+  }
+
+  p,
+  li,
+  .report-definition-value {
+    orphans: 3;
+    widows: 3;
+  }
+}
