@@ -7,6 +7,12 @@ on:
     paths:
       - ".github/workflows/co-final-semantic-fix.yml"
       - "diligence-artifact-backend/scripts/apply-co-final-semantic-fixes.py"
+  pull_request:
+    branches:
+      - domain-gate-v0-preflight
+    paths:
+      - ".github/workflows/co-final-semantic-fix.yml"
+      - "diligence-artifact-backend/scripts/apply-co-final-semantic-fixes.py"
   workflow_dispatch:
 
 permissions:
