@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { Readable } from "node:stream";
 import { config } from "../runtime-config.service.js";
 import { getDriveClient } from "./google.service.js";
@@ -28,7 +29,49 @@ export async function createRunFolder({ run_id }) {
     drive_folder_id: created.data.id,
     drive_folder_name: created.data.name,
     drive_folder_link: created.data.webViewLink,
+    drive_web_view_link: created.data.webViewLink,
     drive_id: created.data.driveId || ""
+  };
+}
+
+export async function ensureDriveFolder({ parent_folder_id, name }) {
+  const drive = getDriveClient();
+  const folderName = String(name || "").trim();
+  if (!parent_folder_id) throw new Error("DRIVE_PARENT_FOLDER_ID_MISSING");
+  if (!folderName) throw new Error("DRIVE_FOLDER_NAME_MISSING");
+  const existing = await drive.files.list({
+    supportsAllDrives: true,
+    includeItemsFromAllDrives: true,
+    q: `'${escapeDriveQuery(parent_folder_id)}' in parents and name = '${escapeDriveQuery(folderName)}' and mimeType = '${FOLDER_MIME}' and trashed = false`,
+    fields: "files(id,name,webViewLink,driveId)",
+    pageSize: 10
+  });
+  const matches = existing.data.files || [];
+  if (matches.length > 1) throw new Error(`DRIVE_FOLDER_DUPLICATE:${parent_folder_id}:${folderName}`);
+  if (matches.length === 1) {
+    return {
+      drive_folder_id: matches[0].id,
+      drive_folder_name: matches[0].name,
+      drive_web_view_link: matches[0].webViewLink,
+      drive_id: matches[0].driveId || "",
+      reused: true
+    };
+  }
+  const created = await drive.files.create({
+    supportsAllDrives: true,
+    requestBody: {
+      name: folderName,
+      mimeType: FOLDER_MIME,
+      parents: [parent_folder_id]
+    },
+    fields: "id,name,webViewLink,driveId"
+  });
+  return {
+    drive_folder_id: created.data.id,
+    drive_folder_name: created.data.name,
+    drive_web_view_link: created.data.webViewLink,
+    drive_id: created.data.driveId || "",
+    reused: false
   };
 }
 
@@ -75,7 +118,7 @@ export async function saveBinaryFileToDrive({ drive_folder_id, filename, mime_ty
       mimeType: mime_type || "application/octet-stream",
       body: Readable.from([body])
     },
-    fields: "id,name,webViewLink,size,driveId"
+    fields: "id,name,webViewLink,size,driveId,md5Checksum"
   });
 
   return {
@@ -83,8 +126,44 @@ export async function saveBinaryFileToDrive({ drive_folder_id, filename, mime_ty
     drive_filename: created.data.name,
     drive_web_view_link: created.data.webViewLink,
     drive_id: created.data.driveId || "",
-    file_size_bytes: body.length
+    file_size_bytes: body.length,
+    md5_checksum: created.data.md5Checksum || "",
+    reused: false
   };
+}
+
+export async function saveBinaryFileToDriveIdempotent({ drive_folder_id, filename, mime_type, buffer }) {
+  const drive = getDriveClient();
+  const body = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer || "");
+  const expectedMd5 = createHash("md5").update(body).digest("hex");
+  const existing = await drive.files.list({
+    supportsAllDrives: true,
+    includeItemsFromAllDrives: true,
+    q: `'${escapeDriveQuery(drive_folder_id)}' in parents and name = '${escapeDriveQuery(filename)}' and trashed = false`,
+    fields: "files(id,name,webViewLink,size,driveId,md5Checksum,mimeType)",
+    pageSize: 10
+  });
+  const matches = existing.data.files || [];
+  if (matches.length > 1) throw new Error(`DRIVE_FILE_DUPLICATE:${drive_folder_id}:${filename}`);
+  if (matches.length === 1) {
+    const file = matches[0];
+    if (file.md5Checksum && file.md5Checksum !== expectedMd5) {
+      throw new Error(`DRIVE_IMMUTABLE_BINARY_CONFLICT:${filename}`);
+    }
+    if (Number(file.size || 0) !== body.length) {
+      throw new Error(`DRIVE_IMMUTABLE_BINARY_SIZE_CONFLICT:${filename}`);
+    }
+    return {
+      drive_file_id: file.id,
+      drive_filename: file.name,
+      drive_web_view_link: file.webViewLink,
+      drive_id: file.driveId || "",
+      file_size_bytes: body.length,
+      md5_checksum: file.md5Checksum || expectedMd5,
+      reused: true
+    };
+  }
+  return saveBinaryFileToDrive({ drive_folder_id, filename, mime_type, buffer: body });
 }
 
 export async function readJsonArtifactFromDrive(fileId) {
@@ -98,7 +177,13 @@ export async function readJsonArtifactFromDrive(fileId) {
   return parsed.artifact ?? parsed;
 }
 
+function escapeDriveQuery(value) {
+  return String(value || "").replaceAll("\\", "\\\\").replaceAll("'", "\\'");
+}
+
 export const DRIVE_STORAGE_SERVICE_STATUS = Object.freeze({
   central_runtime_service: "storage/drive.service",
-  storage_model: "one_folder_per_run"
+  storage_model: "one_folder_per_run",
+  idempotent_binary_assembly_custody: true,
+  deterministic_subfolder_reuse: true
 });
