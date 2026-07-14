@@ -1,5 +1,6 @@
 import { COMPILER_ARTIFACT_NAMES } from "./artifact-permissions.contract.js";
 import { QUALIFIED_REVIEW_RUNTIME_WRITES } from "./phase13-runtime.contract.js";
+import { ASSEMBLY_ENGINE_RUNTIME_WRITES } from "./phase16-assembly-runtime.contract.js";
 
 const PHASE7_BATCH_OUTPUTS = Object.freeze(["dap_semantic_batch_exec_artifact", "dap_semantic_batch_lim_artifact", "dap_semantic_batch_party_artifact", "dap_semantic_batch_role_artifact", "dap_semantic_batch_flow_artifact", "dap_semantic_batch_obj_artifact", "dap_semantic_batch_auth_artifact", "dap_semantic_batch_ctrl_artifact", "dap_semantic_batch_contact_cm_artifact", "dap_semantic_batch_vend_artifact", "dap_semantic_batch_loc_artifact", "dap_semantic_batch_ret_artifact", "dap_semantic_batch_sec_artifact", "dap_semantic_batch_sens_artifact", "dap_semantic_batch_dom_artifact", "dap_semantic_batch_ready_artifact", "dap_semantic_batch_req_artifact"]);
 const CARTOGRAPHY_OUTPUTS = Object.freeze(["cartography_source_inventory", "cartography_locator_spine", "cartography_profile_route_matrix", "cartography_semantic_navigation_overlay", "legal_cartography_deterministic_map", "legal_cartography_semantic_profile", "legal_cartography_reinvestigation_workpad", "legal_cartography_index", "legal_signal_derivation_profile", "target_profile_deterministic_map", "target_profile_semantic_profile", "target_profile_source_index", "domain_derivation_deterministic_map", "domain_derivation_semantic_profile", "domain_derivation_source_index", "activity_profile_deterministic_map", "activity_profile_semantic_profile", "activity_profile_source_index", "data_privacy_deterministic_map", "data_privacy_semantic_profile", "data_privacy_navigation_index", "domain_control_obligation_deterministic_map", "domain_control_obligation_semantic_profile", "domain_control_obligation_navigation_index", "phase_routing_manifest", "phase_route_validation_manifest", "cartography_index", "cartography_validation_manifest"]);
@@ -21,7 +22,7 @@ export const CENTRAL_PHASES = Object.freeze([
   phase(13, "QUALIFIED_REVIEW", "Qualified Review", ["QUALIFIED_REVIEW"], ["NORMALIZED_REPORT_RENDERER"], QUALIFIED_REVIEW_RUNTIME_WRITES),
   phase(14, "QUALIFIED_REVIEW_SUBMISSION", "Qualified Review Submission", ["QUALIFIED_REVIEW_SUBMISSION"], ["QUALIFIED_REVIEW"], ["qualified_review_submission", "qr_final_value_ledger", "document_activation_manifest"]),
   phase(15, "DILIGENCE_QA_COMPLETE", "Diligence-QA Complete", ["DILIGENCE_QA_COMPLETE"], ["QUALIFIED_REVIEW_SUBMISSION"], ["diligence_qa_completion_receipt"]),
-  phase(16, "ASSEMBLY_ENGINE", "Assembly Engine", ["ASSEMBLY_ENGINE"], ["DILIGENCE_QA_COMPLETE"], ["document_assembly_payload", "review_ready_draft_manifest", "document_assembly_validation_manifest"])
+  phase(16, "ASSEMBLY_ENGINE", "Assembly Engine", ["ASSEMBLY_ENGINE"], ["DILIGENCE_QA_COMPLETE"], ASSEMBLY_ENGINE_RUNTIME_WRITES)
 ]);
 
 export const CENTRAL_PHASE_BY_ID = Object.freeze(Object.fromEntries(CENTRAL_PHASES.map((row) => [row.central_phase_id, row])));
