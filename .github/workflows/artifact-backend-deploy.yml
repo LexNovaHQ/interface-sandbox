@@ -13,6 +13,9 @@ concurrency:
   group: artifact-backend-deploy-${{ github.ref }}
   cancel-in-progress: false
 
+env:
+  CLOUD_TASKS_QUEUE: ${{ vars.CLOUD_TASKS_QUEUE || 'diligence-reviewer-worker' }}
+
 jobs:
   certification_matrix:
     name: Isolated CO-FINAL eight-scenario live matrix
@@ -71,6 +74,7 @@ jobs:
           )
           echo "head_sha=$HEAD_SHA" >> "$GITHUB_OUTPUT"
           echo "matrix_id=$MATRIX_ID" >> "$GITHUB_OUTPUT"
+          echo "cert_token=$CERT_TOKEN" >> "$GITHUB_OUTPUT"
           echo "CERT_TOKEN=$CERT_TOKEN" >> "$GITHUB_ENV"
           echo "MATRIX_ID=$MATRIX_ID" >> "$GITHUB_ENV"
           echo "EXPECTED_HEAD_SHA=$HEAD_SHA" >> "$GITHUB_ENV"
@@ -129,7 +133,7 @@ jobs:
           gcloud run deploy "$CERT_SERVICE" \
             --source . --project "$GCP_PROJECT_ID" --region "$GCP_REGION" \
             --service-account "$GCP_ARTIFACT_RUNTIME_SERVICE_ACCOUNT" \
-            --allow-unauthenticated --timeout=900s --concurrency=1 \
+            --no-invoker-iam-check --timeout=900s --concurrency=1 \
             --env-vars-file /tmp/co-final-cert-env.yaml --quiet
           CERT_URL=$(gcloud run services describe "$CERT_SERVICE" --project "$GCP_PROJECT_ID" --region "$GCP_REGION" --format='value(status.url)')
           test -n "$CERT_URL"
@@ -139,10 +143,17 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          READY=false
+          : > /tmp/cert-health.json
           for i in $(seq 1 30); do
-            if curl --silent --show-error --fail "$CERT_URL/health" -o /tmp/cert-health.json; then break; fi
+            HTTP_STATUS=$(curl --silent --show-error --location --output /tmp/cert-health.json --write-out '%{http_code}' "$CERT_URL/health" || true)
+            printf '%s' "$HTTP_STATUS" > /tmp/cert-health-status.txt
+            if [ "$HTTP_STATUS" = "200" ]; then READY=true; break; fi
             sleep 5
           done
+          gcloud run services describe "$CERT_SERVICE" --project "$GCP_PROJECT_ID" --region "$GCP_REGION" --format=json > /tmp/cert-service.json || true
+          gcloud run services logs read "$CERT_SERVICE" --project "$GCP_PROJECT_ID" --region "$GCP_REGION" --limit=100 > /tmp/cert-service-logs.txt 2>&1 || true
+          test "$READY" = "true"
           python - <<'PY2'
           import json,os
           h=json.load(open('/tmp/cert-health.json',encoding='utf-8'))
@@ -229,12 +240,18 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: co-final-eight-scenario-live-matrix-${{ steps.context.outputs.head_sha }}
-          path: /tmp/co-final-live-matrix.json
+          path: |
+            /tmp/co-final-live-matrix.json
+            /tmp/cert-health.json
+            /tmp/cert-health-status.txt
+            /tmp/cert-service.json
+            /tmp/cert-service-logs.txt
           if-no-files-found: warn
           retention-days: 30
 
       - name: Publish matrix result to PR 95
         if: always()
+        continue-on-error: true
         shell: bash
         run: |
           if python -c "import json; d=json.load(open('/tmp/co-final-live-matrix.json')); raise SystemExit(0 if d.get('matrix_validation')=='PASS' else 1)" 2>/dev/null; then
