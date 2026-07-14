@@ -1,0 +1,16 @@
+{
+  "receipt_id": "CO_E2E_01_03_CORRECTED",
+  "status": "SOURCE_RUNTIME_CERTIFIED",
+  "model_led_phase3b": true,
+  "deterministic_support_only": true,
+  "unresolved_primary_blocks": false,
+  "ai_overlay_without_primary_continues": true,
+  "universal_report_only_fallback": true,
+  "critical_failures_only_block": true,
+  "retired_status_absent": true,
+  "phase10_unresolved_rows_preserved_with_limitations": true,
+  "certification_run": 29326567358,
+  "production_suite_count": 29,
+  "live_cloud_run_performed": false,
+  "merge_authorized": false
+}
