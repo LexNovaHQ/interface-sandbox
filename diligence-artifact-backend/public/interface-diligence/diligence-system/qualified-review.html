@@ -11,10 +11,10 @@
   <link rel="stylesheet" href="./diligence-system.css?v=locked-report-20260701" />
   <link rel="stylesheet" href="./interface-header.css?v=20260703" />
   <link rel="stylesheet" href="./interface-ui-shell.css?v=shell-v1-20260713" />
-  <link rel="stylesheet" href="./qualified-review.css?v=qr-workspace-v2-20260713" />
+  <link rel="stylesheet" href="./qualified-review.css?v=qr-section-attestation-v3-20260714" />
 </head>
 <body class="qr-page">
-  <a class="skip-link no-print" href="#qualifiedReviewMain">Skip to review queue</a>
+  <a class="skip-link no-print" href="#qualifiedReviewMain">Skip to review workspace</a>
   <div class="report-visually-hidden" id="qualifiedReviewLiveStatus" role="status" aria-live="polite" aria-atomic="true"></div>
   <div class="progress-line" style="width:100%" aria-hidden="true"></div>
   <header class="topbar interface-topbar qr-topbar no-print">
@@ -36,12 +36,13 @@
   <div class="page-shell qr-shell">
     <header class="qr-hero">
       <div class="qr-hero-copy">
-        <div class="eyebrow">Qualified Review Workspace</div>
-        <h1 id="handoffTitle">Loading review workspace...</h1>
-        <p class="hero-copy" id="handoffSubtitle">Preparing the report findings review queue.</p>
+        <div class="eyebrow">Review Workspace</div>
+        <h1 id="handoffTitle">Qualified Review</h1>
+        <p class="hero-copy" id="handoffSubtitle">Review the prefilled answers, correct what the diligence system could not verify, and lock the inputs before draft preparation.</p>
         <div class="qr-boundary-line">
           <span>Separate workspace</span>
           <span>Shared run ID</span>
+          <span>Section-level attestation</span>
           <span>No document assembly</span>
         </div>
       </div>
@@ -53,7 +54,7 @@
 
     <div class="qr-app-layout">
       <aside class="qr-left-rail no-print" id="qualifiedReviewRailCard" aria-label="Qualified Review sections">
-        <div class="eyebrow">Review queue</div>
+        <div class="eyebrow">Active sections</div>
         <div id="qualifiedReviewRail">Loading sections...</div>
       </aside>
 
@@ -64,7 +65,7 @@
               <div class="eyebrow">Matter summary</div>
               <h2 id="qrMatterHeading">Review context</h2>
             </div>
-            <div class="qr-contract-badge">No assembly</div>
+            <div class="qr-contract-badge">Section attestation</div>
           </div>
           <div id="handoffMeta">Loading review details...</div>
         </section>
@@ -78,8 +79,8 @@
         <section class="qr-review-queue" aria-labelledby="qrQueueHeading">
           <div class="qr-panel-heading">
             <div>
-              <div class="eyebrow">Report findings review queue</div>
-              <h2 id="qrQueueHeading">Confirm, correct or qualify each item</h2>
+              <div class="eyebrow">Active registry values</div>
+              <h2 id="qrQueueHeading">Review values and attest each section</h2>
             </div>
           </div>
           <div id="handoffBody"></div>
@@ -91,9 +92,9 @@
       </main>
     </div>
 
-    <div class="footer-note qr-footer">Qualified Review is a separate confirmation and correction workspace. It does not assemble documents.</div>
+    <div class="footer-note qr-footer">Qualified Review confirms and corrects inputs for Review-Ready Draft preparation. It does not itself assemble documents, provide legal advice, or replace qualified local counsel review.</div>
   </div>
 
-  <script src="./qualified-review-system/qualified-review.js?v=qr-workspace-v2-20260713" defer></script>
+  <script src="./qualified-review-system/qualified-review.js?v=qr-section-attestation-v3-20260714" defer></script>
 </body>
 </html>
