@@ -1,5 +1,6 @@
 name: CO-FINAL Live Matrix
 
+# Exact PR-tree certification workflow. No merge or production deployment.
 on:
   pull_request:
     branches:
