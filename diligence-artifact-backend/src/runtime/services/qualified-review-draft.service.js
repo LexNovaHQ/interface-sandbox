@@ -89,10 +89,12 @@ export function mergeDraft({ run = {}, handoff = {}, current = {}, request_body 
     const field = allowed.get(fieldId);
     if (!field) throw new Error(`QUALIFIED_REVIEW_DRAFT_UNKNOWN_FIELD:${fieldId}`);
     const normalized = normalizeFieldEdit(raw, field);
+    const nextEdit = isNoopEdit(normalized, field) ? null : normalized;
     const before = JSON.stringify(next.field_edits[fieldId] || null);
-    const after = JSON.stringify(normalized);
+    const after = JSON.stringify(nextEdit);
     if (before !== after) changedSections.add(field.section_id);
-    next.field_edits[fieldId] = normalized;
+    if (nextEdit) next.field_edits[fieldId] = nextEdit;
+    else delete next.field_edits[fieldId];
   }
   for (const sectionId of changedSections) delete next.section_attestations[sectionId];
   next.reviewer = {
@@ -129,7 +131,8 @@ export function validateDraft({ handoff = {}, draft = {}, require_complete = fal
 
 function normalizeFieldEdit(raw = {}, field = {}) {
   const atomicValues = {};
-  const incoming = raw.atomic_values && typeof raw.atomic_values === "object" ? raw.atomic_values : raw.value && field.atomic_fields?.length === 1 ? { [field.atomic_fields[0].atomic_key]: raw.value } : raw;
+  const hasScalarValue = Object.prototype.hasOwnProperty.call(raw, "value");
+  const incoming = raw.atomic_values && typeof raw.atomic_values === "object" ? raw.atomic_values : hasScalarValue && field.atomic_fields?.length === 1 ? { [field.atomic_fields[0].atomic_key]: raw.value } : raw;
   for (const atomic of field.atomic_fields || []) {
     if (Object.prototype.hasOwnProperty.call(incoming, atomic.atomic_key)) atomicValues[atomic.atomic_key] = incoming[atomic.atomic_key];
   }
@@ -137,11 +140,17 @@ function normalizeFieldEdit(raw = {}, field = {}) {
     atomic_values: atomicValues,
     limitation: clean(raw.limitation || raw.reviewer_limitation || ""),
     not_applicable: raw.not_applicable === true,
-    review_status: raw.not_applicable === true ? "NOT_APPLICABLE" : Object.keys(atomicValues).length || raw.limitation ? "EDITED" : "UNCHANGED",
-    updated_at: nowIso()
+    review_status: raw.not_applicable === true ? "NOT_APPLICABLE" : Object.keys(atomicValues).length || raw.limitation ? "EDITED" : "UNCHANGED"
   };
 }
 
+function isNoopEdit(edit, field) {
+  if (edit.not_applicable || edit.limitation) return false;
+  const proposed = field.proposed_value || {};
+  const keys = (field.atomic_fields || []).map((atomic) => atomic.atomic_key);
+  return keys.every((key) => Object.prototype.hasOwnProperty.call(edit.atomic_values, key) && sameValue(edit.atomic_values[key], proposed[key]));
+}
+function sameValue(left, right) { return JSON.stringify(left) === JSON.stringify(right); }
 function fieldIndex(handoff) {
   const map = new Map();
   for (const section of handoff.sections || []) for (const field of section.fields || []) map.set(field.qr_field_id, field);
