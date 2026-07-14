@@ -167,7 +167,12 @@ function nextEditRecord({ normalized, field, existingEdit, clearEdit }) {
   if (clearEdit) return null;
   const baseline = structuredClone(existingEdit?.baseline_value || field.proposed_value || {});
   if (existingEdit?.confirmed_activation_probe === true) {
-    return { ...normalized, baseline_value: baseline, confirmed_activation_probe: true, review_status: "SECTION_ATTESTED_PROBE" };
+    return {
+      ...normalized,
+      baseline_value: baseline,
+      confirmed_activation_probe: true,
+      review_status: normalized.not_applicable ? "NOT_APPLICABLE" : "SECTION_ATTESTED_PROBE"
+    };
   }
   if (matchesBaseline(normalized, baseline)) return null;
   return { ...normalized, baseline_value: baseline };
