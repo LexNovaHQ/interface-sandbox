@@ -1,0 +1,70 @@
+package_lifecycle_manifest:
+  schema_version: DOMAIN_PACKAGE_LIFECYCLE_v1
+  status: LOCKED
+  authority: EXECUTABLE_DOMAIN_PACKAGE_ELIGIBILITY
+  catalog_path: references/domain-packages/package-catalog.v0.json
+  doctrine:
+    catalog_is_declared_universe_not_execution_authority: true
+    phase3b_may_select_only_selectable_packages: true
+    package_promotion_requires_complete_asset_bundle: true
+    placeholder_registry_keys_forbidden: true
+    operator_domain_selection_forbidden: true
+  lifecycle_values:
+    - ACTIVE_E2E
+    - ACTIVE_REPORT_ONLY
+    - DECLARED_NOT_INSTALLED
+    - FALLBACK_ONLY
+  required_asset_bundle_for_active_e2e:
+    - registry_key
+    - primary_domain_rule
+    - activity_taxonomy
+    - domain_control_obligations
+    - obligation_navigation_catalog
+    - threat_registry_binding
+    - threat_registry
+    - qr_bridge_registry
+    - document_template_manifest
+    - document_injection_map
+    - production_fixtures
+  packages:
+    ai-governance:
+      lifecycle: ACTIVE_E2E
+      selectable_in_phase3b: true
+      downstream_delivery_mode: FULL_REVIEW_READY
+      phase10_enabled: true
+      phase13_enabled: true
+      phase16_enabled: true
+    fintech:
+      lifecycle: ACTIVE_REPORT_ONLY
+      selectable_in_phase3b: true
+      downstream_delivery_mode: REPORT_ONLY
+      phase10_enabled: true
+      phase13_enabled: false
+      phase16_enabled: false
+      limitation: FinTech QR bridge and Review-Ready document package are not installed.
+    saas: &not_installed
+      lifecycle: DECLARED_NOT_INSTALLED
+      selectable_in_phase3b: false
+      downstream_delivery_mode: NOT_EXECUTABLE
+      phase10_enabled: false
+      phase13_enabled: false
+      phase16_enabled: false
+    healthtech: *not_installed
+    hrtech: *not_installed
+    legaltech: *not_installed
+    edtech: *not_installed
+    marketplace: *not_installed
+    ecommerce: *not_installed
+    cybersecurity: *not_installed
+    developer-tools: *not_installed
+    data-infrastructure: *not_installed
+    enterprise-software: *not_installed
+    consumer-app: *not_installed
+    other-technology: *not_installed
+    unknown:
+      lifecycle: FALLBACK_ONLY
+      selectable_in_phase3b: false
+      downstream_delivery_mode: NOT_EXECUTABLE
+      phase10_enabled: false
+      phase13_enabled: false
+      phase16_enabled: false
