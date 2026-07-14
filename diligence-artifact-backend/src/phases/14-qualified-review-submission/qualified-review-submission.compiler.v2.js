@@ -11,14 +11,7 @@ export function compileQualifiedReviewSubmission({
   qr_registry_resolution_manifest = {},
   authority = loadQrRegistryAuthority()
 } = {}) {
-  const validation = validateSubmissionInputs({
-    run,
-    submission_request,
-    qualified_review_handoff,
-    qr_active_field_ledger,
-    qr_registry_resolution_manifest,
-    authority
-  });
+  const validation = validateSubmissionInputs({ run, submission_request, qualified_review_handoff, qr_active_field_ledger, qr_registry_resolution_manifest, authority });
   if (validation.errors.length) throw new Error(`QUALIFIED_REVIEW_SUBMISSION_INVALID:${validation.errors.join("|")}`);
 
   const finalFields = buildFinalFields({ ledger: qr_active_field_ledger, request: submission_request });
@@ -41,20 +34,13 @@ export function compileQualifiedReviewSubmission({
     source_active_ledger_ref: "qr_active_field_ledger",
     final_fields: finalFields,
     suppressed_activation_decisions: suppressedActivationDecisions,
-    assembly_payload: {
-      qr_values: Object.fromEntries(finalFields.map((field) => [field.qr_field_id, field.final_atomic_values]))
-    },
+    assembly_payload: { qr_values: Object.fromEntries(finalFields.map((field) => [field.qr_field_id, field.final_atomic_values])) },
     counts: summarizeFinalFields(finalFields, suppressedActivationDecisions),
     warnings: validation.warnings
   };
   const finalLedger = withImmutableHash(ledgerBody);
 
-  const documentManifestBody = buildDocumentActivationManifest({
-    run,
-    authority,
-    registryResolution: qr_registry_resolution_manifest,
-    finalFields
-  });
+  const documentManifestBody = buildDocumentActivationManifest({ run, authority, registryResolution: qr_registry_resolution_manifest, finalFields });
   const documentActivationManifest = withImmutableHash(documentManifestBody);
 
   const submissionBody = {
@@ -95,11 +81,7 @@ export function compileQualifiedReviewSubmission({
     qualified_review_submission: submission,
     qr_final_value_ledger: finalLedger,
     document_activation_manifest: documentActivationManifest,
-    validation: freezeImmutableArtifact({
-      status: validation.warnings.length ? "PASS_WITH_WARNINGS" : "PASS",
-      errors: [],
-      warnings: validation.warnings
-    })
+    validation: freezeImmutableArtifact({ status: validation.warnings.length ? "PASS_WITH_WARNINGS" : "PASS", errors: [], warnings: validation.warnings })
   });
 }
 
@@ -134,11 +116,7 @@ function validateSubmissionInputs({ run, submission_request, qualified_review_ha
     if (edit?.confirmed_activation_probe === true) warnings.push(`SUPPRESSED_ACTIVATION_PROBE_RETAINED:${fieldId}`);
     else errors.push(`SUBMISSION_UNKNOWN_FIELD_EDIT:${fieldId}`);
   }
-  return {
-    errors,
-    warnings,
-    attested_section_count: sections.filter((section) => attestations[section.section_id]?.status === "ATTESTED").length
-  };
+  return { errors, warnings, attested_section_count: sections.filter((section) => attestations[section.section_id]?.status === "ATTESTED").length };
 }
 
 function buildFinalFields({ ledger, request }) {
@@ -215,9 +193,7 @@ function buildDocumentActivationManifest({ run, authority, registryResolution, f
   const documents = templateDocuments.map((template) => {
     const rule = rules.get(template.document_id);
     if (!rule) errors.push(`DOCUMENT_ACTIVATION_RULE_MISSING:${template.document_id}`);
-    const evaluation = documentRegistryActive && rule
-      ? evaluateActivationRule(rule.activate_when || {}, context)
-      : { matched: false, trace: [documentRegistryActive ? "RULE_MISSING" : "DOCUMENT_REGISTRY_INACTIVE"] };
+    const evaluation = documentRegistryActive && rule ? evaluateActivationRule(rule.activate_when || {}, context) : { matched: false, trace: [documentRegistryActive ? "RULE_MISSING" : "DOCUMENT_REGISTRY_INACTIVE"] };
     const active = Boolean(evaluation.matched);
     const bindings = active ? buildDocumentBindings({ documentId: template.document_id, finalFields, errors }) : emptyDocumentBindings();
     return freezeImmutableArtifact({
@@ -257,10 +233,7 @@ function buildDocumentActivationManifest({ run, authority, registryResolution, f
       active_placeholder_count: documents.reduce((sum, document) => sum + document.placeholder_bindings.length, 0),
       active_clause_action_count: documents.reduce((sum, document) => sum + document.clause_actions.length, 0)
     },
-    review_ready_boundary: {
-      ...reviewReadyBoundary(),
-      qr_control_schedule_must_be_removed_from_final_draft: true
-    }
+    review_ready_boundary: { ...reviewReadyBoundary(), qr_control_schedule_must_be_removed_from_final_draft: true }
   };
 }
 
@@ -269,17 +242,32 @@ function buildDocumentBindings({ documentId, finalFields, errors }) {
   const clauseActions = [];
   const actionTokens = [];
   for (const field of finalFields) {
-    if (field.not_applicable) continue;
     for (const binding of field.document_bindings || []) {
       if (binding.document_id !== documentId) continue;
       for (const [atomicKey, token] of Object.entries(binding.value_placeholders || binding.placeholders || {})) {
-        const value = field.final_atomic_values[atomicKey];
+        const value = field.not_applicable ? "Not applicable" : field.final_atomic_values[atomicKey];
+        const source = field.not_applicable ? "REVIEWER_NOT_APPLICABLE" : field.atomic_sources[atomicKey];
         if (!hasMaterialValue(value)) errors.push(`ACTIVE_DOCUMENT_PLACEHOLDER_VALUE_MISSING:${documentId}:${field.qr_field_id}:${atomicKey}`);
         if (placeholderByToken.has(token) && !sameValue(placeholderByToken.get(token).value, value)) errors.push(`ACTIVE_DOCUMENT_PLACEHOLDER_VALUE_CONFLICT:${documentId}:${token}`);
-        placeholderByToken.set(token, { token, qr_field_id: field.qr_field_id, atomic_key: atomicKey, value, source: field.atomic_sources[atomicKey] });
+        placeholderByToken.set(token, {
+          token,
+          qr_field_id: field.qr_field_id,
+          atomic_key: atomicKey,
+          value,
+          source,
+          disposition: field.not_applicable ? "RENDER_NOT_APPLICABLE" : "POPULATE"
+        });
       }
-      if ((binding.actions || []).includes("SELECT_CLAUSE")) clauseActions.push({ qr_field_id: field.qr_field_id, target: binding.document_target || binding.target || "", final_atomic_values: field.final_atomic_values });
-      if (binding.action_token) actionTokens.push({ qr_field_id: field.qr_field_id, token: binding.action_token });
+      if ((binding.actions || []).includes("SELECT_CLAUSE") || field.not_applicable) {
+        clauseActions.push({
+          qr_field_id: field.qr_field_id,
+          target: binding.document_target || binding.target || "",
+          final_atomic_values: field.final_atomic_values,
+          not_applicable: field.not_applicable,
+          disposition: field.not_applicable ? "SUPPRESS_OR_MARK_NOT_APPLICABLE" : "SELECT_FROM_FINAL_VALUE"
+        });
+      }
+      if (binding.action_token) actionTokens.push({ qr_field_id: field.qr_field_id, token: binding.action_token, disposition: field.not_applicable ? "SUPPRESS_OR_MARK_NOT_APPLICABLE" : "APPLY" });
     }
   }
   return { placeholder_bindings: [...placeholderByToken.values()], clause_actions: clauseActions, action_tokens: actionTokens, unresolved_qr_placeholder_count: 0 };
@@ -288,10 +276,7 @@ function buildDocumentBindings({ documentId, finalFields, errors }) {
 function evaluateActivationRule(rule, context) {
   const all = Array.isArray(rule.all) ? rule.all.map((condition) => evaluateCondition(condition, context)) : [];
   const any = Array.isArray(rule.any) ? rule.any.map((condition) => evaluateCondition(condition, context)) : [];
-  return {
-    matched: all.every((row) => row.matched) && (!any.length || any.some((row) => row.matched)),
-    trace: [...all.map((row) => `ALL:${row.expression}:${row.matched}`), ...any.map((row) => `ANY:${row.expression}:${row.matched}`)]
-  };
+  return { matched: all.every((row) => row.matched) && (!any.length || any.some((row) => row.matched)), trace: [...all.map((row) => `ALL:${row.expression}:${row.matched}`), ...any.map((row) => `ANY:${row.expression}:${row.matched}`)] };
 }
 
 function evaluateCondition(rawCondition, context) {
@@ -339,9 +324,7 @@ function finalSource({ edit, reviewerHasValue, sourceRecord, value }) {
   return `REVIEWER_ATTESTED_${sourceRecord?.source || "UNRESOLVED"}`;
 }
 
-function reviewReadyBoundary() {
-  return { legal_architect_not_law_firm: true, review_ready_draft_only: true, local_counsel_review_required: true, not_legal_advice: true };
-}
+function reviewReadyBoundary() { return { legal_architect_not_law_firm: true, review_ready_draft_only: true, local_counsel_review_required: true, not_legal_advice: true }; }
 function withImmutableHash(body) { return freezeImmutableArtifact({ ...body, immutable_hash: hashImmutableArtifact(body) }); }
 function emptyDocumentBindings() { return { placeholder_bindings: [], clause_actions: [], action_tokens: [], unresolved_qr_placeholder_count: 0 }; }
 function conditionResult(expression, matched) { return { expression, matched: Boolean(matched) }; }
