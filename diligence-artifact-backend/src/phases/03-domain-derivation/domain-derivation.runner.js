@@ -3,6 +3,8 @@ import { loadDomainDerivationRegistryV0 } from "../../runtime/domain-gate/domain
 import { compileDomainDerivationArtifacts } from "./validators/domain-derivation.validator.js";
 import { readPhaseRouteRuntimePacket } from "../02-cartography-index/services/phase-route-runtime.reader.js";
 
+const MAX_REINVESTIGATION_ATTEMPTS = 2;
+
 export const DOMAIN_DERIVATION_RUNNER_STATUS = Object.freeze({
   phase_runner: "domain-derivation.runner",
   central_phase_id: DOMAIN_DERIVATION_CONTRACT.central_phase_id,
@@ -14,6 +16,12 @@ export const DOMAIN_DERIVATION_RUNNER_STATUS = Object.freeze({
   phase2g_route_scoped_runtime_reader_active: true,
   direct_contract_read_loading_forbidden: true,
   profile_forensics_inputs_forbidden: true,
+  deterministic_exclusion_active: true,
+  model_package_selection_authority_forbidden: true,
+  package_lifecycle_gate_active: true,
+  blocking_is_exception: true,
+  only_critical_failure_blocks: true,
+  maximum_reinvestigation_attempts: MAX_REINVESTIGATION_ATTEMPTS,
   agent_id: DOMAIN_DERIVATION_CONTRACT.agent_id,
   agent_package_root: DOMAIN_DERIVATION_CONTRACT.agent_package_binding.agent_package_root,
   prompt_package_status: DOMAIN_DERIVATION_CONTRACT.agent_package_binding.prompt_package_status,
@@ -22,21 +30,84 @@ export const DOMAIN_DERIVATION_RUNNER_STATUS = Object.freeze({
   routing_manifest_read: "phase_routing_manifest"
 });
 
-export async function runDomainDerivationPhase({ run, internalJobId = DOMAIN_DERIVATION_CONTRACT.internal_job_id, contract, readArtifacts, buildPrompt, callProvider, saveArtifact } = {}) {
+export async function runDomainDerivationPhase({
+  run,
+  internalJobId = DOMAIN_DERIVATION_CONTRACT.internal_job_id,
+  contract,
+  readArtifacts,
+  buildPrompt,
+  callProvider,
+  saveArtifact
+} = {}) {
   assertRuntimeContract(contract);
   assertCallback(readArtifacts, "readArtifacts");
   assertCallback(buildPrompt, "buildPrompt");
   assertCallback(callProvider, "callProvider");
   assertCallback(saveArtifact, "saveArtifact");
   assertPromptPackageDeclared(contract);
-  const routed = await readPhaseRouteRuntimePacket({ internalJobId, readArtifacts, consumerAgentId: contract.agent_id || contract.actor_id });
+
+  const routed = await readPhaseRouteRuntimePacket({
+    internalJobId,
+    readArtifacts,
+    consumerAgentId: contract.agent_id || contract.actor_id
+  });
   const artifacts = routed.artifacts;
   assertRoutePacket(artifacts.phase_route_runtime_packet, internalJobId);
   const registryPacket = await loadDomainDerivationRegistryV0();
-  const prompt = await buildPrompt({ prompt_files: contract.prompt_files, prompt_file: contract.prompt_file, phase: internalJobId, run, artifacts, writes: contract.writes, references: contract.references || [] });
-  const providerResult = await callProvider({ prompt, phase: DOMAIN_DERIVATION_CONTRACT.central_phase_id });
-  const modelOutput = providerResult?.json || providerResult || {};
-  const compiled = await compileDomainDerivationArtifacts({ run, artifacts, modelOutput, registryPacket });
+  const prompt = await buildPrompt({
+    prompt_files: contract.prompt_files,
+    prompt_file: contract.prompt_file,
+    phase: internalJobId,
+    run,
+    artifacts,
+    writes: contract.writes,
+    references: contract.references || []
+  });
+
+  let providerResult = await callProvider({ prompt, phase: DOMAIN_DERIVATION_CONTRACT.central_phase_id });
+  let modelOutput = providerResult?.json || providerResult || {};
+  let compiled = await compileDomainDerivationArtifacts({ run, artifacts, modelOutput, registryPacket });
+  const reinvestigationLedger = [];
+
+  for (let attempt = 1; compiled.phase_lock_status === "REINVESTIGATION_REQUIRED" && attempt <= MAX_REINVESTIGATION_ATTEMPTS; attempt += 1) {
+    reinvestigationLedger.push({
+      attempt_number: attempt,
+      reinvestigation_items: [...(compiled.validation.reinvestigation_items || [])],
+      scope: "PHASE3B_PRIMARY_DOMAIN_AND_RULE_EVIDENCE_ONLY",
+      full_phase_rerun_required: false
+    });
+    const reinvestigationPrompt = `${prompt}
+
+TARGETED PHASE 3B REINVESTIGATION — ATTEMPT ${attempt} OF ${MAX_REINVESTIGATION_ATTEMPTS}.
+Return the complete domain_derivation_profile again, but investigate only these backend-identified items:
+${(compiled.validation.reinvestigation_items || []).map((item) => `- ${item}`).join("\n")}
+Do not choose a package directly. Do not report exclude_result. Return condition results and lossless evidence anchors; the backend alone evaluates trigger_if, exclude_if, package eligibility, and the winning package.`;
+    providerResult = await callProvider({
+      prompt: reinvestigationPrompt,
+      phase: `${DOMAIN_DERIVATION_CONTRACT.central_phase_id}_REINVESTIGATION_${attempt}`
+    });
+    modelOutput = providerResult?.json || providerResult || {};
+    compiled = await compileDomainDerivationArtifacts({ run, artifacts, modelOutput, registryPacket });
+  }
+
+  if (compiled.phase_lock_status === "REINVESTIGATION_REQUIRED") {
+    compiled = await compileDomainDerivationArtifacts({
+      run,
+      artifacts,
+      modelOutput,
+      registryPacket,
+      reinvestigationExhausted: true
+    });
+  }
+
+  compiled.output.domain_derivation_profile.validation_summary = {
+    ...compiled.output.domain_derivation_profile.validation_summary,
+    reinvestigation_attempts: reinvestigationLedger,
+    reinvestigation_attempt_count: reinvestigationLedger.length,
+    maximum_reinvestigation_attempts: MAX_REINVESTIGATION_ATTEMPTS,
+    unresolved_after_reinvestigation: compiled.validation.limitations?.filter((item) => String(item).startsWith("UNRESOLVED_AFTER_REINVESTIGATION:")) || []
+  };
+
   const saved_artifacts = [];
   for (const artifactName of contract.writes) {
     const artifact = compiled.output?.[artifactName];
@@ -44,6 +115,7 @@ export async function runDomainDerivationPhase({ run, internalJobId = DOMAIN_DER
     await saveArtifact({ artifact_name: artifactName, artifact, lock_status: compiled.phase_lock_status });
     saved_artifacts.push(artifactName);
   }
+
   return {
     ok: true,
     output: compiled.output,
@@ -53,9 +125,12 @@ export async function runDomainDerivationPhase({ run, internalJobId = DOMAIN_DER
     validation: compiled.validation,
     model_metadata: providerResult?.metadata || {},
     registry_id: registryPacket.registry?.registry_id || "",
+    package_lifecycle_schema: registryPacket.lifecycle?.schema_version || "",
     registry_ladder_prompt_used: true,
     phase2g_route_id: routed.route.route_id,
     phase2g_bucket_id: routed.route.bucket_id,
+    reinvestigation_attempt_count: reinvestigationLedger.length,
+    only_critical_failure_blocks: true,
     domain_derivation_phase_runner_used: true
   };
 }
