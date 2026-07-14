@@ -11,6 +11,7 @@ from pathlib import Path
 OUTPUT = Path(__file__).resolve().parent.parent / "audits" / "CO_FINAL_PUBLIC_TRANSPORT_SMOKE.json"
 OUTPUT.parent.mkdir(parents=True, exist_ok=True)
 BASE_URL = os.environ.get("CO_FINAL_PUBLIC_BASE_URL", "https://sandbox.lexnovahq.com").rstrip("/")
+BROWSER_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
 
 receipt = {
     "artifact_type": "co_final_public_transport_smoke_receipt",
@@ -29,7 +30,12 @@ def save() -> None:
 
 def request_json(path: str, *, method: str = "GET", body: dict | None = None) -> tuple[int, dict]:
     data = json.dumps(body).encode("utf-8") if body is not None else None
-    headers = {"Accept": "application/json"}
+    headers = {
+        "Accept": "application/json",
+        "User-Agent": BROWSER_USER_AGENT,
+        "Sec-Fetch-Site": "none",
+        "Sec-Fetch-Mode": "navigate",
+    }
     if data is not None:
         headers["Content-Type"] = "application/json"
     request = urllib.request.Request(BASE_URL + path, data=data, headers=headers, method=method)
