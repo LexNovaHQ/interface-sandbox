@@ -1,0 +1,89 @@
+name: CO-FINAL Live Matrix
+
+on:
+  pull_request:
+    branches:
+      - domain-gate-v0-preflight
+    paths:
+      - ".github/workflows/co-final-live-matrix.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+  issues: write
+
+concurrency:
+  group: co-final-live-matrix-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  access-gate:
+    runs-on: ubuntu-latest
+    env:
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      GCP_REGION: ${{ secrets.GCP_REGION }}
+      GCP_ARTIFACT_CLOUD_RUN_SERVICE: ${{ secrets.GCP_ARTIFACT_CLOUD_RUN_SERVICE }}
+      GCP_DEPLOY_SERVICE_ACCOUNT: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+      GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+      CLOUD_TASKS_QUEUE: ${{ vars.CLOUD_TASKS_QUEUE || 'diligence-reviewer-worker' }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout exact PR tree
+        uses: actions/checkout@v4
+        with:
+          ref: co-e2e-01-03-critical-authority
+          fetch-depth: 0
+
+      - name: Authenticate scoped certification identity
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Verify direct cloud access and exact branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git branch --show-current)" = "co-e2e-01-03-critical-authority"
+          test -n "$GCP_PROJECT_ID"
+          test -n "$GCP_REGION"
+          test -n "$GCP_ARTIFACT_CLOUD_RUN_SERVICE"
+          test -n "$CLOUD_TASKS_QUEUE"
+          gcloud run services describe "$GCP_ARTIFACT_CLOUD_RUN_SERVICE" \
+            --project "$GCP_PROJECT_ID" \
+            --region "$GCP_REGION" \
+            --format=json > /tmp/cloud-run.json
+          gcloud tasks queues describe "$CLOUD_TASKS_QUEUE" \
+            --project "$GCP_PROJECT_ID" \
+            --location "$GCP_REGION" \
+            --format=json > /tmp/cloud-tasks.json
+          python - <<'PY'
+          import json, subprocess
+          service = json.load(open('/tmp/cloud-run.json', encoding='utf-8'))
+          queue = json.load(open('/tmp/cloud-tasks.json', encoding='utf-8'))
+          receipt = {
+              'artifact_type': 'co_final_live_matrix_access_gate',
+              'head_sha': subprocess.check_output(['git','rev-parse','HEAD'], text=True).strip(),
+              'branch': subprocess.check_output(['git','branch','--show-current'], text=True).strip(),
+              'gcp_authentication': 'PASS',
+              'cloud_run_service_ready': bool(service.get('status', {}).get('url') or service.get('uri')),
+              'cloud_tasks_queue_present': bool(queue.get('name')),
+              'cloud_tasks_queue_state': queue.get('state', 'UNKNOWN'),
+              'next_gate': 'ISOLATED_CERTIFICATION_DEPLOYMENT_AND_EIGHT_SCENARIOS',
+          }
+          json.dump(receipt, open('co-final-live-matrix-access.json','w',encoding='utf-8'), indent=2, sort_keys=True)
+          PY
+
+      - name: Upload access evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: co-final-live-matrix-access-${{ github.sha }}
+          path: co-final-live-matrix-access.json
+          if-no-files-found: warn
+          retention-days: 7
