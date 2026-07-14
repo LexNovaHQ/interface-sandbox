@@ -1,0 +1,158 @@
+name: CO-FINAL Live Preflight
+
+on:
+  pull_request:
+    branches:
+      - domain-gate-v0-preflight
+    paths:
+      - ".github/workflows/co-final-live-preflight.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: co-final-live-preflight-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  live-preflight:
+    runs-on: ubuntu-latest
+    env:
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      GCP_REGION: ${{ secrets.GCP_REGION }}
+      GCP_ARTIFACT_CLOUD_RUN_SERVICE: ${{ secrets.GCP_ARTIFACT_CLOUD_RUN_SERVICE }}
+      GCP_ARTIFACT_RUNTIME_SERVICE_ACCOUNT: ${{ secrets.GCP_ARTIFACT_RUNTIME_SERVICE_ACCOUNT }}
+      GCP_DEPLOY_SERVICE_ACCOUNT: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+      GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+      GPT_ACTION_API_KEY: ${{ secrets.GPT_ACTION_API_KEY }}
+      GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
+      DRIVE_PARENT_FOLDER_ID: ${{ secrets.DRIVE_PARENT_FOLDER_ID }}
+      SHEETS_SPREADSHEET_ID: ${{ secrets.SHEETS_SPREADSHEET_ID }}
+      CLOUD_TASKS_QUEUE: ${{ vars.CLOUD_TASKS_QUEUE || 'diligence-reviewer-worker' }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Checkout authorized branch
+        uses: actions/checkout@v4
+        with:
+          ref: co-e2e-01-03-critical-authority
+
+      - name: Record non-secret configuration presence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os
+          required = [
+              "GCP_PROJECT_ID",
+              "GCP_REGION",
+              "GCP_ARTIFACT_CLOUD_RUN_SERVICE",
+              "GCP_ARTIFACT_RUNTIME_SERVICE_ACCOUNT",
+              "GCP_DEPLOY_SERVICE_ACCOUNT",
+              "GCP_WORKLOAD_IDENTITY_PROVIDER",
+              "GPT_ACTION_API_KEY",
+              "GEMINI_API_KEYS",
+              "DRIVE_PARENT_FOLDER_ID",
+              "SHEETS_SPREADSHEET_ID",
+              "CLOUD_TASKS_QUEUE",
+          ]
+          optional = ["CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID"]
+          report = {
+              "required_presence": {key: bool(os.environ.get(key, "").strip()) for key in required},
+              "optional_presence": {key: bool(os.environ.get(key, "").strip()) for key in optional},
+          }
+          report["required_complete"] = all(report["required_presence"].values())
+          with open("co-final-live-preflight.json", "w", encoding="utf-8") as handle:
+              json.dump(report, handle, indent=2, sort_keys=True)
+          if not report["required_complete"]:
+              missing = [key for key, present in report["required_presence"].items() if not present]
+              raise SystemExit("missing required live preflight configuration: " + ", ".join(missing))
+          PY
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Verify deployed service queue and runtime contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          gcloud config set project "$GCP_PROJECT_ID" >/dev/null
+          gcloud config set run/region "$GCP_REGION" >/dev/null
+          SERVICE_JSON=$(mktemp)
+          QUEUE_JSON=$(mktemp)
+          gcloud run services describe "$GCP_ARTIFACT_CLOUD_RUN_SERVICE" \
+            --project "$GCP_PROJECT_ID" \
+            --region "$GCP_REGION" \
+            --format=json > "$SERVICE_JSON"
+          gcloud tasks queues describe "$CLOUD_TASKS_QUEUE" \
+            --project "$GCP_PROJECT_ID" \
+            --location "$GCP_REGION" \
+            --format=json > "$QUEUE_JSON"
+          python - "$SERVICE_JSON" "$QUEUE_JSON" <<'PY'
+          import json, sys
+          service = json.load(open(sys.argv[1], encoding="utf-8"))
+          queue = json.load(open(sys.argv[2], encoding="utf-8"))
+          template = service.get("spec", {}).get("template", {}).get("spec", {})
+          containers = template.get("containers", [])
+          env_names = sorted({entry.get("name") for container in containers for entry in container.get("env", []) if entry.get("name")})
+          required_env_names = {
+              "GCP_PROJECT_ID", "GCP_REGION", "DRIVE_PARENT_FOLDER_ID", "SHEETS_SPREADSHEET_ID",
+              "GPT_ACTION_API_KEY", "GEMINI_API_KEYS", "CLOUD_TASKS_QUEUE", "CLOUD_TASKS_LOCATION"
+          }
+          missing_env_names = sorted(required_env_names.difference(env_names))
+          status = service.get("status", {})
+          report = json.load(open("co-final-live-preflight.json", encoding="utf-8"))
+          report.update({
+              "cloud_run_service_ready": bool(status.get("url")),
+              "cloud_run_latest_ready_revision": status.get("latestReadyRevisionName", ""),
+              "cloud_run_runtime_env_names_present": sorted(required_env_names.intersection(env_names)),
+              "cloud_run_runtime_env_names_missing": missing_env_names,
+              "cloud_tasks_queue_state": queue.get("state", "UNKNOWN"),
+              "cloud_tasks_queue_name_present": bool(queue.get("name")),
+          })
+          json.dump(report, open("co-final-live-preflight.json", "w", encoding="utf-8"), indent=2, sort_keys=True)
+          if not status.get("url") or missing_env_names:
+              raise SystemExit("deployed service runtime contract incomplete")
+          PY
+
+      - name: Health smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL=$(gcloud run services describe "$GCP_ARTIFACT_CLOUD_RUN_SERVICE" \
+            --project "$GCP_PROJECT_ID" \
+            --region "$GCP_REGION" \
+            --format='value(status.url)')
+          HTTP_STATUS=$(curl --silent --show-error --location --output co-final-health.json --write-out '%{http_code}' "${URL%/}/health")
+          test "$HTTP_STATUS" = "200"
+          python - <<'PY'
+          import json
+          report = json.load(open("co-final-live-preflight.json", encoding="utf-8"))
+          health = json.load(open("co-final-health.json", encoding="utf-8"))
+          report["health_http_200"] = True
+          report["health_ok"] = health.get("ok") is True
+          report["health_status"] = health.get("status", "")
+          json.dump(report, open("co-final-live-preflight.json", "w", encoding="utf-8"), indent=2, sort_keys=True)
+          if health.get("ok") is not True:
+              raise SystemExit("health response did not report ok=true")
+          PY
+
+      - name: Upload redacted live preflight evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: co-final-live-preflight-${{ github.sha }}
+          path: |
+            co-final-live-preflight.json
+            co-final-health.json
+          if-no-files-found: warn
+          retention-days: 7
