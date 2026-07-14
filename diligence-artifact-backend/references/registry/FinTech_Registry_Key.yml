@@ -394,10 +394,13 @@ domain_derivation_rules:
       C8: "Involves financial data infrastructure/open banking/account aggregation/financial API/transaction-data enrichment/bank connectivity as a product."
       C9: "The financial activity is part of the target's own product/service wrapper offered to customers/merchants/borrowers/investors/institutions/partners."
       C10: "Evidence appears in >=1 admitted product-facing or legal/control source tied to the actual offering."
+      C11: "The only financial signal is subscription billing/generic pricing/SaaS-fee collection/investor relations/customer logos/blog/case study/finance vertical example for a non-financial product."
+      C12: "The actual reviewed offering is an AI product and finance appears only as a customer use case/demo/industry page/example vertical."
     trigger_if: "C1 AND (C2 OR C3 OR C4 OR C5 OR C6 OR C7 OR C8) AND C9 AND C10"
     exclude_if:
-      - "The only financial signal is subscription billing/generic pricing/SaaS-fee collection/investor relations/customer logos/blog/case study/finance vertical example for a non-financial product."
-      - "The actual reviewed offering is an AI product and finance appears only as a customer use case/demo/industry page/example vertical."
+      any:
+        - condition: C11
+        - condition: C12
     evidence_policy: {must_cite_lossless_evidence: true, phase_2_index_as_evidence: FORBIDDEN}
     result: {primary_domain_package: fintech, primary_domain_status: LOCKED, ai_package_mount: EVALUATE_SEPARATELY}
     lock_scope: PRIMARY_DOMAIN_LOCK

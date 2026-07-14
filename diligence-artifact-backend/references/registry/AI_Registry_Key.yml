@@ -399,10 +399,13 @@ domain_derivation_rules:
       C6: "Reviewed offering provides AI moderation/monitoring/security/optimization, biometric/signal processing, or AI governance/control functionality."
       C7: "The AI capability is the product/service wrapper or a core capability, not merely an internal operating tool."
       C8: "Evidence appears in >=1 admitted product-facing or legal/control source (product/platform/API/docs/demo/pricing/terms/AI policy/trust/help/integration/announcement)."
+      C9: "A non-AI primary-domain rule fires and the AI capability is only the mechanism used inside that non-AI vertical activity."
+      C10: "The only AI evidence is generic wording (AI-powered/smart/automated/SEO/blog/hiring/investor/roadmap) with no concrete current AI product capability."
     trigger_if: "C1 AND (C2 OR C3 OR C4 OR C5 OR C6) AND C7 AND C8"
     exclude_if:
-      - "A non-AI primary-domain rule fires and the AI capability is only the mechanism used inside that non-AI vertical activity."
-      - "The only AI evidence is generic wording (AI-powered/smart/automated/SEO/blog/hiring/investor/roadmap) with no concrete current AI product capability."
+      any:
+        - condition: C9
+        - condition: C10
     evidence_policy: {must_cite_lossless_evidence: true, phase_2_index_as_evidence: FORBIDDEN}
     result: {primary_domain_package: ai-governance, primary_domain_status: LOCKED, ai_package_mount: AI_PRIMARY, ai_overlay_mount: PROHIBITED}
     lock_scope: PRIMARY_DOMAIN_LOCK
@@ -420,8 +423,12 @@ domain_derivation_rules:
         C6: "Target's product uses/provides AI moderation/monitoring/security/optimization/biometric (C6)."
         C7: "AI function is tied to an actual product activity, user workflow, output, decision, API, or automation flow."
         C8: "AI function appears in >=1 admitted product-facing or legal/control source."
+      C9: "AI appears only as generic marketing/SEO/blog/hiring/investor/roadmap language."
       trigger_if: "C1 AND (C2 OR C3 OR C4 OR C5 OR C6) AND C7 AND C8"
-      exclude_if: ["Primary domain is ai-governance.", "AI appears only as generic marketing/SEO/blog/hiring/investor/roadmap language."]
+      exclude_if:
+        any:
+          - rule_fired: PRIMARY_DOMAIN_AI_GOVERNANCE
+          - condition: C9
       result: {ai_package_mount: AI_OVERLAY_MOUNTED, ai_overlay_status: LOCKED_FOR_PACKAGE_MOUNT_ONLY}
       lock_scope: PACKAGE_MOUNT_ONLY
       defer_to: PHASE_5_ACTIVITY_PROFILE_FOR_BEHAVIOR_LANE_SURFACE_AND_EXPOSURE_ROUTING
@@ -433,7 +440,9 @@ domain_derivation_rules:
         C1: "Evidence contains AI-adjacent wording (AI-powered/ML/model/LLM/generative/assistant/agent/prediction/recommendation/automation)."
         C2: "Evidence does not identify a concrete current AI product activity/workflow/output/model/decision/API/user-facing capability."
       trigger_if: "C1 AND C2"
-      exclude_if: ["PRIMARY_DOMAIN_AI_GOVERNANCE fires.", "AI_OVERLAY_MOUNTED fires."]
+      exclude_if:
+        any:
+          - rule_fired_any: [PRIMARY_DOMAIN_AI_GOVERNANCE, AI_OVERLAY_MOUNTED]
       result: {ai_package_mount: AI_CANDIDATE_ONLY}
       lock_scope: CANDIDATE_ONLY
     - rule_id: AI_NOT_VISIBLE
@@ -443,7 +452,9 @@ domain_derivation_rules:
       conditions:
         C1: "No admitted lossless evidence contains any AI function/product/capability/model/workflow/AI-adjacent signal."
       trigger_if: "C1"
-      exclude_if: ["PRIMARY_DOMAIN_AI_GOVERNANCE fires.", "AI_OVERLAY_MOUNTED fires.", "AI_CANDIDATE_ONLY fires."]
+      exclude_if:
+        any:
+          - rule_fired_any: [PRIMARY_DOMAIN_AI_GOVERNANCE, AI_OVERLAY_MOUNTED, AI_CANDIDATE_ONLY]
       result: {ai_package_mount: AI_NOT_VISIBLE}
       lock_scope: NOT_VISIBLE
   fusion_note: "ai-native fusion candidates are owned by the locked non-AI primary domain package; fusion grammar lives in the FDR (DOMAIN_FUSION_CANDIDATE), deferred to Phase 5 + Phase 9."

@@ -42,7 +42,8 @@
     "check:runtime-authority-boundaries": "node scripts/check-runtime-authority-boundaries.mjs",
     "check:domain-registry-assembled": "node scripts/check-domain-registry-assembled.mjs",
     "smoke:health": "node scripts/smoke-health.mjs",
-    "smoke:reviewer": "node scripts/smoke-reviewer-run.mjs"
+    "smoke:reviewer": "node scripts/smoke-reviewer-run.mjs",
+    "check:e2e-authority": "node scripts/check-e2e-outcome-domain-authority.mjs"
   },
   "dependencies": {
     "@google-cloud/firestore": "^7.11.0",
