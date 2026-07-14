@@ -1,6 +1,11 @@
 name: CO-FINAL Live Preflight
 
 on:
+  push:
+    branches:
+      - co-e2e-01-03-critical-authority
+    paths:
+      - ".github/workflows/co-final-live-preflight.yml"
   pull_request:
     branches:
       - domain-gate-v0-preflight
@@ -11,13 +16,21 @@ on:
 permissions:
   contents: read
   id-token: write
+  issues: write
 
 concurrency:
   group: co-final-live-preflight-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  live-preflight:
+  pr-context-record:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "The live probe runs under branch push identity; PR identity rejection is already recorded."
+
+  branch-live-preflight:
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     env:
       GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
@@ -33,237 +46,135 @@ jobs:
       CLOUD_TASKS_QUEUE: ${{ vars.CLOUD_TASKS_QUEUE || 'diligence-reviewer-worker' }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      GH_TOKEN: ${{ github.token }}
     steps:
-      - name: Checkout authorized branch
-        uses: actions/checkout@v4
-        with:
-          ref: co-e2e-01-03-critical-authority
-
-      - name: Record non-secret configuration presence
+      - name: Execute redacted branch-identity live preflight
+        id: probe
+        continue-on-error: true
         shell: bash
         run: |
-          set -euo pipefail
           python - <<'PY'
-          import json, os
+          import base64, json, os, urllib.error, urllib.parse, urllib.request
+
+          report = {
+              "event_name": os.environ.get("GITHUB_EVENT_NAME"),
+              "git_ref": os.environ.get("GITHUB_REF"),
+              "required_presence": {},
+              "optional_presence": {},
+          }
           required = [
-              "GCP_PROJECT_ID",
-              "GCP_REGION",
-              "GCP_ARTIFACT_CLOUD_RUN_SERVICE",
-              "GCP_ARTIFACT_RUNTIME_SERVICE_ACCOUNT",
-              "GCP_DEPLOY_SERVICE_ACCOUNT",
-              "GCP_WORKLOAD_IDENTITY_PROVIDER",
-              "GPT_ACTION_API_KEY",
-              "GEMINI_API_KEYS",
-              "DRIVE_PARENT_FOLDER_ID",
-              "SHEETS_SPREADSHEET_ID",
-              "CLOUD_TASKS_QUEUE",
+              "GCP_PROJECT_ID", "GCP_REGION", "GCP_ARTIFACT_CLOUD_RUN_SERVICE",
+              "GCP_ARTIFACT_RUNTIME_SERVICE_ACCOUNT", "GCP_DEPLOY_SERVICE_ACCOUNT",
+              "GCP_WORKLOAD_IDENTITY_PROVIDER", "GPT_ACTION_API_KEY", "GEMINI_API_KEYS",
+              "DRIVE_PARENT_FOLDER_ID", "SHEETS_SPREADSHEET_ID", "CLOUD_TASKS_QUEUE",
           ]
           optional = ["CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID"]
-          report = {
-              "required_presence": {key: bool(os.environ.get(key, "").strip()) for key in required},
-              "optional_presence": {key: bool(os.environ.get(key, "").strip()) for key in optional},
-          }
+          report["required_presence"] = {key: bool(os.environ.get(key, "").strip()) for key in required}
+          report["optional_presence"] = {key: bool(os.environ.get(key, "").strip()) for key in optional}
           report["required_complete"] = all(report["required_presence"].values())
-          with open("co-final-live-preflight.json", "w", encoding="utf-8") as handle:
-              json.dump(report, handle, indent=2, sort_keys=True)
-          if not report["required_complete"]:
-              missing = [key for key, present in report["required_presence"].items() if not present]
-              raise SystemExit("missing required live preflight configuration: " + ", ".join(missing))
-          PY
 
-      - name: Diagnose GitHub OIDC and Google STS trust
-        id: oidc
-        shell: bash
-        run: |
-          set -euo pipefail
-          python - <<'PY'
-          import base64
-          import json
-          import os
-          import urllib.error
-          import urllib.parse
-          import urllib.request
+          def save():
+              json.dump(report, open("co-final-live-preflight.json", "w", encoding="utf-8"), indent=2, sort_keys=True)
 
-          report_path = "co-final-live-preflight.json"
-          report = json.load(open(report_path, encoding="utf-8"))
-          provider = os.environ["GCP_WORKLOAD_IDENTITY_PROVIDER"].strip()
-          for prefix in ("https://iam.googleapis.com/", "//iam.googleapis.com/"):
-              if provider.startswith(prefix):
-                  provider = provider[len(prefix):]
-          audience = "https://iam.googleapis.com/" + provider
-          request_url = os.environ["ACTIONS_ID_TOKEN_REQUEST_URL"]
-          separator = "&" if "?" in request_url else "?"
-          request_url += separator + "audience=" + urllib.parse.quote(audience, safe="")
-          request = urllib.request.Request(
-              request_url,
-              headers={"Authorization": "Bearer " + os.environ["ACTIONS_ID_TOKEN_REQUEST_TOKEN"]},
-          )
-          with urllib.request.urlopen(request, timeout=30) as response:
-              oidc_token = json.load(response)["value"]
-
-          payload_segment = oidc_token.split(".")[1]
-          payload_segment += "=" * (-len(payload_segment) % 4)
-          claims = json.loads(base64.urlsafe_b64decode(payload_segment.encode("ascii")))
-          report["github_oidc_claims"] = {
-              key: claims.get(key)
-              for key in ("repository", "repository_owner", "ref", "event_name", "sub", "workflow", "job_workflow_ref")
-              if key in claims
-          }
-          report["github_oidc_token_issued"] = True
-
-          sts_payload = urllib.parse.urlencode({
-              "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange",
-              "audience": "//iam.googleapis.com/" + provider,
-              "scope": "https://www.googleapis.com/auth/cloud-platform",
-              "requested_token_type": "urn:ietf:params:oauth:token-type:access_token",
-              "subject_token_type": "urn:ietf:params:oauth:token-type:jwt",
-              "subject_token": oidc_token,
-          }).encode("utf-8")
-          sts_request = urllib.request.Request(
-              "https://sts.googleapis.com/v1/token",
-              data=sts_payload,
-              headers={"Content-Type": "application/x-www-form-urlencoded"},
-              method="POST",
-          )
-          try:
-              with urllib.request.urlopen(sts_request, timeout=30) as response:
-                  sts = json.load(response)
-              federated_token = sts["access_token"]
-              report["google_sts_exchange_succeeded"] = True
-              report["google_sts_error"] = None
-          except urllib.error.HTTPError as error:
-              body = error.read().decode("utf-8", errors="replace")
-              try:
-                  parsed = json.loads(body)
-              except json.JSONDecodeError:
-                  parsed = {"message": body[:1000]}
-              report["google_sts_exchange_succeeded"] = False
-              report["google_sts_http_status"] = error.code
-              report["google_sts_error"] = parsed.get("error", parsed)
-              json.dump(report, open(report_path, "w", encoding="utf-8"), indent=2, sort_keys=True)
-              raise SystemExit("Google STS rejected the GitHub OIDC identity; see redacted artifact")
-
-          service_account = os.environ["GCP_DEPLOY_SERVICE_ACCOUNT"].strip()
-          iam_url = (
-              "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/"
-              + urllib.parse.quote(service_account, safe="")
-              + ":generateAccessToken"
-          )
-          iam_payload = json.dumps({
-              "scope": ["https://www.googleapis.com/auth/cloud-platform"],
-              "lifetime": "1800s",
-          }).encode("utf-8")
-          iam_request = urllib.request.Request(
-              iam_url,
-              data=iam_payload,
-              headers={
-                  "Authorization": "Bearer " + federated_token,
-                  "Content-Type": "application/json",
-              },
-              method="POST",
-          )
-          try:
-              with urllib.request.urlopen(iam_request, timeout=30) as response:
-                  impersonation = json.load(response)
-              access_token = impersonation["accessToken"]
-              report["service_account_impersonation_succeeded"] = True
-              report["service_account_impersonation_error"] = None
-          except urllib.error.HTTPError as error:
-              body = error.read().decode("utf-8", errors="replace")
-              try:
-                  parsed = json.loads(body)
-              except json.JSONDecodeError:
-                  parsed = {"message": body[:1000]}
-              report["service_account_impersonation_succeeded"] = False
-              report["service_account_impersonation_http_status"] = error.code
-              report["service_account_impersonation_error"] = parsed.get("error", parsed)
-              json.dump(report, open(report_path, "w", encoding="utf-8"), indent=2, sort_keys=True)
-              raise SystemExit("Google service-account impersonation rejected the federated identity; see redacted artifact")
-
-          with open("/tmp/co-final-gcp-access-token", "w", encoding="utf-8") as handle:
-              handle.write(access_token)
-          json.dump(report, open(report_path, "w", encoding="utf-8"), indent=2, sort_keys=True)
-          PY
-
-      - name: Verify deployed service queue and runtime contract
-        shell: bash
-        run: |
-          set -euo pipefail
-          python - <<'PY'
-          import json
-          import os
-          import urllib.error
-          import urllib.parse
-          import urllib.request
-
-          token = open("/tmp/co-final-gcp-access-token", encoding="utf-8").read().strip()
-          project = os.environ["GCP_PROJECT_ID"]
-          region = os.environ["GCP_REGION"]
-          service_name = os.environ["GCP_ARTIFACT_CLOUD_RUN_SERVICE"]
-          queue_name = os.environ["CLOUD_TASKS_QUEUE"]
-
-          def get_json(url):
-              request = urllib.request.Request(url, headers={"Authorization": "Bearer " + token})
-              with urllib.request.urlopen(request, timeout=30) as response:
+          def request_json(url, *, token=None, data=None, content_type=None):
+              headers = {}
+              if token:
+                  headers["Authorization"] = "Bearer " + token
+              if content_type:
+                  headers["Content-Type"] = content_type
+              request = urllib.request.Request(url, data=data, headers=headers, method="POST" if data is not None else "GET")
+              with urllib.request.urlopen(request, timeout=45) as response:
                   return json.load(response)
 
-          service = get_json(
-              "https://run.googleapis.com/v2/projects/"
-              + urllib.parse.quote(project, safe="")
-              + "/locations/"
-              + urllib.parse.quote(region, safe="")
-              + "/services/"
-              + urllib.parse.quote(service_name, safe="")
-          )
-          queue = get_json(
-              "https://cloudtasks.googleapis.com/v2/projects/"
-              + urllib.parse.quote(project, safe="")
-              + "/locations/"
-              + urllib.parse.quote(region, safe="")
-              + "/queues/"
-              + urllib.parse.quote(queue_name, safe="")
-          )
+          try:
+              if not report["required_complete"]:
+                  raise RuntimeError("required_live_configuration_missing")
 
-          containers = service.get("template", {}).get("containers", [])
-          env_names = sorted({entry.get("name") for container in containers for entry in container.get("env", []) if entry.get("name")})
-          required_env_names = {
-              "GCP_PROJECT_ID", "GCP_REGION", "DRIVE_PARENT_FOLDER_ID", "SHEETS_SPREADSHEET_ID",
-              "GPT_ACTION_API_KEY", "GEMINI_API_KEYS", "CLOUD_TASKS_QUEUE", "CLOUD_TASKS_LOCATION"
-          }
-          missing_env_names = sorted(required_env_names.difference(env_names))
-          report = json.load(open("co-final-live-preflight.json", encoding="utf-8"))
-          report.update({
-              "cloud_run_service_ready": bool(service.get("uri")),
-              "cloud_run_latest_ready_revision": service.get("latestReadyRevision", ""),
-              "cloud_run_runtime_env_names_present": sorted(required_env_names.intersection(env_names)),
-              "cloud_run_runtime_env_names_missing": missing_env_names,
-              "cloud_tasks_queue_state": queue.get("state", "UNKNOWN"),
-              "cloud_tasks_queue_name_present": bool(queue.get("name")),
-          })
-          json.dump(report, open("co-final-live-preflight.json", "w", encoding="utf-8"), indent=2, sort_keys=True)
-          if not service.get("uri") or missing_env_names:
-              raise SystemExit("deployed service runtime contract incomplete")
-          with open("/tmp/co-final-cloud-run-uri", "w", encoding="utf-8") as handle:
-              handle.write(service["uri"])
-          PY
+              provider = os.environ["GCP_WORKLOAD_IDENTITY_PROVIDER"].strip()
+              for prefix in ("https://iam.googleapis.com/", "//iam.googleapis.com/"):
+                  if provider.startswith(prefix):
+                      provider = provider[len(prefix):]
+              oidc_audience = "https://iam.googleapis.com/" + provider
+              oidc_url = os.environ["ACTIONS_ID_TOKEN_REQUEST_URL"]
+              oidc_url += ("&" if "?" in oidc_url else "?") + "audience=" + urllib.parse.quote(oidc_audience, safe="")
+              oidc_request = urllib.request.Request(oidc_url, headers={"Authorization": "Bearer " + os.environ["ACTIONS_ID_TOKEN_REQUEST_TOKEN"]})
+              with urllib.request.urlopen(oidc_request, timeout=30) as response:
+                  oidc_token = json.load(response)["value"]
+              payload = oidc_token.split(".")[1]
+              payload += "=" * (-len(payload) % 4)
+              claims = json.loads(base64.urlsafe_b64decode(payload.encode("ascii")))
+              report["github_oidc_token_issued"] = True
+              report["github_oidc_claims"] = {key: claims.get(key) for key in ("repository", "ref", "event_name", "sub", "workflow")}
 
-      - name: Health smoke
-        shell: bash
-        run: |
-          set -euo pipefail
-          URL=$(cat /tmp/co-final-cloud-run-uri)
-          HTTP_STATUS=$(curl --silent --show-error --location --output co-final-health.json --write-out '%{http_code}' "${URL%/}/health")
-          test "$HTTP_STATUS" = "200"
-          python - <<'PY'
-          import json
-          report = json.load(open("co-final-live-preflight.json", encoding="utf-8"))
-          health = json.load(open("co-final-health.json", encoding="utf-8"))
-          report["health_http_200"] = True
-          report["health_ok"] = health.get("ok") is True
-          report["health_status"] = health.get("status", "")
-          json.dump(report, open("co-final-live-preflight.json", "w", encoding="utf-8"), indent=2, sort_keys=True)
-          if health.get("ok") is not True:
-              raise SystemExit("health response did not report ok=true")
+              sts_data = urllib.parse.urlencode({
+                  "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange",
+                  "audience": "//iam.googleapis.com/" + provider,
+                  "scope": "https://www.googleapis.com/auth/cloud-platform",
+                  "requested_token_type": "urn:ietf:params:oauth:token-type:access_token",
+                  "subject_token_type": "urn:ietf:params:oauth:token-type:jwt",
+                  "subject_token": oidc_token,
+              }).encode("utf-8")
+              sts = request_json("https://sts.googleapis.com/v1/token", data=sts_data, content_type="application/x-www-form-urlencoded")
+              federated_token = sts["access_token"]
+              report["google_sts_exchange_succeeded"] = True
+
+              service_account = urllib.parse.quote(os.environ["GCP_DEPLOY_SERVICE_ACCOUNT"].strip(), safe="")
+              iam_data = json.dumps({"scope": ["https://www.googleapis.com/auth/cloud-platform"], "lifetime": "1800s"}).encode("utf-8")
+              impersonation = request_json(
+                  f"https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/{service_account}:generateAccessToken",
+                  token=federated_token,
+                  data=iam_data,
+                  content_type="application/json",
+              )
+              access_token = impersonation["accessToken"]
+              report["service_account_impersonation_succeeded"] = True
+
+              project = urllib.parse.quote(os.environ["GCP_PROJECT_ID"], safe="")
+              region = urllib.parse.quote(os.environ["GCP_REGION"], safe="")
+              service_name = urllib.parse.quote(os.environ["GCP_ARTIFACT_CLOUD_RUN_SERVICE"], safe="")
+              queue_name = urllib.parse.quote(os.environ["CLOUD_TASKS_QUEUE"], safe="")
+              service = request_json(f"https://run.googleapis.com/v2/projects/{project}/locations/{region}/services/{service_name}", token=access_token)
+              queue = request_json(f"https://cloudtasks.googleapis.com/v2/projects/{project}/locations/{region}/queues/{queue_name}", token=access_token)
+              containers = service.get("template", {}).get("containers", [])
+              env_names = sorted({entry.get("name") for container in containers for entry in container.get("env", []) if entry.get("name")})
+              required_env = {"GCP_PROJECT_ID", "GCP_REGION", "DRIVE_PARENT_FOLDER_ID", "SHEETS_SPREADSHEET_ID", "GPT_ACTION_API_KEY", "GEMINI_API_KEYS", "CLOUD_TASKS_QUEUE", "CLOUD_TASKS_LOCATION"}
+              report["cloud_run_service_ready"] = bool(service.get("uri"))
+              report["cloud_run_latest_ready_revision"] = service.get("latestReadyRevision", "")
+              report["cloud_run_runtime_env_names_missing"] = sorted(required_env.difference(env_names))
+              report["cloud_tasks_queue_state"] = queue.get("state", "UNKNOWN")
+              report["cloud_tasks_queue_name_present"] = bool(queue.get("name"))
+
+              health_url = service.get("uri", "").rstrip("/") + "/health"
+              health = request_json(health_url)
+              report["health_http_200"] = True
+              report["health_ok"] = health.get("ok") is True
+              report["health_status"] = health.get("status", "")
+              report["preflight_succeeded"] = bool(
+                  report["cloud_run_service_ready"]
+                  and not report["cloud_run_runtime_env_names_missing"]
+                  and report["cloud_tasks_queue_name_present"]
+                  and report["health_ok"]
+              )
+              if not report["preflight_succeeded"]:
+                  raise RuntimeError("deployed_runtime_contract_incomplete")
+          except urllib.error.HTTPError as error:
+              body = error.read().decode("utf-8", errors="replace")
+              try:
+                  parsed = json.loads(body)
+              except json.JSONDecodeError:
+                  parsed = {"message": body[:1000]}
+              report["preflight_succeeded"] = False
+              report["failure_stage"] = "http_exchange"
+              report["failure_http_status"] = error.code
+              report["failure_error"] = parsed.get("error", parsed)
+          except Exception as error:
+              report["preflight_succeeded"] = False
+              report["failure_stage"] = "local_or_contract_validation"
+              report["failure_error"] = {"type": type(error).__name__, "message": str(error)}
+          finally:
+              save()
+
+          raise SystemExit(0 if report.get("preflight_succeeded") else 1)
           PY
 
       - name: Upload redacted live preflight evidence
@@ -271,8 +182,39 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: co-final-live-preflight-${{ github.sha }}
-          path: |
-            co-final-live-preflight.json
-            co-final-health.json
-          if-no-files-found: warn
+          path: co-final-live-preflight.json
+          if-no-files-found: error
           retention-days: 7
+
+      - name: Publish redacted result to PR 95
+        if: always()
+        shell: bash
+        run: |
+          python - <<'PY' > /tmp/co-final-comment.md
+          import json
+          report = json.load(open("co-final-live-preflight.json", encoding="utf-8"))
+          status = "PASS" if report.get("preflight_succeeded") else "BLOCKED"
+          claims = report.get("github_oidc_claims", {})
+          print("## CO-FINAL branch-identity live preflight: " + status)
+          print()
+          print(f"- Event: `{report.get('event_name')}`")
+          print(f"- Ref: `{report.get('git_ref')}`")
+          print(f"- OIDC subject: `{claims.get('sub', 'not-issued')}`")
+          print(f"- Google STS: `{report.get('google_sts_exchange_succeeded', False)}`")
+          print(f"- Service-account impersonation: `{report.get('service_account_impersonation_succeeded', False)}`")
+          print(f"- Cloud Run ready: `{report.get('cloud_run_service_ready', False)}`")
+          print(f"- Cloud Tasks queue present: `{report.get('cloud_tasks_queue_name_present', False)}`")
+          print(f"- Health OK: `{report.get('health_ok', False)}`")
+          print(f"- Cloudflare API credentials available: `{all(report.get('optional_presence', {}).values())}`")
+          if not report.get("preflight_succeeded"):
+              print(f"- Failure stage: `{report.get('failure_stage', 'unknown')}`")
+              error = report.get("failure_error")
+              print(f"- Redacted error: `{error}`")
+          print()
+          print("This comment contains no credential values or access tokens.")
+          PY
+          gh api repos/LexNovaHQ/interface-sandbox/issues/95/comments -f body="$(cat /tmp/co-final-comment.md)"
+
+      - name: Enforce result
+        if: steps.probe.outcome != 'success'
+        run: exit 1
