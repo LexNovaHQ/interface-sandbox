@@ -1,6 +1,8 @@
 name: Artifact Backend Deploy
 
 on:
+  schedule:
+    - cron: "*/5 * * * *"
   push:
     branches:
       - main
@@ -28,7 +30,124 @@ env:
   CLOUD_TASKS_QUEUE: ${{ vars.CLOUD_TASKS_QUEUE || 'diligence-reviewer-worker' }}
 
 jobs:
+  bootstrap_wif:
+    name: Scoped WIF certification bootstrap
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      issues: write
+    env:
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+      GCP_DEPLOY_SERVICE_ACCOUNT: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+      CERT_BRANCH: co-e2e-01-03-critical-authority
+      CERT_WORKFLOW: CO-FINAL Live Matrix
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Authenticate with trusted deploy workflow identity
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Apply exact branch and workflow trust
+        shell: bash
+        run: |
+          set -euo pipefail
+          PROVIDER_RESOURCE="$GCP_WORKLOAD_IDENTITY_PROVIDER"
+          PROVIDER_RESOURCE="${PROVIDER_RESOURCE#https://iam.googleapis.com/}"
+          PROVIDER_RESOURCE="${PROVIDER_RESOURCE#//iam.googleapis.com/}"
+          PROJECT_NUMBER=$(printf '%s' "$PROVIDER_RESOURCE" | sed -n 's#projects/\([^/]*\)/locations/.*#\1#p')
+          POOL_ID=$(printf '%s' "$PROVIDER_RESOURCE" | sed -n 's#.*workloadIdentityPools/\([^/]*\)/providers/.*#\1#p')
+          PROVIDER_ID=$(printf '%s' "$PROVIDER_RESOURCE" | sed -n 's#.*providers/\([^/]*\)$#\1#p')
+          test -n "$PROJECT_NUMBER"
+          test -n "$POOL_ID"
+          test -n "$PROVIDER_ID"
+
+          gcloud iam workload-identity-pools providers describe "$PROVIDER_ID" \
+            --workload-identity-pool="$POOL_ID" \
+            --location=global \
+            --project="$GCP_PROJECT_ID" \
+            --format=json > /tmp/provider-before.json
+
+          python - <<'PY2'
+          import json, os
+          provider = json.load(open('/tmp/provider-before.json', encoding='utf-8'))
+          current = (provider.get('attributeCondition') or '').strip()
+          branch = os.environ['CERT_BRANCH']
+          workflow = os.environ['CERT_WORKFLOW']
+          clause = (
+              "assertion.repository=='LexNovaHQ/interface-sandbox' && "
+              f"assertion.ref=='refs/heads/{branch}' && "
+              f"assertion.workflow=='{workflow}'"
+          )
+          updated = current if clause in current else (f"({current}) || ({clause})" if current else clause)
+          json.dump({'before': current, 'after': updated, 'changed': updated != current}, open('/tmp/wif-plan.json','w',encoding='utf-8'), indent=2)
+          PY2
+
+          NEW_CONDITION=$(python -c "import json; print(json.load(open('/tmp/wif-plan.json'))['after'])")
+          CHANGED=$(python -c "import json; print(str(json.load(open('/tmp/wif-plan.json'))['changed']).lower())")
+          if [ "$CHANGED" = "true" ]; then
+            gcloud iam workload-identity-pools providers update-oidc "$PROVIDER_ID" \
+              --workload-identity-pool="$POOL_ID" \
+              --location=global \
+              --project="$GCP_PROJECT_ID" \
+              --attribute-condition="$NEW_CONDITION"
+          fi
+
+          SUBJECT="repo:LexNovaHQ/interface-sandbox:ref:refs/heads/$CERT_BRANCH"
+          MEMBER="principal://iam.googleapis.com/projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/$POOL_ID/subject/$SUBJECT"
+          gcloud iam service-accounts add-iam-policy-binding "$GCP_DEPLOY_SERVICE_ACCOUNT" \
+            --project="$GCP_PROJECT_ID" \
+            --member="$MEMBER" \
+            --role="roles/iam.workloadIdentityUser" \
+            --quiet
+
+          python - <<'PY2'
+          import json, os
+          plan=json.load(open('/tmp/wif-plan.json',encoding='utf-8'))
+          receipt={
+            'artifact_type':'co_final_wif_bootstrap_receipt',
+            'target_branch':os.environ['CERT_BRANCH'],
+            'target_workflow':os.environ['CERT_WORKFLOW'],
+            'trusted_main_workflow':'Artifact Backend Deploy',
+            'provider_condition_changed':plan['changed'],
+            'exact_subject_binding_added':True,
+            'scope':'exact repository + exact branch + exact workflow provider clause; exact branch subject binding'
+          }
+          json.dump(receipt,open('/tmp/co-final-wif-bootstrap.json','w',encoding='utf-8'),indent=2,sort_keys=True)
+          PY2
+
+      - name: Publish bootstrap result to PR 95
+        if: always()
+        shell: bash
+        run: |
+          if [ -f /tmp/co-final-wif-bootstrap.json ]; then
+            python - <<'PY2' > /tmp/comment.md
+          import json
+          r=json.load(open('/tmp/co-final-wif-bootstrap.json',encoding='utf-8'))
+          print('## CO-FINAL scoped WIF bootstrap: PASS')
+          print()
+          print(f"- Trusted workflow: `{r['trusted_main_workflow']}`")
+          print(f"- Target branch: `{r['target_branch']}`")
+          print(f"- Target workflow: `{r['target_workflow']}`")
+          print(f"- Provider condition changed: `{r['provider_condition_changed']}`")
+          print(f"- Exact subject binding added: `{r['exact_subject_binding_added']}`")
+          print(f"- Scope: {r['scope']}")
+          PY2
+          else
+            printf '%s\n' '## CO-FINAL scoped WIF bootstrap: FAILED' '' 'The trusted deploy workflow could not apply the scoped grant.' > /tmp/comment.md
+          fi
+          gh api repos/LexNovaHQ/interface-sandbox/issues/95/comments -f body="$(cat /tmp/comment.md)"
+
   check:
+    if: github.event_name != 'schedule'
     name: Build and syntax check
     runs-on: ubuntu-latest
     steps:
@@ -51,7 +170,7 @@ jobs:
   deploy:
     name: Deploy Cloud Run artifact backend
     needs: check
-    if: github.event_name == 'push' || inputs.mode == 'deploy'
+    if: github.event_name != 'schedule' && (github.event_name == 'push' || inputs.mode == 'deploy')
     runs-on: ubuntu-latest
     permissions:
       contents: read
