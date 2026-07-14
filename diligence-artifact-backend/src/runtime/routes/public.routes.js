@@ -7,7 +7,7 @@ import { readJsonArtifactFromDrive } from "../services/storage/drive.service.js"
 import { sendError } from "../errors.js";
 import { CENTRAL_PHASES } from "../contracts/central-phase.contract.js";
 import { createDiligenceRun } from "../services/runs.service.js";
-import { requestPipelineAdvance } from "../services/async.service.js";
+import { requestPipelineAdvance } from "../services/async-phase13.service.js";
 import {
   readQualifiedReviewDraft,
   saveQualifiedReviewDraft,
@@ -108,7 +108,8 @@ publicRouter.put("/diligence-system/qualified-review/:run_id/sections/:section_i
     const run = await getRunRecord(req.params.run_id);
     const handoff = await readRequiredArtifact(req.params.run_id, "qualified_review_handoff");
     const saved = await attestQualifiedReviewSection({ run, handoff, section_id: req.params.section_id, request_body: req.body || {} });
-    return res.json({ ok: true, run_id: req.params.run_id, qualified_review_draft: saved.artifact, validation: saved.artifact.validation });
+    await rebuildQualifiedReviewWorkspace({ run: await getRunRecord(req.params.run_id), reviewer_values: saved.artifact.field_edits || {} });
+    return res.json(await qualifiedReviewResponse(req.params.run_id));
   } catch (error) { return sendError(res, error); }
 });
 
@@ -119,7 +120,7 @@ publicRouter.post("/diligence-system/qualified-review/:run_id/submit", async (re
     const run = await getRunRecord(req.params.run_id);
     const handoff = await readRequiredArtifact(req.params.run_id, "qualified_review_handoff");
     const draft = await readQualifiedReviewDraft(req.params.run_id);
-    const saved = await createQualifiedReviewSubmissionRequest({ run, handoff, draft, request_body: req.body || {} });
+    const saved = await createQualifiedReviewSubmissionRequest({ run, handoff, draft });
     return res.status(201).json({ ok: true, run_id: req.params.run_id, artifact_name: saved.artifact_name, version: saved.version, qualified_review_submission_request: saved.artifact });
   } catch (error) { return sendError(res, error); }
 });
