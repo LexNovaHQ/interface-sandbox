@@ -11,16 +11,22 @@ export async function readPostReviewArtifact(runId, artifactName) {
   return readJsonArtifactFromDrive(meta.drive_file_id);
 }
 
+export async function inspectPostReviewArtifact(runId, artifactName) {
+  try {
+    const meta = await getArtifactMetadata(runId, artifactName);
+    const artifact = await readJsonArtifactFromDrive(meta.drive_file_id);
+    return { exists: true, meta, artifact };
+  } catch (error) {
+    const message = String(error?.message || error);
+    if (message.startsWith(`ARTIFACT_NOT_FOUND:${runId}:${artifactName}`)) return { exists: false, meta: null, artifact: null };
+    throw error;
+  }
+}
+
 export async function assertPostReviewArtifactsAbsent(runId, artifactNames) {
   for (const artifactName of artifactNames || []) {
-    try {
-      await getArtifactMetadata(runId, artifactName);
-      throw new Error(`IMMUTABLE_POST_REVIEW_ARTIFACT_ALREADY_EXISTS:${artifactName}`);
-    } catch (error) {
-      const message = String(error?.message || error);
-      if (message === `IMMUTABLE_POST_REVIEW_ARTIFACT_ALREADY_EXISTS:${artifactName}`) throw error;
-      if (!message.startsWith(`ARTIFACT_NOT_FOUND:${runId}:${artifactName}`)) throw error;
-    }
+    const existing = await inspectPostReviewArtifact(runId, artifactName);
+    if (existing.exists) throw new Error(`IMMUTABLE_POST_REVIEW_ARTIFACT_ALREADY_EXISTS:${artifactName}`);
   }
 }
 
@@ -33,7 +39,32 @@ export async function persistImmutablePostReviewArtifact({
   lock_status = "LOCKED",
   event_type = "IMMUTABLE_POST_REVIEW_ARTIFACT_SAVED"
 }) {
-  await assertPostReviewArtifactsAbsent(run.run_id, [artifact_name]);
+  const existing = await inspectPostReviewArtifact(run.run_id, artifact_name);
+  if (existing.exists) {
+    if (!artifact.immutable_hash || existing.artifact?.immutable_hash !== artifact.immutable_hash) {
+      throw new Error(`IMMUTABLE_POST_REVIEW_ARTIFACT_CONFLICT:${artifact_name}`);
+    }
+    await logEvent({
+      run_id: run.run_id,
+      event_type: "IMMUTABLE_POST_REVIEW_ARTIFACT_REUSED",
+      actor: agent_id,
+      payload: {
+        artifact_name,
+        version: existing.meta.latest_version || existing.meta.version,
+        immutable_hash: artifact.immutable_hash
+      }
+    });
+    return {
+      ok: true,
+      reused: true,
+      artifact_name,
+      version: existing.meta.latest_version || existing.meta.version,
+      drive_file_id: existing.meta.drive_file_id,
+      drive_web_view_link: existing.meta.drive_web_view_link,
+      artifact: existing.artifact
+    };
+  }
+
   const version = await getNextArtifactVersion(run.run_id, artifact_name);
   if (version !== 1) throw new Error(`IMMUTABLE_POST_REVIEW_VERSION_INVALID:${artifact_name}:${version}`);
   const drive = await saveJsonArtifactToDrive({
@@ -70,6 +101,7 @@ export async function persistImmutablePostReviewArtifact({
   });
   return {
     ok: true,
+    reused: false,
     artifact_name,
     version,
     drive_file_id: meta.drive_file_id,
