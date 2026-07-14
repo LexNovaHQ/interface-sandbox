@@ -65,6 +65,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          git restore --source=HEAD -- diligence-artifact-backend/scripts/apply-co-final-semantic-fixes.py
           git config user.name "LexNovaHQ Automation"
           git config user.email "automation@lexnovahq.invalid"
           git add -- \
