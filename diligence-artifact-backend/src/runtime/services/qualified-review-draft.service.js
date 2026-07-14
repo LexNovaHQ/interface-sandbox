@@ -28,15 +28,31 @@ export async function attestQualifiedReviewSection({ run, handoff, section_id, r
   const section = sectionById(handoff, section_id);
   const attest = request_body.attested !== false;
   const next = structuredClone(current);
+  next.field_edits ||= {};
   next.section_attestations ||= {};
+  const confirmedProbeIds = [];
   if (!attest) delete next.section_attestations[section_id];
-  else next.section_attestations[section_id] = {
-    status: "ATTESTED",
-    confirmation_unit: "SECTION",
-    field_state_hash: section.attestation?.field_state_hash || "",
-    reviewer_identity: clean(request_body.reviewer_identity || request_body.attested_by || "public_qualified_review_ui"),
-    attested_at: nowIso()
-  };
+  else {
+    for (const probeId of section.activation_probe_field_ids || []) {
+      const field = (section.fields || []).find((row) => row.qr_field_id === probeId);
+      if (!field || next.field_edits[probeId]) continue;
+      next.field_edits[probeId] = {
+        atomic_values: structuredClone(field.proposed_value || {}),
+        limitation: "",
+        not_applicable: false,
+        review_status: "SECTION_ATTESTED_PROBE"
+      };
+      confirmedProbeIds.push(probeId);
+    }
+    next.section_attestations[section_id] = {
+      status: "ATTESTED",
+      confirmation_unit: "SECTION",
+      field_state_hash: section.attestation?.field_state_hash || "",
+      reviewer_identity: clean(request_body.reviewer_identity || request_body.attested_by || "public_qualified_review_ui"),
+      attested_at: nowIso(),
+      activation_probe_field_ids_confirmed: confirmedProbeIds
+    };
+  }
   next.revision = Number(current.revision || 0) + 1;
   next.updated_at = nowIso();
   next.validation = validateDraft({ handoff, draft: next });
