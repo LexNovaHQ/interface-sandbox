@@ -5,6 +5,7 @@ import { DOMAIN_DERIVATION_CONTRACT } from "../src/phases/03-domain-derivation/d
 import { compileDomainDerivationArtifacts } from "../src/phases/03-domain-derivation/validators/domain-derivation.validator.js";
 import { loadDomainDerivationRegistryV0 } from "../src/runtime/domain-gate/domain-derivation-registry.loader.js";
 import { loadPackageLifecycleV1, selectablePackageIds } from "../src/runtime/domain-gate/package-lifecycle.loader.js";
+import { resolvePostReviewPackageDisposition } from "../src/runtime/services/qualified-review-workspace.service.js";
 
 const lifecycle = await loadPackageLifecycleV1();
 assert.equal(lifecycle.packages["ai-governance"].lifecycle, "ACTIVE_E2E");
@@ -23,6 +24,9 @@ assert.equal(classifyPipelineError(new Error("provider timeout")), EXECUTION_OUT
 assert.equal(shouldBlockRun(EXECUTION_OUTCOMES.TECHNICAL_RETRY_REQUIRED), false);
 assert.equal(classifyPipelineError(new Error("P3_DOMAIN_DERIVATION_FORBIDDEN_INPUT_PRESENT:x")), EXECUTION_OUTCOMES.CRITICAL_FAILURE);
 assert.equal(shouldBlockRun(EXECUTION_OUTCOMES.CRITICAL_FAILURE), true);
+assert.deepEqual(resolvePostReviewPackageDisposition({ primary_domain_package: "ai-governance", primary_domain_lifecycle: "ACTIVE_E2E", primary_domain_delivery_mode: "FULL_REVIEW_READY" }), { package_id: "ai-governance", lifecycle: "ACTIVE_E2E", delivery_mode: "FULL_REVIEW_READY", mode: "FULL_REVIEW_READY" });
+assert.deepEqual(resolvePostReviewPackageDisposition({ primary_domain_package: "fintech", primary_domain_lifecycle: "ACTIVE_REPORT_ONLY", primary_domain_delivery_mode: "REPORT_ONLY" }), { package_id: "fintech", lifecycle: "ACTIVE_REPORT_ONLY", delivery_mode: "REPORT_ONLY", mode: "REPORT_ONLY" });
+assert.throws(() => resolvePostReviewPackageDisposition({ primary_domain_package: "saas", primary_domain_lifecycle: "DECLARED_NOT_INSTALLED", primary_domain_delivery_mode: "NOT_EXECUTABLE" }), /PACKAGE_LIFECYCLE_NOT_EXECUTABLE_POST_REVIEW/);
 
 const artifacts = baseArtifacts();
 const noWinner = await compileDomainDerivationArtifacts({

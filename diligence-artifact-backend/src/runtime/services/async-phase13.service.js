@@ -10,6 +10,7 @@ import { rebuildQualifiedReviewWorkspace } from "./qualified-review-workspace.se
 import { compileQualifiedReviewSubmissionRuntime } from "./qualified-review-submission-compiler.service.js";
 import { runDiligenceQaCompleteRuntime } from "./diligence-qa-complete.service.js";
 import { runAssemblyEngineRuntime } from "./assembly-engine.service.js";
+import { outcomeRecord } from "../contracts/execution-outcome.contract.js";
 
 export { cloudTasksDispatcherConfigured, enqueueReviewerWorkerTask };
 
@@ -58,6 +59,10 @@ export async function runPipelineWorkerOnce({ run_id, actor = "cloud_tasks_worke
   try {
     if (job === QR_JOB) {
       const rebuilt = await rebuildQualifiedReviewWorkspace({ run: claimed });
+      if (rebuilt.report_only === true) {
+        await completedEvent({ run_id, actor, completedPhase: job, run: rebuilt.run, dispatchedNext: false, paused: false });
+        return workerResponse(rebuilt.run, { completed_step: true, terminal: true, report_only: true });
+      }
       await completedEvent({ run_id, actor, completedPhase: job, run: rebuilt.run, dispatchedNext: false, paused: true });
       return workerResponse(rebuilt.run, { completed_step: true, paused: true });
     }
@@ -79,22 +84,21 @@ export async function runPipelineWorkerOnce({ run_id, actor = "cloud_tasks_worke
     await completedEvent({ run_id, actor, completedPhase: job, run: assembled.run, dispatchedNext: false, paused: false });
     return workerResponse(assembled.run, { completed_step: true, terminal: true });
   } catch (error) {
+    const outcome = outcomeRecord(error);
     const failed = await updateRunRecord(run_id, {
-      status: "CONTROLLED_FAILURE",
-      runner_state: "FAILED",
-      runner_last_error: error?.message || String(error),
-      runner_failed_at: new Date().toISOString()
+      status: outcome.runtime_status,
+      run_blocked: outcome.run_blocked,
+      execution_outcome: outcome.execution_outcome,
+      runner_state: outcome.run_blocked ? "FAILED" : "IDLE",
+      runner_last_error: outcome.message,
+      runner_failed_at: outcome.run_blocked ? new Date().toISOString() : null
     });
     await updateRunDashboardRow(failed);
     await logEvent({
       run_id,
-      event_type: "ASYNC_WORKER_FAILED",
+      event_type: "ASYNC_WORKER_OUTCOME",
       actor,
-      payload: {
-        phase: job,
-        central_phase: centralPhaseForJob(job),
-        error_message: error?.message || String(error)
-      }
+      payload: { phase: job, central_phase: centralPhaseForJob(job), ...outcome }
     });
     throw error;
   }
@@ -276,6 +280,7 @@ function workerResponse(run, options = {}) {
     dispatched_next: options.dispatched_next === true,
     terminal: options.terminal === true,
     paused: options.paused === true,
+    report_only: options.report_only === true,
     already_running: false,
     runner_mode: run.runner_mode || "CLOUD_TASKS_RUNNER",
     runner_state: run.runner_state || "IDLE",
