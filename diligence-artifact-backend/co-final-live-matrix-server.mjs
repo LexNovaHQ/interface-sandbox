@@ -45,7 +45,7 @@ app.post("/start/:matrixId", async (req, res) => {
   try {
     requireToken(req);
     const matrixId = safeId(req.params.matrixId);
-    const origin = `${req.protocol}://${req.get("host")}`;
+    const origin = `https://${req.get("host")}`;
     const parent = taskClient.queuePath(PROJECT_ID, REGION, CERT_QUEUE);
     const taskNames = [];
     for (const scenarioId of SCENARIOS) {
