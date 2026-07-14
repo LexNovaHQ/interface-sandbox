@@ -4,7 +4,7 @@ import yaml from "js-yaml";
 import { PIPELINE_CONTRACTS, PIPELINE_CONTRACT_STATUS } from "../src/runtime/contracts/pipeline.contract.js";
 import { INTERNAL_JOB_CONTRACT_STATUS } from "../src/runtime/contracts/internal-job.contract.js";
 import { CENTRAL_ARTIFACT_GROUPS } from "../src/runtime/contracts/artifacts.contract.js";
-import { artifactMatchesPermission, AGENT_ARTIFACT_PERMISSIONS } from "../src/runtime/contracts/artifact-permissions.contract.js";
+import { artifactMatchesPermission, WRITE_PERMISSIONS } from "../src/runtime/contracts/artifact-permissions.contract.js";
 import { loadDomainDerivationRegistryV0, listPackageKeyFiles } from "../src/runtime/domain-gate/domain-derivation-registry.loader.js";
 
 const root = resolve(process.cwd());
@@ -39,7 +39,7 @@ if (artifactGroupMisses.length) add("HIGH", "CENTRAL_ARTIFACT_GROUP_DRIFT", "Pip
 const permissionMisses = [];
 for (const [job, contract] of Object.entries(PIPELINE_CONTRACTS)) {
   const actor = contract.agent_id || contract.actor_id;
-  const permissions = AGENT_ARTIFACT_PERMISSIONS[actor]?.writes || [];
+  const permissions = WRITE_PERMISSIONS[actor] || [];
   for (const write of contract.writes || []) if (!String(write).includes("{") && !permissions.some((p) => artifactMatchesPermission(write, p))) permissionMisses.push({ job, actor, write });
 }
 evidence.pipeline.permission_misses = permissionMisses;
@@ -108,7 +108,7 @@ if (suspiciousValidators.length) add("HIGH", "NONCRITICAL_BLOCKER_RISK", "Valida
 const phase11Only = reinvestigationFiles.filter((x) => x.startsWith("src/phases/11-") || x.includes("agent_5_exposure_registry") || x.includes("agent_7"));
 evidence.blocking.reinvestigation_scope = { total_files: reinvestigationFiles.length, phase11_related: phase11Only.length, outside_phase11: reinvestigationFiles.filter((x) => !phase11Only.includes(x)) };
 
-const routeBuilderCandidates = ["src/phases/02-cartography-index/builders/phase-routing-manifest.builder.js", "src/phases/02-cartography-index/orchestrators/phase-routing-manifest.orchestrator.js"];
+const routeBuilderCandidates = ["src/phases/02-cartography-index/services/phase-routing-manifest.builder.js", "src/phases/02-cartography-index/orchestrators/phase-routing-manifest.orchestrator.js"];
 const routeFiles = routeBuilderCandidates.filter((p) => existsSync(join(root, p)));
 const routeSources = routeFiles.map((p) => text(p)).join("\n");
 const routingSignals = { reads_domain_derivation_profile: /domain_derivation_profile/.test(routeSources), emits_active_run_package_manifest: /active_run_package_manifest/.test(routeSources), centralized_authority_marker: /P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY/.test(routeSources) };
