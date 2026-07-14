@@ -1,49 +1,40 @@
 import { DOMAIN_DERIVATION_CONTRACT } from "../domain-derivation.contract.js";
 import { loadDomainDerivationRegistryV0 } from "../../../runtime/domain-gate/domain-derivation-registry.loader.js";
 import { buildPhase3BDomainDerivationManifestUpdate } from "../../../runtime/domain-gate/active-run-package-manifest.schema.js";
+import { isSelectableLifecycle } from "../../../runtime/domain-gate/package-lifecycle.loader.js";
 
 const CONTROLLED_FAILURE_STATUS = "CONTROLLED_FAILURE";
+const REINVESTIGATION_REQUIRED_STATUS = "REINVESTIGATION_REQUIRED";
 const AI_MOUNT_ONLY_STATUS = "LOCKED_FOR_PACKAGE_MOUNT_ONLY";
 const REGULATORY_CANDIDATE_STATUS = "CANDIDATE_ONLY";
 const FORBIDDEN_OUTPUT_MARKERS = Object.freeze([
-  "business_context.lane",
-  "\"lane\"",
-  "legal_advice",
-  "\"compliance_conclusion\"",
-  "enforceability_assessment",
-  "risk_conclusion",
-  "exposure_registry",
-  "ai_archetype",
-  "surface_lock",
-  "license_validity",
-  "license_requirement",
-  "applicable_regulator",
-  "regulatory_compliance_status",
-  "grievance_sufficiency",
-  "grievance_compliance_status",
-  "ombudsman_requirement",
-  "statutory_complaint_obligation"
+  "business_context.lane", "\"lane\"", "legal_advice", "\"compliance_conclusion\"",
+  "enforceability_assessment", "risk_conclusion", "exposure_registry", "ai_archetype",
+  "surface_lock", "license_validity", "license_requirement", "applicable_regulator",
+  "regulatory_compliance_status", "grievance_sufficiency", "grievance_compliance_status",
+  "ombudsman_requirement", "statutory_complaint_obligation"
 ]);
 const INDEX_ARTIFACT_NAMES = new Set([
-  "cartography_index",
-  "target_profile_source_index",
-  "domain_derivation_source_index",
-  "activity_profile_source_index",
-  "legal_cartography_index",
-  "legal_signal_derivation_profile",
-  "data_privacy_navigation_index",
-  "source_discovery_handoff",
-  "phase_routing_manifest",
+  "cartography_index", "target_profile_source_index", "domain_derivation_source_index",
+  "activity_profile_source_index", "legal_cartography_index", "legal_signal_derivation_profile",
+  "data_privacy_navigation_index", "source_discovery_handoff", "phase_routing_manifest",
   "phase_route_runtime_packet"
 ]);
 
-export async function compileDomainDerivationArtifacts({ run = {}, artifacts = {}, modelOutput = {}, registryPacket } = {}) {
+export async function compileDomainDerivationArtifacts({
+  run = {},
+  artifacts = {},
+  modelOutput = {},
+  registryPacket,
+  reinvestigationExhausted = false
+} = {}) {
   const packet = registryPacket || await loadDomainDerivationRegistryV0();
   const registry = packet.registry;
   assertDomainDerivationRuntimeArtifacts(artifacts);
   const rawProfile = modelOutput?.domain_derivation_profile || modelOutput || {};
   const normalized = normalizeProfile({ run, rawProfile, artifacts, registry });
-  const validation = validateDomainDerivationProfile(normalized, { artifacts, registry });
+  const validation = validateDomainDerivationProfile(normalized, { artifacts, registry, reinvestigationExhausted });
+  normalized.primary_domain_derivation = applyPrimaryValidationStatus(normalized.primary_domain_derivation, validation);
   const manifest = compileActiveRunPackageManifest({ run, artifacts, profile: normalized, validation });
   normalized.manifest_update = manifest.manifest_update;
   normalized.validation_summary = validation;
@@ -57,34 +48,103 @@ export async function compileDomainDerivationArtifacts({ run = {}, artifacts = {
   };
 }
 
-export function validateDomainDerivationProfile(profile = {}, { artifacts = {}, registry = {} } = {}) {
-  const failures = [];
+export function validateDomainDerivationProfile(profile = {}, {
+  artifacts = {},
+  registry = {},
+  reinvestigationExhausted = false
+} = {}) {
+  const criticalFailures = [];
+  const reinvestigationItems = [];
+  const limitations = [];
   const warnings = [];
-  if (!isPlainObject(profile)) failures.push("domain_derivation_profile must be object");
-  for (const branch of DOMAIN_DERIVATION_CONTRACT.output_contract.required_top_level_branches) if (!Object.prototype.hasOwnProperty.call(profile, branch)) failures.push(`domain_derivation_profile missing ${branch}`);
-  assertNoForbiddenMarkers(profile, failures);
-  assertDomainDerivationRuntimeArtifacts(artifacts, failures);
+
+  if (!isPlainObject(profile)) criticalFailures.push("domain_derivation_profile must be object");
+  for (const branch of DOMAIN_DERIVATION_CONTRACT.output_contract.required_top_level_branches) {
+    if (!Object.prototype.hasOwnProperty.call(profile, branch)) criticalFailures.push(`domain_derivation_profile missing ${branch}`);
+  }
+  assertNoForbiddenMarkers(profile, criticalFailures);
+  assertDomainDerivationRuntimeArtifacts(artifacts, criticalFailures);
+
   const rulesById = new Map((registry.rules || []).map((rule) => [rule.rule_id, rule]));
   const evaluatedRules = allEvaluatedRules(profile);
-  for (const row of evaluatedRules) validateEvaluatedRule(row, { rulesById, failures, warnings });
-  validateRegulatoryOverlayDerivation(profile.regulatory_overlay_derivation || {}, { artifacts, failures, warnings });
+  for (const row of evaluatedRules) {
+    validateEvaluatedRule(row, { rulesById, criticalFailures, reinvestigationItems, warnings });
+  }
+  validateRegulatoryOverlayDerivation(profile.regulatory_overlay_derivation || {}, {
+    artifacts,
+    criticalFailures,
+    reinvestigationItems,
+    limitations,
+    warnings
+  });
+
   const primary = profile.primary_domain_derivation || {};
   const aiMount = profile.ai_mount_derivation || {};
   const fusion = profile.fusion_candidate_derivation || {};
-  const lockedPrimaryRules = evaluatedRules.filter((row) => row.rule_type === "PRIMARY_DOMAIN" && row.validator_trigger_result === true && row.validator_exclude_result !== true);
-  if (lockedPrimaryRules.length > 1) failures.push(`multiple primary domain rules fired: ${lockedPrimaryRules.map((row) => row.rule_id).join(",")}`);
-  if (primary.selected_package && !String(primary.selected_package).match(/^[a-z0-9-]+$/)) failures.push("primary_domain_derivation.selected_package must be catalog-style package id");
-  if (primary.selected_package === "ai-governance" && aiMount.ai_package_mount === "AI_OVERLAY_MOUNTED") failures.push("AI primary and AI overlay cannot both apply");
-  if (aiMount.ai_package_mount === "AI_OVERLAY_MOUNTED" && primary.selected_package === "ai-governance") failures.push("AI overlay cannot mount when primary domain is ai-governance");
-  if (aiMount.ai_package_mount === "AI_OVERLAY_MOUNTED" && aiMount.status !== AI_MOUNT_ONLY_STATUS) failures.push(`AI_OVERLAY_MOUNTED status must be ${AI_MOUNT_ONLY_STATUS}`);
-  if ((fusion.candidates || []).length && aiMount.ai_package_mount !== "AI_OVERLAY_MOUNTED") failures.push("fusion candidate requires AI_OVERLAY_MOUNTED");
-  for (const candidate of fusion.candidates || []) if (candidate.fusion_owner && primary.selected_package && candidate.fusion_owner !== primary.selected_package) failures.push(`fusion owner ${candidate.fusion_owner} must equal primary package ${primary.selected_package}`);
-  const status = failures.length ? CONTROLLED_FAILURE_STATUS : (primary.status === "REVIEW_REQUIRED" ? "LOCKED_WITH_LIMITATIONS" : "LOCKED");
+  const lockedPrimaryRules = effectiveRows(evaluatedRules.filter((row) => row.rule_type === "PRIMARY_DOMAIN"));
+
+  if (lockedPrimaryRules.length === 0) reinvestigationItems.push("NO_PRIMARY_DOMAIN_RULE_FIRED");
+  if (lockedPrimaryRules.length > 1) reinvestigationItems.push(`MULTIPLE_PRIMARY_DOMAIN_RULES_FIRED:${lockedPrimaryRules.map((row) => row.rule_id).join(",")}`);
+
+  if (primary.selected_package && !String(primary.selected_package).match(/^[a-z0-9-]+$/)) {
+    criticalFailures.push("primary_domain_derivation.selected_package must be catalog-style package id");
+  }
+  if (primary.selected_package) {
+    const lifecycle = registry.package_lifecycle_by_id?.[primary.selected_package];
+    if (!isSelectableLifecycle(lifecycle)) criticalFailures.push(`PRIMARY_PACKAGE_NOT_EXECUTABLE:${primary.selected_package}`);
+  }
+  if (primary.selected_package === "ai-governance" && aiMount.ai_package_mount === "AI_OVERLAY_MOUNTED") {
+    criticalFailures.push("AI primary and AI overlay cannot both apply");
+  }
+  if (aiMount.ai_package_mount === "AI_OVERLAY_MOUNTED" && primary.selected_package === "ai-governance") {
+    criticalFailures.push("AI overlay cannot mount when primary domain is ai-governance");
+  }
+  if (aiMount.ai_package_mount === "AI_OVERLAY_MOUNTED" && aiMount.status !== AI_MOUNT_ONLY_STATUS) {
+    criticalFailures.push(`AI_OVERLAY_MOUNTED status must be ${AI_MOUNT_ONLY_STATUS}`);
+  }
+  if ((fusion.candidates || []).length && aiMount.ai_package_mount !== "AI_OVERLAY_MOUNTED") {
+    criticalFailures.push("fusion candidate requires AI_OVERLAY_MOUNTED");
+  }
+  for (const candidate of fusion.candidates || []) {
+    if (candidate.fusion_owner && primary.selected_package && candidate.fusion_owner !== primary.selected_package) {
+      criticalFailures.push(`fusion owner ${candidate.fusion_owner} must equal primary package ${primary.selected_package}`);
+    }
+  }
+
+  if (reinvestigationExhausted && reinvestigationItems.length) {
+    if (lockedPrimaryRules.length !== 1 || !primary.selected_package) {
+      criticalFailures.push("NO_EXECUTABLE_PRIMARY_PACKAGE_AFTER_REINVESTIGATION");
+    } else {
+      limitations.push(...reinvestigationItems.map((item) => `UNRESOLVED_AFTER_REINVESTIGATION:${item}`));
+      reinvestigationItems.length = 0;
+    }
+  }
+
+  const status = criticalFailures.length
+    ? CONTROLLED_FAILURE_STATUS
+    : reinvestigationItems.length
+      ? REINVESTIGATION_REQUIRED_STATUS
+      : limitations.length || primary.status === "LOCKED_WITH_LIMITATIONS"
+        ? "LOCKED_WITH_LIMITATIONS"
+        : "LOCKED";
+
   return {
     status,
-    validator: "domain-derivation.validator",
-    gates_passed: failures.length ? [] : ["SCHEMA", "REGISTRY_RULES", "SCOPED_EVIDENCE", "P2G_ROUTE_PACKET", "P2B_DOMAIN_SOURCE_INDEX", "LEGAL_INPUTS_FORBIDDEN", "PRIMARY_DOMAIN_LOCK_ONLY", "AI_PACKAGE_MOUNT_ONLY", "REGULATORY_OVERLAY_CANDIDATE_ONLY", "FUSION_DOMAIN_OWNED", "MANIFEST_COMPILABLE"],
-    failures,
+    validator: "domain-derivation.validator.v2_critical_only",
+    blocking_is_exception: true,
+    only_critical_failure_blocks: true,
+    maximum_reinvestigation_attempts: 2,
+    gates_passed: criticalFailures.length ? [] : [
+      "SCHEMA", "REGISTRY_RULES", "DETERMINISTIC_EXCLUSION", "SCOPED_EVIDENCE",
+      "P2G_ROUTE_PACKET", "P2B_DOMAIN_SOURCE_INDEX", "LEGAL_INPUTS_FORBIDDEN",
+      "PRIMARY_DOMAIN_LOCK_ONLY", "PACKAGE_LIFECYCLE_ELIGIBILITY",
+      "AI_PACKAGE_MOUNT_ONLY", "REGULATORY_OVERLAY_CANDIDATE_ONLY",
+      "FUSION_DOMAIN_OWNED", "MANIFEST_COMPILABLE"
+    ],
+    failures: criticalFailures,
+    critical_failures: criticalFailures,
+    reinvestigation_items: reinvestigationItems,
+    limitations,
     warnings
   };
 }
@@ -93,9 +153,15 @@ export function assertDomainDerivationRuntimeArtifacts(artifacts = {}, failures 
   const localFailures = failures || [];
   const allowed = new Set(DOMAIN_DERIVATION_CONTRACT.reads);
   for (const key of Object.keys(artifacts || {})) if (!allowed.has(key)) localFailures.push(`P3_DOMAIN_DERIVATION_FORBIDDEN_RUNTIME_ARTIFACT:${key}`);
-  for (const required of ["phase_routing_manifest", "phase_route_runtime_packet", "domain_derivation_source_index", "target_profile", "domain_selection_profile", "active_run_package_manifest"]) if (!Object.prototype.hasOwnProperty.call(artifacts || {}, required)) localFailures.push(`P3_DOMAIN_DERIVATION_MISSING_REQUIRED_INPUT:${required}`);
-  for (const root of DOMAIN_DERIVATION_CONTRACT.scoped_lossless_evidence_reads) if (!Object.prototype.hasOwnProperty.call(artifacts || {}, root)) localFailures.push(`P3_DOMAIN_DERIVATION_MISSING_SCOPED_LOSSLESS_ROOT:${root}`);
-  for (const forbidden of DOMAIN_DERIVATION_CONTRACT.forbidden_reads) if (Object.prototype.hasOwnProperty.call(artifacts || {}, forbidden)) localFailures.push(`P3_DOMAIN_DERIVATION_FORBIDDEN_INPUT_PRESENT:${forbidden}`);
+  for (const required of ["phase_routing_manifest", "phase_route_runtime_packet", "domain_derivation_source_index", "target_profile", "domain_selection_profile", "active_run_package_manifest"]) {
+    if (!Object.prototype.hasOwnProperty.call(artifacts || {}, required)) localFailures.push(`P3_DOMAIN_DERIVATION_MISSING_REQUIRED_INPUT:${required}`);
+  }
+  for (const root of DOMAIN_DERIVATION_CONTRACT.scoped_lossless_evidence_reads) {
+    if (!Object.prototype.hasOwnProperty.call(artifacts || {}, root)) localFailures.push(`P3_DOMAIN_DERIVATION_MISSING_SCOPED_LOSSLESS_ROOT:${root}`);
+  }
+  for (const forbidden of DOMAIN_DERIVATION_CONTRACT.forbidden_reads) {
+    if (Object.prototype.hasOwnProperty.call(artifacts || {}, forbidden)) localFailures.push(`P3_DOMAIN_DERIVATION_FORBIDDEN_INPUT_PRESENT:${forbidden}`);
+  }
   const routePacket = artifacts?.phase_route_runtime_packet || {};
   if (routePacket.routing_authority !== "P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY") localFailures.push("P3_DOMAIN_DERIVATION_PHASE2G_ROUTING_AUTHORITY_MISSING");
   if (routePacket.route_id !== DOMAIN_DERIVATION_CONTRACT.route_contract.route_id) localFailures.push(`P3_DOMAIN_DERIVATION_PHASE2G_ROUTE_ID_MISMATCH:${routePacket.route_id || "missing"}`);
@@ -110,7 +176,7 @@ function normalizeProfile({ run, rawProfile, artifacts, registry }) {
   const primaryRows = normalizeRows(rawProfile?.primary_domain_derivation?.evaluated_rules || rawProfile?.evaluated_rules || [], registry, "PRIMARY_DOMAIN");
   const aiRows = normalizeRows(rawProfile?.ai_mount_derivation?.evaluated_rules || [], registry, "AI_MOUNT");
   const fusionRows = normalizeRows(rawProfile?.fusion_candidate_derivation?.evaluated_rules || [], registry, "FUSION_CANDIDATE");
-  const primary = selectPrimary(primaryRows, rawProfile?.primary_domain_derivation || {});
+  const primary = selectPrimary(primaryRows, registry, rawProfile?.primary_domain_derivation || {});
   const aiMount = selectAiMount(aiRows, primary, rawProfile?.ai_mount_derivation || {});
   const regulatoryOverlay = selectRegulatoryOverlay(rawProfile?.regulatory_overlay_derivation || {}, artifacts);
   const fusion = selectFusion(fusionRows, primary, aiMount, rawProfile?.fusion_candidate_derivation || {});
@@ -152,46 +218,85 @@ function normalizeProfile({ run, rawProfile, artifacts, registry }) {
 
 function normalizeRows(rows, registry, expectedType) {
   const rulesById = new Map((registry.rules || []).map((rule) => [rule.rule_id, rule]));
-  return (Array.isArray(rows) ? rows : []).map((row) => {
+  const preliminary = (Array.isArray(rows) ? rows : []).map((row) => {
     const rule = rulesById.get(row?.rule_id) || {};
     const conditionBooleans = normalizeConditionBooleans(row?.condition_results || row?.conditions || {});
     return {
       rule_id: row?.rule_id || "",
       rule_type: rule.rule_type || row?.rule_type || expectedType,
       package_id: row?.package_id || rule.package_id || null,
+      package_lifecycle: rule.package_lifecycle || registry.package_lifecycle_by_id?.[rule.package_id]?.lifecycle || "",
       condition_results: row?.condition_results || row?.conditions || {},
+      condition_booleans: conditionBooleans,
       trigger_result_claimed: Boolean(row?.trigger_result ?? row?.trigger_claimed),
       exclude_result_claimed: Boolean(row?.exclude_result ?? row?.exclude_claimed),
       validator_trigger_result: rule.trigger_if ? evaluateBooleanExpression(rule.trigger_if, conditionBooleans) : false,
-      validator_exclude_result: Boolean(row?.exclude_result ?? row?.exclude_claimed),
       evidence_anchors: evidenceAnchorsForRow(row),
-      limitation_notes: Array.isArray(row?.limitation_notes) ? row.limitation_notes : []
+      limitation_notes: Array.isArray(row?.limitation_notes) ? row.limitation_notes : [],
+      rule_priority: Number(rule.priority || 0),
+      exclude_rule: rule.exclude_if
+    };
+  });
+  const triggerRows = [...preliminary];
+  return preliminary.map((row) => {
+    const exclusion = evaluateExclusion(row.exclude_rule, {
+      conditions: row.condition_booleans,
+      triggerRows
+    });
+    const { condition_booleans, exclude_rule, ...publicRow } = row;
+    return {
+      ...publicRow,
+      validator_exclude_result: exclusion.result,
+      validator_exclude_rule_valid: exclusion.valid,
+      validator_exclude_trace: exclusion.trace,
+      model_exclude_claim_ignored: true
     };
   });
 }
 
-function selectPrimary(rows, modelPrimary) {
-  const fired = rows.filter((row) => row.validator_trigger_result === true && row.validator_exclude_result !== true);
+function selectPrimary(rows, registry, modelPrimary) {
+  const fired = effectiveRows(rows.filter((row) => row.rule_type === "PRIMARY_DOMAIN"))
+    .filter((row) => isSelectableLifecycle(registry.package_lifecycle_by_id?.[row.package_id]));
   const selected = fired.length === 1 ? fired[0] : null;
+  const lifecycle = selected ? registry.package_lifecycle_by_id?.[selected.package_id] || null : null;
   return {
-    selected_package: selected?.package_id || modelPrimary.selected_package || null,
+    selected_package: selected?.package_id || null,
     status: selected ? "LOCKED" : "REVIEW_REQUIRED",
-    selected_rule_id: selected?.rule_id || modelPrimary.selected_rule_id || null,
+    selected_rule_id: selected?.rule_id || null,
+    package_lifecycle_state: lifecycle?.lifecycle || "",
+    downstream_delivery_mode: lifecycle?.downstream_delivery_mode || "",
     evaluated_rules: rows,
-    conflict_resolution: fired.length > 1 ? "REVIEW_REQUIRED_MULTIPLE_PRIMARY_RULES_FIRED" : "REGISTRY_VALIDATED",
-    final_basis: modelPrimary.final_basis || "semantic_derivation_subject_to_deterministic_registry_gate"
+    conflict_resolution: fired.length > 1
+      ? "REINVESTIGATION_REQUIRED_MULTIPLE_PRIMARY_RULES_FIRED"
+      : fired.length === 0
+        ? "REINVESTIGATION_REQUIRED_NO_PRIMARY_RULE_FIRED"
+        : "REGISTRY_VALIDATED",
+    model_selected_package_ignored: Boolean(modelPrimary.selected_package),
+    final_basis: "deterministic_registry_trigger_and_exclusion_gate"
   };
 }
 
 function selectAiMount(rows, primary, modelAi) {
-  const fired = rows.filter((row) => row.validator_trigger_result === true && row.validator_exclude_result !== true);
+  const fired = effectiveRows(rows).sort((a, b) => b.rule_priority - a.rule_priority);
   const selected = fired[0] || null;
   const aiPrimary = primary.selected_package === "ai-governance";
-  const aiPackageMount = aiPrimary ? "AI_PRIMARY" : (selected?.rule_id === "AI_OVERLAY_MOUNTED" ? "AI_OVERLAY_MOUNTED" : (selected?.rule_id === "AI_CANDIDATE_ONLY" ? "AI_CANDIDATE_ONLY" : (modelAi.ai_package_mount || "AI_NOT_VISIBLE")));
+  const aiPackageMount = aiPrimary
+    ? "AI_PRIMARY"
+    : selected?.rule_id === "AI_OVERLAY_MOUNTED"
+      ? "AI_OVERLAY_MOUNTED"
+      : selected?.rule_id === "AI_CANDIDATE_ONLY"
+        ? "AI_CANDIDATE_ONLY"
+        : "AI_NOT_VISIBLE";
   return {
     ai_package_mount: aiPackageMount,
-    status: aiPrimary ? "LOCKED" : (aiPackageMount === "AI_OVERLAY_MOUNTED" ? AI_MOUNT_ONLY_STATUS : (aiPackageMount === "AI_CANDIDATE_ONLY" ? "CANDIDATE_ONLY" : "NOT_VISIBLE")),
-    selected_rule_id: aiPrimary ? "PRIMARY_DOMAIN_AI_GOVERNANCE" : (selected?.rule_id || modelAi.selected_rule_id || null),
+    status: aiPrimary
+      ? "LOCKED"
+      : aiPackageMount === "AI_OVERLAY_MOUNTED"
+        ? AI_MOUNT_ONLY_STATUS
+        : aiPackageMount === "AI_CANDIDATE_ONLY"
+          ? "CANDIDATE_ONLY"
+          : "NOT_VISIBLE",
+    selected_rule_id: aiPrimary ? "PRIMARY_DOMAIN_AI_GOVERNANCE" : (selected?.rule_id || null),
     overlay_package_id: aiPrimary ? null : (selected?.package_id || null),
     package_mount_lock_status: aiPackageMount === "AI_OVERLAY_MOUNTED" ? AI_MOUNT_ONLY_STATUS : null,
     activity_lock_status: "DEFERRED_TO_PHASE_5",
@@ -199,7 +304,8 @@ function selectAiMount(rows, primary, modelAi) {
     archetype_lock_deferred_to_phase_5: true,
     surface_classification_deferred_to_phase_5: true,
     evaluated_rules: rows,
-    final_basis: modelAi.final_basis || "semantic_ai_mount_derivation_subject_to_registry_gate"
+    model_ai_mount_ignored: Boolean(modelAi.ai_package_mount || modelAi.selected_rule_id),
+    final_basis: "deterministic_registry_trigger_and_exclusion_gate"
   };
 }
 
@@ -221,17 +327,22 @@ function selectRegulatoryOverlay(modelRegulatory = {}, artifacts = {}) {
     candidates,
     legal_applicability_status: "NOT_DETERMINED_IN_PHASE_3B",
     compliance_conclusion_forbidden: true,
-    final_basis: modelRegulatory.final_basis || "regulatory_overlay_candidates_are_catalog_gated_and_deferred_to_later_review"
+    final_basis: "catalog_gated_candidate_context_deferred_downstream"
   };
 }
 
 function selectFusion(rows, primary, aiMount, modelFusion) {
-  const fired = rows.filter((row) => row.validator_trigger_result === true && row.validator_exclude_result !== true);
+  const fired = effectiveRows(rows);
   const allowed = primary.selected_package && primary.selected_package !== "ai-governance" && aiMount.ai_package_mount === "AI_OVERLAY_MOUNTED";
   return {
     status: allowed && fired.length ? "CANDIDATE_ONLY" : "NOT_VISIBLE",
     evaluated_rules: rows,
-    candidates: allowed ? fired.map((row) => ({ fusion_owner: primary.selected_package, rule_id: row.rule_id, candidate_basis: "domain_owned_ai_fusion_candidate", deferred_to: "PHASE_5_ACTIVITY_PROFILE_AND_PHASE_9_EXPOSURE_PROFILE" })) : [],
+    candidates: allowed ? fired.map((row) => ({
+      fusion_owner: primary.selected_package,
+      rule_id: row.rule_id,
+      candidate_basis: "domain_owned_ai_fusion_candidate",
+      deferred_to: "PHASE_5_ACTIVITY_PROFILE_AND_PHASE_9_EXPOSURE_PROFILE"
+    })) : [],
     final_basis: modelFusion.final_basis || "fusion_candidates_deferred_downstream"
   };
 }
@@ -245,38 +356,102 @@ function compileActiveRunPackageManifest({ run, artifacts, profile, validation }
   });
 }
 
-function validateEvaluatedRule(row, { rulesById, failures, warnings }) {
-  if (!row.rule_id || !rulesById.has(row.rule_id)) { failures.push(`unknown evaluated rule_id: ${row.rule_id || "missing"}`); return; }
+function validateEvaluatedRule(row, { rulesById, criticalFailures, reinvestigationItems, warnings }) {
+  if (!row.rule_id || !rulesById.has(row.rule_id)) {
+    criticalFailures.push(`unknown evaluated rule_id: ${row.rule_id || "missing"}`);
+    return;
+  }
   const rule = rulesById.get(row.rule_id);
-  if (row.rule_type !== rule.rule_type) failures.push(`${row.rule_id} rule_type mismatch`);
+  if (row.rule_type !== rule.rule_type) criticalFailures.push(`${row.rule_id} rule_type mismatch`);
+  if (row.validator_exclude_rule_valid !== true) criticalFailures.push(`${row.rule_id} exclude_if machine grammar invalid`);
   const conditionRefs = [...new Set(String(rule.trigger_if || "").match(/\bC\d+\b/g) || [])];
   const conditionBooleans = normalizeConditionBooleans(row.condition_results || {});
-  for (const ref of conditionRefs) if (!(ref in conditionBooleans)) warnings.push(`${row.rule_id} missing condition result ${ref}`);
-  if (row.validator_trigger_result) {
+  for (const ref of conditionRefs) if (!(ref in conditionBooleans)) reinvestigationItems.push(`${row.rule_id}:MISSING_CONDITION_RESULT:${ref}`);
+  if (row.validator_trigger_result && !row.validator_exclude_result) {
     const anchors = evidenceAnchorsForRow(row);
-    if (!anchors.length) failures.push(`${row.rule_id} fired without evidence anchors`);
-    assertAnchorsAreScopedLossless(anchors, failures, `${row.rule_id}`);
+    if (!anchors.length) reinvestigationItems.push(`${row.rule_id}:MISSING_EVIDENCE_ANCHOR`);
+    assertAnchorsAreScopedLossless(anchors, criticalFailures, `${row.rule_id}`);
   }
+  if (row.exclude_result_claimed !== row.validator_exclude_result) warnings.push(`${row.rule_id}:MODEL_EXCLUDE_CLAIM_OVERRIDDEN_BY_BACKEND`);
 }
 
-function validateRegulatoryOverlayDerivation(regulatory = {}, { artifacts = {}, failures, warnings }) {
-  if (!isPlainObject(regulatory)) { failures.push("regulatory_overlay_derivation must be object"); return; }
+function validateRegulatoryOverlayDerivation(regulatory = {}, {
+  artifacts = {},
+  criticalFailures,
+  reinvestigationItems,
+  limitations,
+  warnings
+}) {
+  if (!isPlainObject(regulatory)) {
+    criticalFailures.push("regulatory_overlay_derivation must be object");
+    return;
+  }
   const allowedStatus = new Set(DOMAIN_DERIVATION_CONTRACT.output_contract.regulatory_overlay_status_values || ["NOT_VISIBLE", "CANDIDATE_ONLY", "REVIEW_REQUIRED"]);
-  if (!allowedStatus.has(regulatory.status || "NOT_VISIBLE")) failures.push(`regulatory_overlay_derivation.status is not allowed: ${regulatory.status || "missing"}`);
+  if (!allowedStatus.has(regulatory.status || "NOT_VISIBLE")) criticalFailures.push(`regulatory_overlay_derivation.status is not allowed: ${regulatory.status || "missing"}`);
   const catalogOverlays = availableRegulatoryOverlayIds(artifacts);
   const candidates = Array.isArray(regulatory.candidates) ? regulatory.candidates : [];
-  if (candidates.length && regulatory.status === "NOT_VISIBLE") failures.push("regulatory overlay candidates require CANDIDATE_ONLY or REVIEW_REQUIRED status");
+  if (candidates.length && regulatory.status === "NOT_VISIBLE") criticalFailures.push("regulatory overlay candidates require CANDIDATE_ONLY or REVIEW_REQUIRED status");
   for (const [index, candidate] of candidates.entries()) {
-    if (!candidate.overlay_id) failures.push(`regulatory_overlay_derivation.candidates[${index}] missing overlay_id`);
-    if (catalogOverlays.size && candidate.overlay_id && !catalogOverlays.has(candidate.overlay_id)) failures.push(`regulatory overlay ${candidate.overlay_id} not present in package catalog`);
-    if (candidate.status && !allowedStatus.has(candidate.status)) failures.push(`regulatory overlay candidate ${candidate.overlay_id || index} has invalid status ${candidate.status}`);
-    if (candidate.legal_applicability_status !== "NOT_DETERMINED_IN_PHASE_3B") failures.push(`regulatory overlay candidate ${candidate.overlay_id || index} must not determine legal applicability`);
-    if (candidate.compliance_conclusion_forbidden !== true) failures.push(`regulatory overlay candidate ${candidate.overlay_id || index} must forbid compliance conclusion`);
+    if (!candidate.overlay_id) criticalFailures.push(`regulatory_overlay_derivation.candidates[${index}] missing overlay_id`);
+    if (catalogOverlays.size && candidate.overlay_id && !catalogOverlays.has(candidate.overlay_id)) criticalFailures.push(`regulatory overlay ${candidate.overlay_id} not present in package catalog`);
+    if (candidate.status && !allowedStatus.has(candidate.status)) criticalFailures.push(`regulatory overlay candidate ${candidate.overlay_id || index} has invalid status ${candidate.status}`);
+    if (candidate.legal_applicability_status !== "NOT_DETERMINED_IN_PHASE_3B") criticalFailures.push(`regulatory overlay candidate ${candidate.overlay_id || index} must not determine legal applicability`);
+    if (candidate.compliance_conclusion_forbidden !== true) criticalFailures.push(`regulatory overlay candidate ${candidate.overlay_id || index} must forbid compliance conclusion`);
     const anchors = evidenceAnchorsForRow(candidate);
-    if (!anchors.length) failures.push(`regulatory overlay candidate ${candidate.overlay_id || index} missing scoped lossless evidence anchors`);
-    assertAnchorsAreScopedLossless(anchors, failures, `regulatory_overlay:${candidate.overlay_id || index}`);
+    if (!anchors.length) limitations.push(`REGULATORY_OVERLAY_WITHOUT_VISIBLE_ANCHOR:${candidate.overlay_id || index}`);
+    assertAnchorsAreScopedLossless(anchors, criticalFailures, `regulatory_overlay:${candidate.overlay_id || index}`);
   }
   if (!catalogOverlays.size) warnings.push("active_run_package_manifest package catalog did not expose regulatory_overlays; catalog membership was not checked");
+}
+
+function evaluateExclusion(node, { conditions, triggerRows }, path = "exclude_if") {
+  if (!node || typeof node !== "object" || Array.isArray(node)) return { result: false, valid: false, trace: [`${path}:INVALID`] };
+  if (Object.prototype.hasOwnProperty.call(node, "literal")) return { result: Boolean(node.literal), valid: typeof node.literal === "boolean", trace: [`${path}:literal=${Boolean(node.literal)}`] };
+  if (Object.prototype.hasOwnProperty.call(node, "condition")) {
+    const id = String(node.condition || "");
+    return { result: Boolean(conditions[id]), valid: Boolean(id), trace: [`${path}:condition:${id}=${Boolean(conditions[id])}`] };
+  }
+  if (Object.prototype.hasOwnProperty.call(node, "rule_fired")) {
+    const id = String(node.rule_fired || "");
+    const result = triggerRows.some((row) => row.rule_id === id && row.validator_trigger_result === true);
+    return { result, valid: Boolean(id), trace: [`${path}:rule_fired:${id}=${result}`] };
+  }
+  if (Object.prototype.hasOwnProperty.call(node, "rule_fired_any")) {
+    const ids = Array.isArray(node.rule_fired_any) ? node.rule_fired_any.map(String) : [];
+    const result = triggerRows.some((row) => ids.includes(row.rule_id) && row.validator_trigger_result === true);
+    return { result, valid: ids.length > 0, trace: [`${path}:rule_fired_any:${ids.join(",")}=${result}`] };
+  }
+  if (Object.prototype.hasOwnProperty.call(node, "rule_fired_any_type")) {
+    const type = String(node.rule_fired_any_type || "");
+    const result = triggerRows.some((row) => row.rule_type === type && row.validator_trigger_result === true);
+    return { result, valid: Boolean(type), trace: [`${path}:rule_fired_any_type:${type}=${result}`] };
+  }
+  if (Object.prototype.hasOwnProperty.call(node, "not")) {
+    const child = evaluateExclusion(node.not, { conditions, triggerRows }, `${path}.not`);
+    return { result: !child.result, valid: child.valid, trace: child.trace };
+  }
+  for (const operator of ["any", "all"]) {
+    if (Object.prototype.hasOwnProperty.call(node, operator)) {
+      const children = Array.isArray(node[operator]) ? node[operator] : [];
+      const evaluated = children.map((child, index) => evaluateExclusion(child, { conditions, triggerRows }, `${path}.${operator}[${index}]`));
+      return {
+        result: operator === "any" ? evaluated.some((item) => item.result) : evaluated.every((item) => item.result),
+        valid: children.length > 0 && evaluated.every((item) => item.valid),
+        trace: evaluated.flatMap((item) => item.trace)
+      };
+    }
+  }
+  return { result: false, valid: false, trace: [`${path}:UNKNOWN_OPERATOR`] };
+}
+
+function applyPrimaryValidationStatus(primary = {}, validation = {}) {
+  if (validation.status === "LOCKED") return { ...primary, status: primary.selected_package ? "LOCKED" : "REVIEW_REQUIRED" };
+  if (validation.status === "LOCKED_WITH_LIMITATIONS") return { ...primary, status: primary.selected_package ? "LOCKED_WITH_LIMITATIONS" : "REVIEW_REQUIRED" };
+  return { ...primary, status: "REVIEW_REQUIRED" };
+}
+
+function effectiveRows(rows = []) {
+  return rows.filter((row) => row.validator_trigger_result === true && row.validator_exclude_result !== true);
 }
 
 function buildSourceEvidenceLedger(artifacts, rows, regulatoryCandidates = []) {
@@ -303,10 +478,32 @@ function availableRegulatoryOverlayIds(artifacts = {}) {
   return new Set(Array.isArray(overlays) ? overlays.filter(Boolean) : []);
 }
 
-function allEvaluatedRules(profile = {}) { return [...(profile.primary_domain_derivation?.evaluated_rules || []), ...(profile.ai_mount_derivation?.evaluated_rules || []), ...(profile.fusion_candidate_derivation?.evaluated_rules || [])]; }
-function evidenceAnchorsForRow(row = {}) { const anchors = row.evidence_anchors || row.evidence_basis || row.source_evidence || []; return Array.isArray(anchors) ? anchors : []; }
-function normalizeConditionBooleans(value = {}) { return Object.fromEntries(Object.entries(value || {}).map(([key, item]) => [key, Boolean(typeof item === "object" && item !== null ? (item.value ?? item.satisfied ?? item.present ?? item.result) : item)])); }
-function evaluateBooleanExpression(expr = "", vars = {}) { const normalized = String(expr).replace(/\bAND\b/g, "&&").replace(/\bOR\b/g, "||").replace(/\bNOT\b/g, "!").replace(/\bC\d+\b/g, (name) => (vars[name] ? "true" : "false")); if (!/^[\s()!&|truefals]+$/.test(normalized)) return false; try { return Boolean(Function(`"use strict"; return (${normalized});`)()); } catch { return false; } }
+function allEvaluatedRules(profile = {}) {
+  return [
+    ...(profile.primary_domain_derivation?.evaluated_rules || []),
+    ...(profile.ai_mount_derivation?.evaluated_rules || []),
+    ...(profile.fusion_candidate_derivation?.evaluated_rules || [])
+  ];
+}
+function evidenceAnchorsForRow(row = {}) {
+  const anchors = row.evidence_anchors || row.evidence_basis || row.source_evidence || [];
+  return Array.isArray(anchors) ? anchors : [];
+}
+function normalizeConditionBooleans(value = {}) {
+  return Object.fromEntries(Object.entries(value || {}).map(([key, item]) => [
+    key,
+    Boolean(typeof item === "object" && item !== null ? (item.value ?? item.satisfied ?? item.present ?? item.result) : item)
+  ]));
+}
+function evaluateBooleanExpression(expr = "", vars = {}) {
+  const normalized = String(expr)
+    .replace(/\bAND\b/g, "&&")
+    .replace(/\bOR\b/g, "||")
+    .replace(/\bNOT\b/g, "!")
+    .replace(/\bC\d+\b/g, (name) => (vars[name] ? "true" : "false"));
+  if (!/^[\s()!&|truefals]+$/.test(normalized)) return false;
+  try { return Boolean(Function(`"use strict"; return (${normalized});`)()); } catch { return false; }
+}
 function assertNoForbiddenMarkers(value, failures) {
   const text = JSON.stringify(value || {});
   for (const marker of FORBIDDEN_OUTPUT_MARKERS) {
@@ -315,5 +512,9 @@ function assertNoForbiddenMarkers(value, failures) {
     if (re.test(text)) failures.push(`forbidden domain derivation output marker present: ${marker}`);
   }
 }
-function escapeForbiddenMarker(v) { return String(v).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
-function isPlainObject(value) { return Boolean(value && typeof value === "object" && !Array.isArray(value)); }
+function escapeForbiddenMarker(v) {
+  return String(v).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+function isPlainObject(value) {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
