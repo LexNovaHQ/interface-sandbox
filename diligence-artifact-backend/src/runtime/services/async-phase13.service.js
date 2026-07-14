@@ -9,6 +9,7 @@ import { updateRunDashboardRow } from "./storage/sheets.service.js";
 import { rebuildQualifiedReviewWorkspace } from "./qualified-review-workspace.service.js";
 import { compileQualifiedReviewSubmissionRuntime } from "./qualified-review-submission-compiler.service.js";
 import { runDiligenceQaCompleteRuntime } from "./diligence-qa-complete.service.js";
+import { runAssemblyEngineRuntime } from "./assembly-engine.service.js";
 
 export { cloudTasksDispatcherConfigured, enqueueReviewerWorkerTask };
 
@@ -17,11 +18,17 @@ const QR_PAUSE = "AWAITING_QUALIFIED_REVIEW";
 const SUBMISSION_JOB = "QUALIFIED_REVIEW_SUBMISSION";
 const QA_JOB = "DILIGENCE_QA_COMPLETE";
 const ASSEMBLY_PAUSE = "AWAITING_ASSEMBLY";
-const INTERCEPTED_JOBS = new Set([QR_JOB, SUBMISSION_JOB, QA_JOB]);
+const ASSEMBLY_JOB = "ASSEMBLY_ENGINE";
+const INTERCEPTED_JOBS = new Set([QR_JOB, SUBMISSION_JOB, QA_JOB, ASSEMBLY_JOB]);
 
 export async function requestPipelineAdvance(input = {}) {
   const run = await getRunRecord(input.run_id);
-  if (isPaused(run)) return asyncResponse(run, { paused: true });
+  if (isAssemblyPaused(run)) {
+    if (!assemblyAuthorizationRequested(input)) return asyncResponse(run, { paused: true });
+    const authorized = await authorizeAssembly({ run, input });
+    return requestLegacyPipelineAdvance({ ...input, run_id: authorized.run_id, auto_continue: false });
+  }
+  if (isQualifiedReviewPaused(run)) return asyncResponse(run, { paused: true });
   return requestLegacyPipelineAdvance(input);
 }
 
@@ -62,9 +69,15 @@ export async function runPipelineWorkerOnce({ run_id, actor = "cloud_tasks_worke
       return workerResponse(dispatch.run, { completed_step: true, dispatched_next: dispatch.dispatched });
     }
 
-    const completed = await runDiligenceQaCompleteRuntime({ run: claimed });
-    await completedEvent({ run_id, actor, completedPhase: job, run: completed.run, dispatchedNext: false, paused: true });
-    return workerResponse(completed.run, { completed_step: true, paused: true });
+    if (job === QA_JOB) {
+      const completed = await runDiligenceQaCompleteRuntime({ run: claimed });
+      await completedEvent({ run_id, actor, completedPhase: job, run: completed.run, dispatchedNext: false, paused: true });
+      return workerResponse(completed.run, { completed_step: true, paused: true });
+    }
+
+    const assembled = await runAssemblyEngineRuntime({ run: claimed });
+    await completedEvent({ run_id, actor, completedPhase: job, run: assembled.run, dispatchedNext: false, paused: false });
+    return workerResponse(assembled.run, { completed_step: true, terminal: true });
   } catch (error) {
     const failed = await updateRunRecord(run_id, {
       status: "CONTROLLED_FAILURE",
@@ -85,6 +98,39 @@ export async function runPipelineWorkerOnce({ run_id, actor = "cloud_tasks_worke
     });
     throw error;
   }
+}
+
+async function authorizeAssembly({ run, input }) {
+  if (run.diligence_qa_complete !== true) throw new Error("ASSEMBLY_AUTHORIZATION_DILIGENCE_QA_INCOMPLETE");
+  if (run.assembly_complete === true) throw new Error("ASSEMBLY_ALREADY_COMPLETE");
+  const authorizedAt = new Date().toISOString();
+  const updated = await updateRunRecord(run.run_id, {
+    current_phase: ASSEMBLY_JOB,
+    status: "ASSEMBLY_REQUESTED",
+    central_phase: "ASSEMBLY_ENGINE",
+    central_phase_label: "Assembly Engine",
+    active_internal_job: ASSEMBLY_JOB,
+    runner_state: "IDLE",
+    runner_auto_continue: false,
+    runner_active_phase: ASSEMBLY_JOB,
+    assembly_authorized: true,
+    assembly_authorized_at: authorizedAt,
+    assembly_authorized_by: String(input.authorized_by || input.actor || "operator")
+  });
+  await updateRunDashboardRow(updated);
+  await logEvent({
+    run_id: run.run_id,
+    event_type: "ASSEMBLY_ENGINE_AUTHORIZED",
+    actor: String(input.authorized_by || input.actor || "operator"),
+    payload: {
+      previous_phase: ASSEMBLY_PAUSE,
+      current_phase: ASSEMBLY_JOB,
+      authorized_at: authorizedAt,
+      review_ready_draft_only: true,
+      local_counsel_review_required: true
+    }
+  });
+  return updated;
 }
 
 async function claimPostReviewJob({ run, job }) {
@@ -159,12 +205,24 @@ async function completedEvent({ run_id, actor, completedPhase, run, dispatchedNe
   });
 }
 
+function assemblyAuthorizationRequested(input = {}) {
+  return input.authorize_assembly === true || input.action === "AUTHORIZE_ASSEMBLY";
+}
+
+function isQualifiedReviewPaused(run = {}) {
+  return run.current_phase === QR_PAUSE || run.status === QR_PAUSE;
+}
+
+function isAssemblyPaused(run = {}) {
+  return run.current_phase === ASSEMBLY_PAUSE || run.status === ASSEMBLY_PAUSE;
+}
+
 function isPaused(run = {}) {
-  return [QR_PAUSE, ASSEMBLY_PAUSE].includes(run.current_phase) || [QR_PAUSE, ASSEMBLY_PAUSE].includes(run.status);
+  return isQualifiedReviewPaused(run) || isAssemblyPaused(run);
 }
 
 async function markPausedIdle(run) {
-  const qrPaused = run.current_phase === QR_PAUSE || run.status === QR_PAUSE;
+  const qrPaused = isQualifiedReviewPaused(run);
   const phase = qrPaused ? QR_PAUSE : ASSEMBLY_PAUSE;
   const updated = await updateRunRecord(run.run_id, {
     current_phase: phase,
@@ -183,7 +241,8 @@ async function markPausedIdle(run) {
 function centralPhaseForJob(job) {
   if (job === QR_JOB) return "QUALIFIED_REVIEW";
   if (job === SUBMISSION_JOB) return "QUALIFIED_REVIEW_SUBMISSION";
-  return "DILIGENCE_QA_COMPLETE";
+  if (job === QA_JOB) return "DILIGENCE_QA_COMPLETE";
+  return "ASSEMBLY_ENGINE";
 }
 
 function asyncResponse(run, options = {}) {
@@ -215,7 +274,7 @@ function workerResponse(run, options = {}) {
     central_phase_label: run.central_phase_label || "",
     completed_step: options.completed_step === true,
     dispatched_next: options.dispatched_next === true,
-    terminal: false,
+    terminal: options.terminal === true,
     paused: options.paused === true,
     already_running: false,
     runner_mode: run.runner_mode || "CLOUD_TASKS_RUNNER",
