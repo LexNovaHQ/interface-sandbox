@@ -1,6 +1,9 @@
 name: CO-FINAL Matrix Launcher f144
 
 on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/co-final-launch-f144.yml"]
   schedule:
     - cron: "*/5 * * * *"
   workflow_dispatch:
