@@ -20,7 +20,8 @@ export function runDiligenceQaComplete({
   validateDocuments({ authority, document_activation_manifest, errors, warnings });
   validateReviewReadyBoundary({ qualified_review_submission, document_activation_manifest, errors });
 
-  const status = errors.length ? "CONTROLLED_FAILURE" : warnings.length ? "COMPLETE_WITH_WARNINGS" : "COMPLETE";
+  const uniqueWarnings = unique(warnings);
+  const status = errors.length ? "CONTROLLED_FAILURE" : uniqueWarnings.length ? "COMPLETE_WITH_WARNINGS" : "COMPLETE";
   const receiptBody = {
     artifact_type: "diligence_qa_completion_receipt",
     artifact_version: "phase15_diligence_qa_completion_receipt.v1",
@@ -46,11 +47,11 @@ export function runDiligenceQaComplete({
       active_document_count: document_activation_manifest.counts?.active_document_count || 0,
       suppressed_document_count: document_activation_manifest.counts?.suppressed_document_count || 0,
       active_placeholder_count: document_activation_manifest.counts?.active_placeholder_count || 0,
-      warning_count: warnings.length,
+      warning_count: uniqueWarnings.length,
       error_count: errors.length
     },
     errors,
-    warnings: unique(warnings),
+    warnings: uniqueWarnings,
     review_ready_boundary: {
       legal_architect_not_law_firm: true,
       review_ready_draft_only: true,
@@ -112,6 +113,7 @@ function validateFinalValues({ qr_final_value_ledger, errors, warnings }) {
       if (!hasMaterialValue(value)) errors.push(`FINAL_ATOMIC_VALUE_MISSING:${field.qr_field_id}:${atomicKey}`);
       const source = field.atomic_sources?.[atomicKey] || "";
       if (!source.startsWith("REVIEWER_")) errors.push(`FINAL_ATOMIC_VALUE_NOT_REVIEWER_ATTESTED:${field.qr_field_id}:${atomicKey}`);
+      if (source.includes("UNRESOLVED")) errors.push(`FINAL_ATOMIC_VALUE_SOURCE_UNRESOLVED:${field.qr_field_id}:${atomicKey}`);
       if (source === "REVIEWER_ATTESTED_MARKET_BASED") warnings.push(`MARKET_BASED_VALUE_ATTESTED:${field.qr_field_id}:${atomicKey}`);
     }
   }
@@ -127,23 +129,41 @@ function validateFinalValues({ qr_final_value_ledger, errors, warnings }) {
 function validateDocuments({ authority, document_activation_manifest, errors, warnings }) {
   const templates = authority.template_manifest?.documents || [];
   const templateById = new Map(templates.map((document) => [document.document_id, document]));
+  const injectionDocuments = authority.injection_map?.documents || [];
+  const injectionById = new Map(injectionDocuments.map((document) => [document.document_id, document]));
+  const injectionValidationActive = injectionDocuments.length > 0;
   const documents = document_activation_manifest.documents || [];
   if (documents.length !== templates.length) errors.push(`DOCUMENT_MANIFEST_TEMPLATE_COUNT_MISMATCH:${documents.length}:${templates.length}`);
+  if (injectionValidationActive && injectionDocuments.length !== templates.length) errors.push(`INJECTION_MAP_TEMPLATE_COUNT_MISMATCH:${injectionDocuments.length}:${templates.length}`);
   const seen = new Set();
   for (const document of documents) {
     if (!document.document_id) errors.push("DOCUMENT_ID_MISSING");
     else if (seen.has(document.document_id)) errors.push(`DOCUMENT_ID_DUPLICATE:${document.document_id}`);
     else seen.add(document.document_id);
     const template = templateById.get(document.document_id);
+    const injection = injectionById.get(document.document_id);
     if (!template) errors.push(`DOCUMENT_TEMPLATE_UNKNOWN:${document.document_id || "missing"}`);
+    if (template && document.template_path !== template.template_path) errors.push(`DOCUMENT_TEMPLATE_PATH_MISMATCH:${document.document_id}`);
+    if (template && String(document.template_version || "") !== String(template.template_version || "")) errors.push(`DOCUMENT_TEMPLATE_VERSION_MISMATCH:${document.document_id}`);
+    if (template && String(document.lane || "") !== String(template.lane || "")) errors.push(`DOCUMENT_TEMPLATE_LANE_MISMATCH:${document.document_id}`);
+    if (injectionValidationActive && !injection) errors.push(`DOCUMENT_INJECTION_MAP_ENTRY_MISSING:${document.document_id || "missing"}`);
     if (!document.template_path) errors.push(`DOCUMENT_TEMPLATE_PATH_MISSING:${document.document_id || "missing"}`);
     if (document.review_ready_template !== true || document.requires_local_counsel_review !== true) errors.push(`DOCUMENT_REVIEW_READY_BOUNDARY_INVALID:${document.document_id || "missing"}`);
     if (!["ACTIVE", "SUPPRESSED"].includes(document.status)) errors.push(`DOCUMENT_STATUS_INVALID:${document.document_id || "missing"}:${document.status || "missing"}`);
     if (document.status === "ACTIVE") {
       if (Number(document.unresolved_qr_placeholder_count || 0) !== 0) errors.push(`ACTIVE_DOCUMENT_UNRESOLVED_QR_PLACEHOLDER:${document.document_id}`);
+      const manifestTokens = new Set([
+        ...(document.placeholder_bindings || []).map((binding) => binding.token),
+        ...(document.action_tokens || []).map((binding) => binding.token)
+      ].filter(Boolean));
       for (const binding of document.placeholder_bindings || []) {
         if (!binding.token || !String(binding.token).startsWith("{{QR.")) errors.push(`ACTIVE_DOCUMENT_QR_TOKEN_INVALID:${document.document_id}`);
         if (!hasMaterialValue(binding.value)) errors.push(`ACTIVE_DOCUMENT_QR_VALUE_MISSING:${document.document_id}:${binding.token || "missing"}`);
+      }
+      if (injection) {
+        for (const requiredToken of requiredQrTokens(injection)) {
+          if (!manifestTokens.has(requiredToken)) errors.push(`ACTIVE_DOCUMENT_REQUIRED_QR_TOKEN_MISSING:${document.document_id}:${requiredToken}`);
+        }
       }
       if (!(document.placeholder_bindings || []).length && !(document.clause_actions || []).length && document.blank_operational_instrument_only !== true && document.inherit_only !== true) warnings.push(`ACTIVE_DOCUMENT_HAS_NO_DIRECT_QR_BINDINGS:${document.document_id}`);
     }
@@ -164,6 +184,25 @@ function validateReviewReadyBoundary({ qualified_review_submission, document_act
   }
 }
 
+function requiredQrTokens(injectionDocument) {
+  const tokens = [];
+  for (const binding of injectionDocument.bindings || []) {
+    collectQrTokens(binding.placeholders || {}, tokens);
+    collectQrTokens(binding.action_token, tokens);
+  }
+  return unique(tokens);
+}
+function collectQrTokens(value, output) {
+  if (typeof value === "string") {
+    if (value.startsWith("{{QR.")) output.push(value);
+    return;
+  }
+  if (Array.isArray(value)) {
+    for (const child of value) collectQrTokens(child, output);
+    return;
+  }
+  if (value && typeof value === "object") for (const child of Object.values(value)) collectQrTokens(child, output);
+}
 function recomputeHash(artifact) { const clone = structuredClone(artifact || {}); delete clone.immutable_hash; return hashImmutableArtifact(clone); }
 function withImmutableHash(body) { return freezeImmutableArtifact({ ...body, immutable_hash: hashImmutableArtifact(body) }); }
 function unique(values) { return [...new Set(values)]; }
