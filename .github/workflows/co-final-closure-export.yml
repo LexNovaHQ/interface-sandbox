@@ -1,0 +1,66 @@
+name: CO-FINAL Closure Export
+
+on:
+  pull_request:
+    branches:
+      - domain-gate-v0-preflight
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: co-final-closure-export-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  export-current-branch-and-environment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout authorized branch
+        uses: actions/checkout@v4
+        with:
+          ref: co-e2e-01-03-critical-authority
+          fetch-depth: 0
+
+      - name: Build non-secret environment inventory
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo "head_sha=$(git rev-parse HEAD)"
+            echo "branch=$(git branch --show-current)"
+            echo "root_package_json_present=$([ -f package.json ] && echo true || echo false)"
+            echo "backend_package_json_present=$([ -f diligence-artifact-backend/package.json ] && echo true || echo false)"
+            echo "root_index_html_present=$([ -f index.html ] && echo true || echo false)"
+            echo "backend_public_present=$([ -d diligence-artifact-backend/public ] && echo true || echo false)"
+            echo "wrangler_config_count=$(find . -maxdepth 4 -type f \( -name 'wrangler.toml' -o -name 'wrangler.json' -o -name 'wrangler.jsonc' \) | wc -l | tr -d ' ')"
+            echo "pages_config_count=$(find . -maxdepth 4 -type f -iname '*pages*' | wc -l | tr -d ' ')"
+            echo "workflow_count=$(find .github/workflows -maxdepth 1 -type f 2>/dev/null | wc -l | tr -d ' ')"
+            echo "gcp_service_account_secret_present=${{ secrets.GCP_SERVICE_ACCOUNT_KEY != '' }}"
+            echo "gcp_credentials_secret_present=${{ secrets.GCP_CREDENTIALS != '' }}"
+            echo "google_credentials_secret_present=${{ secrets.GOOGLE_CREDENTIALS != '' }}"
+            echo "gcp_wif_provider_secret_present=${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER != '' }}"
+            echo "gcp_service_account_name_secret_present=${{ secrets.GCP_SERVICE_ACCOUNT != '' }}"
+            echo "gpt_action_api_key_secret_present=${{ secrets.GPT_ACTION_API_KEY != '' }}"
+            echo "gemini_api_keys_secret_present=${{ secrets.GEMINI_API_KEYS != '' }}"
+            echo "drive_parent_folder_secret_present=${{ secrets.DRIVE_PARENT_FOLDER_ID != '' }}"
+            echo "sheets_spreadsheet_secret_present=${{ secrets.SHEETS_SPREADSHEET_ID != '' }}"
+            echo "cloud_tasks_queue_secret_present=${{ secrets.CLOUD_TASKS_QUEUE != '' }}"
+            echo "cloud_tasks_worker_url_secret_present=${{ secrets.CLOUD_TASKS_WORKER_URL != '' }}"
+            echo "cloudflare_api_token_secret_present=${{ secrets.CLOUDFLARE_API_TOKEN != '' }}"
+            echo "cloudflare_account_id_secret_present=${{ secrets.CLOUDFLARE_ACCOUNT_ID != '' }}"
+          } > co-final-environment-inventory.txt
+          find . -maxdepth 3 -mindepth 1 -not -path './.git/*' -print | sort > co-final-root-tree.txt
+
+      - name: Upload current source snapshot and inventory
+        uses: actions/upload-artifact@v4
+        with:
+          name: co-final-current-branch-${{ github.sha }}
+          path: |
+            diligence-artifact-backend
+            .github/workflows
+            co-final-environment-inventory.txt
+            co-final-root-tree.txt
+          if-no-files-found: error
+          retention-days: 1
