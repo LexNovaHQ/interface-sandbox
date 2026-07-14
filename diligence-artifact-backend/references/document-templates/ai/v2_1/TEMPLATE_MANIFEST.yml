@@ -9,6 +9,12 @@ template_manifest:
     local_counsel_review_required: true
     legal_advice_disclaimer_required: true
     qr_assembly_control_schedule_removed_from_final_draft: true
+  branding:
+    mode: WHITE_LABEL
+    provider_branding_present: false
+    neutral_ai_governance_banner: true
+    neutral_banner_sha256: adea2ea359d521f65e3b3c1ab677953e239ccbfbc234af98f143144000f259d8
+    creator_metadata_scrubbed: true
   activation:
     universal_values_always_available: true
     lane_a_templates_when_lane_a_active: true
