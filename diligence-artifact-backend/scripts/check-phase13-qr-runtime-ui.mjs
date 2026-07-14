@@ -42,8 +42,16 @@ assert.equal(unchanged.section_attestations.G01.status, "ATTESTED");
 
 const edited = mergeDraft({ run: { run_id: "qr-runtime-fixture" }, handoff, current: unchanged, request_body: { field_edits: { U01: { atomic_values: { legal_entity_name: "Corrected Fixture AI Ltd." } } } } });
 assert.equal(edited.field_edits.U01.atomic_values.legal_entity_name, "Corrected Fixture AI Ltd.");
+assert.deepEqual(edited.field_edits.U01.baseline_value, { legal_entity_name: "Fixture AI Ltd." });
 assert.equal(edited.section_attestations.G01, undefined);
 assert.deepEqual(edited.changed_section_ids, ["G01"]);
+
+const repeated = mergeDraft({ run: { run_id: "qr-runtime-fixture" }, handoff, current: edited, request_body: { field_edits: { U01: { atomic_values: { legal_entity_name: "Corrected Fixture AI Ltd." } } } } });
+assert.equal(repeated.field_edits.U01.atomic_values.legal_entity_name, "Corrected Fixture AI Ltd.");
+assert.deepEqual(repeated.field_edits.U01.baseline_value, { legal_entity_name: "Fixture AI Ltd." });
+
+const reverted = mergeDraft({ run: { run_id: "qr-runtime-fixture" }, handoff, current: repeated, request_body: { field_edits: { U01: { atomic_values: { legal_entity_name: "Fixture AI Ltd." } } } } });
+assert.equal(reverted.field_edits.U01, undefined);
 
 const incomplete = validateDraft({ handoff, draft: edited, require_complete: true });
 assert.equal(incomplete.status, "INCOMPLETE");
@@ -71,7 +79,8 @@ assert.doesNotMatch(publicRoutes, /qualified-review-submission\.service\.js/);
 const draftSource = source("src/runtime/services/qualified-review-draft.service.js");
 assert.match(draftSource, /SECTION_ATTESTED_PROBE/);
 assert.match(draftSource, /activation_probe_field_ids_confirmed/);
-assert.match(draftSource, /isNoopEdit/);
+assert.match(draftSource, /nextEditRecord/);
+assert.match(draftSource, /baseline_value/);
 const ui = source("public/interface-diligence/diligence-system/qualified-review-system/qualified-review.js");
 assert.match(ui, /confirmation_unit: "SECTION"/);
 assert.match(ui, /Attest this section/);
@@ -90,7 +99,7 @@ const artifactsContract = source("src/runtime/contracts/artifacts.contract.js");
 assert.match(artifactsContract, /QUALIFIED_REVIEW: QUALIFIED_REVIEW_RUNTIME_WRITES/);
 
 console.log("Phase 13 QR runtime and UI: PASS");
-console.log(JSON.stringify({ confirmation_unit: "SECTION", active_sections: 1, active_fields: 2, runtime_writes: QUALIFIED_REVIEW_RUNTIME_WRITES.length, unchanged_values_preserve_provenance: true, edit_resets_section_attestation: true, probe_attestation_rebuilds_active_registry: true, legacy_responses_endpoint_retired: true }, null, 2));
+console.log(JSON.stringify({ confirmation_unit: "SECTION", active_sections: 1, active_fields: 2, runtime_writes: QUALIFIED_REVIEW_RUNTIME_WRITES.length, unchanged_values_preserve_provenance: true, repeated_saves_preserve_reviewer_edits: true, baseline_revert_clears_override: true, edit_resets_section_attestation: true, probe_attestation_rebuilds_active_registry: true, legacy_responses_endpoint_retired: true }, null, 2));
 
 function field(id, sectionId, label, atomicKey, value, sourceType) {
   return { qr_field_id: id, canonical_key: id.toLowerCase(), label, registry_id: "UNIVERSAL_QR_BRIDGE_REGISTRY", registry_scope: "UNIVERSAL", lane: "SHARED", section_id: sectionId, shape: "SCALAR", fillability: "FULL", required_for_assembly: true, activation_probe: false, atomic_values: { [atomicKey]: { value, source: sourceType, value_state: sourceType === "MARKET_BASED" ? "PROPOSED_MARKET_BASED" : "RESOLVED", demo_not_evidence: sourceType === "MARKET_BASED", phase12_field_ids: sourceType === "PHASE_12" ? ["TP.ID.002"] : [], route_ids: sourceType === "PHASE_12" ? ["P12.ROUTE.TP.ID.002"] : [], report_artifacts: sourceType === "PHASE_12" ? ["report_section__03_target_entity_sector_profile"] : [] } }, source_mix: [sourceType], source_counts: { REVIEWER: 0, PHASE_12: sourceType === "PHASE_12" ? 1 : 0, MARKET_BASED: sourceType === "MARKET_BASED" ? 1 : 0, UNRESOLVED: 0 }, unresolved_atomic_fields: [], review_state: "UNCHANGED", limitation: "", not_applicable: false, document_bindings: [{ document_id: "DOC_AI_A_TOS", actions: ["POPULATE"], document_target: "Preamble" }], document_binding_count: 1, ui: { prompt: label } };
