@@ -1,4 +1,5 @@
 import express from "express";
+import cloudTasks from "@google-cloud/tasks";
 import assert from "node:assert/strict";
 import { createDiligenceRun } from "./src/runtime/services/runs.service.js";
 import { getDb, getNextArtifactVersion, saveArtifactMetadata, updateRunRecord } from "./src/runtime/services/storage/firestore.service.js";
@@ -13,12 +14,18 @@ import { prepareDocumentAssembly, finalizeDocumentAssembly } from "./src/phases/
 import { loadQrRegistryAuthority } from "./src/phases/13-qualified-review/registry/qr-registry-loader.js";
 import { freezeImmutableArtifact, hashImmutableArtifact } from "./src/phases/14-qualified-review-submission/immutable-artifact-hash.js";
 
+const { CloudTasksClient } = cloudTasks;
+const taskClient = new CloudTasksClient();
 const PORT = Number(process.env.PORT || 8080);
 const CERT_TOKEN = String(process.env.CERT_TOKEN || "");
 const EXPECTED_HEAD_SHA = String(process.env.EXPECTED_HEAD_SHA || "");
+const PROJECT_ID = String(process.env.GCP_PROJECT_ID || "");
+const REGION = String(process.env.GCP_REGION || "");
+const CERT_QUEUE = String(process.env.CLOUD_TASKS_QUEUE || "");
 const SCENARIOS = Object.freeze(["A", "B", "C", "D", "E", "F", "G", "H"]);
 if (!CERT_TOKEN) throw new Error("CERT_TOKEN_MISSING");
 if (!EXPECTED_HEAD_SHA) throw new Error("EXPECTED_HEAD_SHA_MISSING");
+if (!PROJECT_ID || !REGION || !CERT_QUEUE) throw new Error("CERT_CLOUD_TASKS_CONFIG_MISSING");
 
 const app = express();
 app.use(express.json({ limit: "2mb" }));
@@ -27,15 +34,34 @@ app.get("/status/:matrixId", async (req, res) => {
   try {
     requireToken(req);
     const matrixId = safeId(req.params.matrixId);
-    const docs = await Promise.all(SCENARIOS.map(async (scenarioId) => {
-      const snap = await scenarioRef(matrixId, scenarioId).get();
-      return snap.exists ? snap.data() : { scenario_id: scenarioId, status: "PENDING" };
-    }));
-    res.json({ ok: true, matrix_id: matrixId, expected_head_sha: EXPECTED_HEAD_SHA, scenarios: docs });
+    const docs = await readScenarioRows(matrixId);
+    const validation = validateMatrixRows(docs);
+    res.json({ ok: true, matrix_id: matrixId, expected_head_sha: EXPECTED_HEAD_SHA, scenarios: docs, ...validation });
   } catch (error) {
     res.status(400).json({ ok: false, error: error?.message || String(error) });
   }
 });
+app.post("/start/:matrixId", async (req, res) => {
+  try {
+    requireToken(req);
+    const matrixId = safeId(req.params.matrixId);
+    const origin = `${req.protocol}://${req.get("host")}`;
+    const parent = taskClient.queuePath(PROJECT_ID, REGION, CERT_QUEUE);
+    const taskNames = [];
+    for (const scenarioId of SCENARIOS) {
+      const taskId = `${matrixId.toLowerCase()}-${scenarioId.toLowerCase()}`.replace(/[^a-z0-9-]/g, "-").slice(0, 490);
+      const body = Buffer.from(JSON.stringify({ matrix_id: matrixId, scenario_id: scenarioId })).toString("base64");
+      const task = { name: `${parent}/tasks/${taskId}`, httpRequest: { httpMethod: "POST", url: `${origin}/scenario`, headers: { "Content-Type": "application/json", "x-co-final-cert-token": CERT_TOKEN }, body } };
+      const [created] = await taskClient.createTask({ parent, task });
+      taskNames.push(created.name || task.name);
+    }
+    await matrixRef(matrixId).set({ matrix_id: matrixId, expected_head_sha: EXPECTED_HEAD_SHA, scenario_count: SCENARIOS.length, cloud_tasks_enqueued: true, task_name_count: taskNames.length, started_at: new Date().toISOString() }, { merge: true });
+    res.status(202).json({ ok: true, matrix_id: matrixId, queued: true, task_name_count: taskNames.length });
+  } catch (error) {
+    res.status(500).json({ ok: false, error: error?.message || String(error) });
+  }
+});
+
 app.post("/scenario", async (req, res) => {
   const taskName = String(req.get("X-CloudTasks-TaskName") || "");
   const retryCount = Number(req.get("X-CloudTasks-TaskRetryCount") || 0);
@@ -122,6 +148,39 @@ async function claimScenario({ matrixId, scenarioId, taskName, retryCount }) {
     }, { merge: true });
     return { already_complete: false, delivery_attempt_count: deliveryAttemptCount };
   });
+}
+
+async function readScenarioRows(matrixId) {
+  return Promise.all(SCENARIOS.map(async (scenarioId) => {
+    const snap = await scenarioRef(matrixId, scenarioId).get();
+    return snap.exists ? snap.data() : { scenario_id: scenarioId, status: "PENDING" };
+  }));
+}
+function validateMatrixRows(rows) {
+  const byId = Object.fromEntries(rows.map((row) => [row.scenario_id, row]));
+  const statuses = rows.map((row) => row.status);
+  if (statuses.some((status) => status === "FAILED")) return { matrix_validation: "FAILED", complete: false };
+  if (rows.length !== 8 || !statuses.every((status) => status === "COMPLETE")) return { matrix_validation: "PENDING", complete: false };
+  try {
+    for (const row of rows) {
+      assert.equal(row.tested_head_sha, EXPECTED_HEAD_SHA);
+      assert.equal(row.task_name_present, true);
+      assert.equal(row.drive_folder_id_present, true);
+      assert.equal(row.receipt_drive_file_id_present, true);
+      assert.equal(row.receipt_artifact_version, 1);
+    }
+    assert.equal(byId.A.delivery_mode, "FULL_REVIEW_READY"); assert.equal(byId.A.phase16_complete, true); assert.equal(byId.A.review_ready_document_drive_file_id_present, true); assert.equal(byId.A.run_blocked, false);
+    assert.equal(byId.B.delivery_mode, "REPORT_ONLY"); assert.equal(byId.B.run_blocked, false);
+    assert.equal(byId.C.delivery_mode, "UNIVERSAL_REPORT_ONLY"); assert.equal(byId.C.derived_primary_domain, "saas"); assert.equal(byId.C.mounted_primary_package, null);
+    assert.equal(byId.D.delivery_mode, "AI_OVERLAY_FULL_REVIEW_READY"); assert.equal(byId.D.ai_overlay, true); assert.equal(byId.D.reinvestigation_attempt_count, 2); assert.equal(byId.D.run_blocked, false);
+    assert.equal(byId.E.delivery_mode, "UNIVERSAL_REPORT_ONLY"); assert.equal(byId.E.reinvestigation_attempt_count, 2); assert.equal(byId.E.run_blocked, false);
+    assert.equal(byId.F.execution_outcome, "LIMITATION"); assert.equal(byId.F.reinvestigation_attempt_count, 2); assert.equal(byId.F.run_blocked, false);
+    assert.equal(byId.G.execution_outcome, "TECHNICAL_RETRY_REQUIRED"); assert.ok(byId.G.delivery_attempt_count >= 2); assert.equal(byId.G.duplicate_write_count, 0); assert.equal(byId.G.run_blocked, false);
+    assert.equal(byId.H.execution_outcome, "CRITICAL_FAILURE"); assert.equal(byId.H.run_blocked, true);
+    return { matrix_validation: "PASS", complete: true, production_service_modified: false };
+  } catch (error) {
+    return { matrix_validation: "FAILED", complete: true, validation_error: error?.message || String(error) };
+  }
 }
 
 async function executeScenario({ matrixId, scenarioId, deliveryAttemptCount }) {
