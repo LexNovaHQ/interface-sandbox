@@ -3,19 +3,16 @@ import {
   runDiligenceQaComplete
 } from "../../phases/15-diligence-qa-complete/diligence-qa-complete.runner.js";
 import {
-  DILIGENCE_QA_COMPLETE_RUNTIME_READS,
-  DILIGENCE_QA_COMPLETE_RUNTIME_WRITES
+  DILIGENCE_QA_COMPLETE_RUNTIME_READS
 } from "../contracts/phase15-diligence-qa-runtime.contract.js";
 import { updateRunRecord, logEvent } from "./storage/firestore.service.js";
 import { updateRunDashboardRow } from "./storage/sheets.service.js";
 import {
-  assertPostReviewArtifactsAbsent,
   persistImmutablePostReviewArtifact,
   readPostReviewArtifact
 } from "./immutable-post-review-artifacts.service.js";
 
 export async function runDiligenceQaCompleteRuntime({ run } = {}) {
-  await assertPostReviewArtifactsAbsent(run.run_id, DILIGENCE_QA_COMPLETE_RUNTIME_WRITES);
   const artifacts = {};
   for (const artifactName of DILIGENCE_QA_COMPLETE_RUNTIME_READS) {
     artifacts[artifactName] = await readPostReviewArtifact(run.run_id, artifactName);
