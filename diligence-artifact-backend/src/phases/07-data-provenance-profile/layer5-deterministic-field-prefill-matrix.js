@@ -1,4 +1,4 @@
-import { phase7ModelRequiredForPrefillStatus, selectPhase7PrefillStatus } from "./layer5-prefill-status-policy.js";
+import { phase7ModelRequiredForPrefillStatus, phase7PrefillReinvestigationMetadata, selectPhase7PrefillStatus } from "./layer5-prefill-status-policy.js";
 
 export function buildPhase7DeterministicFieldPrefillMatrix({ dapRegistryManifest, sourceNavigationInventory, evidenceAtomInventory, activityDataFlowCandidateMap } = {}) {
   if (!dapRegistryManifest || dapRegistryManifest.artifact_type !== "dap_registry_manifest") throw new Error("PHASE7_LAYER5_REQUIRES_DAP_REGISTRY_MANIFEST");
@@ -43,6 +43,7 @@ function prefillRow({ rule, sourceNavigationInventory, evidenceAtomInventory, ac
     supporting_route_ids: Object.freeze(routeIds),
     supporting_atom_ids: Object.freeze(atomIds),
     prefill_candidate_status: status,
+    reinvestigation_metadata: phase7PrefillReinvestigationMetadata({ status, rule }),
     prefill_candidate_kind: "PREFILL_CANDIDATE_ONLY_NOT_FINAL_VALUE",
     model_packet_family: rule.model_packet_family,
     model_packet_required: phase7ModelRequiredForPrefillStatus(status),
