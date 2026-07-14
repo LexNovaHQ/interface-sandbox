@@ -41,7 +41,7 @@ export { validatePhase7EvidenceAtomInventory } from "./layer3-evidence-atom-vali
 export { normalizePhase7ActivitySources } from "./layer4-activity-source-normalizer.js";
 export { buildPhase7ActivityDataFlowCandidateMap } from "./layer4-activity-dap-obligation-joiner.js";
 export { validatePhase7ActivityDataFlowCandidateMap } from "./layer4-activity-data-joiner-validator.js";
-export { PHASE7_PREFILL_STATUSES, selectPhase7PrefillStatus, phase7ModelRequiredForPrefillStatus } from "./layer5-prefill-status-policy.js";
+export { PHASE7_PREFILL_STATUSES, selectPhase7PrefillStatus, phase7PrefillReinvestigationMetadata, phase7ModelRequiredForPrefillStatus } from "./layer5-prefill-status-policy.js";
 export { buildPhase7DeterministicFieldPrefillMatrix } from "./layer5-deterministic-field-prefill-matrix.js";
 export { validatePhase7DeterministicFieldPrefillMatrix } from "./layer5-prefill-matrix-validator.js";
 export { buildPhase7ModelWorkPacketManifest } from "./layer6-model-work-packet-router.js";
