@@ -11,16 +11,19 @@ export const DOMAIN_DERIVATION_RUNNER_STATUS = Object.freeze({
   internal_job_id: DOMAIN_DERIVATION_CONTRACT.internal_job_id,
   public_label: DOMAIN_DERIVATION_CONTRACT.public_label,
   phase_owned_runner: true,
-  semantic_first_deterministic_gated: true,
+  model_semantic_derivation_authority_active: true,
+  deterministic_validation_support_only: true,
+  registry_conditions_trigger_if_and_exclude_if_support_model_reasoning: true,
+  deterministic_domain_selection_forbidden: true,
   registry_ladder_prompt_active: true,
   phase2g_route_scoped_runtime_reader_active: true,
   direct_contract_read_loading_forbidden: true,
   profile_forensics_inputs_forbidden: true,
-  deterministic_exclusion_active: true,
-  model_package_selection_authority_forbidden: true,
-  package_lifecycle_gate_active: true,
+  package_lifecycle_mount_validation_active: true,
   blocking_is_exception: true,
   only_critical_failure_blocks: true,
+  unresolved_primary_after_reinvestigation_non_blocking: true,
+  ai_overlay_without_primary_continuation_allowed: true,
   maximum_reinvestigation_attempts: MAX_REINVESTIGATION_ATTEMPTS,
   agent_id: DOMAIN_DERIVATION_CONTRACT.agent_id,
   agent_package_root: DOMAIN_DERIVATION_CONTRACT.agent_package_binding.agent_package_root,
@@ -73,15 +76,20 @@ export async function runDomainDerivationPhase({
     reinvestigationLedger.push({
       attempt_number: attempt,
       reinvestigation_items: [...(compiled.validation.reinvestigation_items || [])],
-      scope: "PHASE3B_PRIMARY_DOMAIN_AND_RULE_EVIDENCE_ONLY",
-      full_phase_rerun_required: false
+      scope: "PHASE3B_MODEL_DOMAIN_AND_OVERLAY_DERIVATION_ONLY",
+      full_phase_rerun_required: false,
+      model_derivation_authority_preserved: true,
+      deterministic_support_only: true
     });
     const reinvestigationPrompt = `${prompt}
 
 TARGETED PHASE 3B REINVESTIGATION — ATTEMPT ${attempt} OF ${MAX_REINVESTIGATION_ATTEMPTS}.
-Return the complete domain_derivation_profile again, but investigate only these backend-identified items:
+The model remains the primary-domain and overlay derivation authority.
+Use the registry conditions, trigger_if and exclude_if as reasoning support. Re-read the routed lossless evidence through the Phase 2B navigation index and return the complete domain_derivation_profile.
+Investigate only these validation items:
 ${(compiled.validation.reinvestigation_items || []).map((item) => `- ${item}`).join("\n")}
-Do not choose a package directly. Do not report exclude_result. Return condition results and lossless evidence anchors; the backend alone evaluates trigger_if, exclude_if, package eligibility, and the winning package.`;
+State the model-derived primary domain, selected supporting rule where available, trigger and exclusion conclusions, scoped lossless evidence anchors, AI mount conclusion, regulatory candidates, contradictions and limitations.
+The backend validates structure, evidence discipline, internal consistency and package mount eligibility. It must not replace the model's domain judgment.`;
     providerResult = await callProvider({
       prompt: reinvestigationPrompt,
       phase: `${DOMAIN_DERIVATION_CONTRACT.central_phase_id}_REINVESTIGATION_${attempt}`
@@ -105,7 +113,11 @@ Do not choose a package directly. Do not report exclude_result. Return condition
     reinvestigation_attempts: reinvestigationLedger,
     reinvestigation_attempt_count: reinvestigationLedger.length,
     maximum_reinvestigation_attempts: MAX_REINVESTIGATION_ATTEMPTS,
-    unresolved_after_reinvestigation: compiled.validation.limitations?.filter((item) => String(item).startsWith("UNRESOLVED_AFTER_REINVESTIGATION:")) || []
+    unresolved_after_reinvestigation: compiled.validation.limitations?.filter((item) => String(item).startsWith("UNRESOLVED_AFTER_REINVESTIGATION:")) || [],
+    unresolved_primary_after_reinvestigation: compiled.validation.unresolved_primary_after_reinvestigation === true,
+    ai_overlay_continuation_active: compiled.validation.ai_overlay_continuation_active === true,
+    universal_report_only_continuation_active: compiled.validation.universal_report_only_continuation_active === true,
+    run_blocked: compiled.phase_lock_status === "CONTROLLED_FAILURE"
   };
 
   const saved_artifacts = [];
@@ -130,6 +142,8 @@ Do not choose a package directly. Do not report exclude_result. Return condition
     phase2g_route_id: routed.route.route_id,
     phase2g_bucket_id: routed.route.bucket_id,
     reinvestigation_attempt_count: reinvestigationLedger.length,
+    model_derivation_authority_preserved: true,
+    deterministic_support_only: true,
     only_critical_failure_blocks: true,
     domain_derivation_phase_runner_used: true
   };
