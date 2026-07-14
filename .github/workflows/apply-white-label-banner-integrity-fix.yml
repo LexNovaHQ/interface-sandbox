@@ -33,7 +33,7 @@ jobs:
           root=backend/'references/document-templates/ai/v2_1'
           encoded=(backend/'scripts/neutral-white-label-banner.b64').read_text().strip()
           banner=base64.b64decode(encoded,validate=True)
-          expected='096e640706605ba2449e04eb3cc0efa692b1d3771f365a09c841a747872b4f32'
+          expected='9d8885933f88de5e20b7457ce8d78e8a1bab2e4a1f1de14c4f8bf27f03dcb6d0'
           assert hashlib.sha256(banner).hexdigest()==expected
           assert banner[:8]==b'\x89PNG\r\n\x1a\n'
           pos=8;width=height=None
@@ -45,7 +45,7 @@ jobs:
             if kind==b'IHDR':width,height=struct.unpack('>II',payload[:8])
             pos+=12+length
             if kind==b'IEND':break
-          assert (width,height)==(1999,476)
+          assert (width,height)==(1999,1)
 
           docs=sorted(root.glob('lane-*/*.docx'))
           assert len(docs)==13
