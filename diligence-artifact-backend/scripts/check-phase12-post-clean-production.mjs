@@ -17,7 +17,6 @@ const EXPECTED_PACKAGE_SCRIPTS = Object.freeze([
   "check:production-gate-severity",
   "check:syntax:active",
   "check:domain-gate-v0",
-  "check:e2e-authority",
   "check:phase1-8-runtime",
   "check:phase3a-target-profile",
   "check:phase3-domain-derivation",
@@ -49,7 +48,8 @@ const EXPECTED_PACKAGE_SCRIPTS = Object.freeze([
   "check:runtime-authority-boundaries",
   "check:domain-registry-assembled",
   "smoke:health",
-  "smoke:reviewer"
+  "smoke:reviewer",
+  "check:e2e-authority"
 ]);
 
 const ABSENT_RETIRED_FILES = Object.freeze([
@@ -95,6 +95,7 @@ assert.ok(gateManifest.includes('gate("phase12-post-clean", "Phase 12 post-clean
 assert.ok(gateManifest.includes('gate("phase13-legacy-retirement", "Phase 13 legacy matrix retirement", "check:phase13-legacy-retirement"'));
 assert.ok(gateManifest.includes('gate("phase16-assembly", "Phase 16 Review-Ready document assembly", "check:phase16-assembly"'));
 assert.ok(gateManifest.includes('gate("interface-ui", "Universal Interface UI contract", "check:interface-ui"'));
+assert.ok(gateManifest.includes('gate("e2e-authority", "Critical-only outcomes and executable domain lifecycle", "check:e2e-authority"'));
 
 const coClean02 = assertNoUnreferencedCleaningArtifacts();
 
