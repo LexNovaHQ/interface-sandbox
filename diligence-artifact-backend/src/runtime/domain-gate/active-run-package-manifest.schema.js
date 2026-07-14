@@ -12,7 +12,7 @@ export const PHASE_3B_DOMAIN_DERIVATION_SELECTION_STAGE = "PHASE_3B_DOMAIN_DERIV
 export function buildActiveRunPackageManifestV0({ run = {}, catalog, now = new Date().toISOString() } = {}) {
   return {
     artifact_name: ACTIVE_RUN_PACKAGE_MANIFEST_ARTIFACT_NAME,
-    version: "0.1",
+    version: "0.2.lifecycle-gated",
     selection_mode: DOMAIN_GATE_SELECTION_MODE,
     selection_stage: PRE_PHASE_1_SELECTION_STAGE,
     run_id: run.run_id || null,
@@ -21,6 +21,8 @@ export function buildActiveRunPackageManifestV0({ run = {}, catalog, now = new D
     primary_domain_package: null,
     primary_domain_status: "PROVISIONAL",
     primary_domain_rule_id: null,
+    primary_domain_lifecycle: null,
+    primary_domain_delivery_mode: null,
     primary_domain_evidence_basis: [],
     capability_overlays: [],
     capability_overlay_status: "PROVISIONAL",
@@ -49,6 +51,12 @@ export function buildActiveRunPackageManifestV0({ run = {}, catalog, now = new D
     },
     adapter_mode: PASSIVE_MANIFEST_ADAPTER_MODE,
     runtime_flags: buildAllFalseRuntimeFlags(),
+    activation_flags: {
+      pre_phase1_domain_lock_enabled: false,
+      phase3b_package_selection_enabled: true,
+      downstream_package_mounting_enabled: false,
+      p2g_source_routing_authority_enabled: true
+    },
     validation: {
       status: catalog ? "PASS" : "FAIL",
       errors: catalog ? [] : ["package catalog failed to load"],
@@ -57,91 +65,130 @@ export function buildActiveRunPackageManifestV0({ run = {}, catalog, now = new D
   };
 }
 
-export function buildPhase3BDomainDerivationManifestUpdate({ run = {}, before = {}, domain_derivation_profile = {}, validation = {}, now = new Date().toISOString() } = {}) {
+export function buildPhase3BDomainDerivationManifestUpdate({
+  run = {},
+  before = {},
+  domain_derivation_profile = {},
+  validation = {},
+  now = new Date().toISOString()
+} = {}) {
   const primary = domain_derivation_profile.primary_domain_derivation || {};
   const ai = domain_derivation_profile.ai_mount_derivation || {};
   const regulatory = domain_derivation_profile.regulatory_overlay_derivation || {};
   const fusion = domain_derivation_profile.fusion_candidate_derivation || {};
   const runtimeFlags = forceAllRuntimeFlagsFalse(before.runtime_flags || {});
-  const aiOverlayMounted = ai.ai_package_mount === "AI_OVERLAY_MOUNTED";
-  const regulatoryCandidates = Array.isArray(regulatory.candidates) ? regulatory.candidates : [];
+  const selectionResolved = Boolean(
+    primary.selected_package
+    && ["LOCKED", "LOCKED_WITH_LIMITATIONS"].includes(primary.status)
+    && !["CONTROLLED_FAILURE", "REINVESTIGATION_REQUIRED"].includes(validation.status)
+  );
+  const selectedPackage = selectionResolved ? primary.selected_package : null;
+  const aiOverlayMounted = selectionResolved && ai.ai_package_mount === "AI_OVERLAY_MOUNTED";
+  const regulatoryCandidates = selectionResolved && Array.isArray(regulatory.candidates) ? regulatory.candidates : [];
+
   const after = {
     ...before,
     artifact_name: ACTIVE_RUN_PACKAGE_MANIFEST_ARTIFACT_NAME,
-    version: before.version || "0.1",
+    version: before.version || "0.2.lifecycle-gated",
     selection_mode: before.selection_mode || DOMAIN_GATE_SELECTION_MODE,
     selection_stage: PHASE_3B_DOMAIN_DERIVATION_SELECTION_STAGE,
     run_id: before.run_id || run.run_id || null,
     updated_at: now,
-    primary_domain_package: primary.selected_package || null,
-    primary_domain_status: primary.status || "REVIEW_REQUIRED",
-    primary_domain_rule_id: primary.selected_rule_id || null,
-    primary_domain_evidence_basis: evidenceBasis(primary.evaluated_rules),
+    primary_domain_package: selectedPackage,
+    primary_domain_status: selectionResolved ? primary.status : "REVIEW_REQUIRED",
+    primary_domain_rule_id: selectionResolved ? primary.selected_rule_id || null : null,
+    primary_domain_lifecycle: selectionResolved ? primary.package_lifecycle_state || null : null,
+    primary_domain_delivery_mode: selectionResolved ? primary.downstream_delivery_mode || null : null,
+    primary_domain_evidence_basis: selectionResolved ? evidenceBasis(primary.evaluated_rules) : [],
     capability_overlays: aiOverlayMounted ? [ai.overlay_package_id || "ai-native"].filter(Boolean) : [],
-    capability_overlay_status: ai.status || "NOT_VISIBLE",
-    capability_overlay_rule_ids: ai.selected_rule_id ? [ai.selected_rule_id] : [],
-    ai_package_mount: ai.ai_package_mount || "AI_NOT_VISIBLE",
-    ai_mount_rule_id: ai.selected_rule_id || null,
-    ai_mount_evidence_basis: evidenceBasis(ai.evaluated_rules),
+    capability_overlay_status: selectionResolved ? ai.status || "NOT_VISIBLE" : "NOT_VISIBLE",
+    capability_overlay_rule_ids: aiOverlayMounted && ai.selected_rule_id ? [ai.selected_rule_id] : [],
+    ai_package_mount: selectionResolved ? ai.ai_package_mount || "AI_NOT_VISIBLE" : "AI_NOT_VISIBLE",
+    ai_mount_rule_id: selectionResolved ? ai.selected_rule_id || null : null,
+    ai_mount_evidence_basis: selectionResolved ? evidenceBasis(ai.evaluated_rules) : [],
     ai_package_mount_only: aiOverlayMounted,
-    ai_activity_lock_status: aiOverlayMounted ? "DEFERRED_TO_PHASE_5" : (ai.activity_lock_status || "NOT_EVALUATED"),
-    ai_exposure_lock_status: aiOverlayMounted ? "DEFERRED_TO_PHASE_9" : (ai.exposure_lock_status || "NOT_EVALUATED"),
+    ai_activity_lock_status: aiOverlayMounted ? "DEFERRED_TO_PHASE_5" : (selectionResolved ? ai.activity_lock_status || "NOT_EVALUATED" : "NOT_EVALUATED"),
+    ai_exposure_lock_status: aiOverlayMounted ? "DEFERRED_TO_PHASE_9" : (selectionResolved ? ai.exposure_lock_status || "NOT_EVALUATED" : "NOT_EVALUATED"),
     regulatory_overlays: regulatoryCandidates.map((candidate) => candidate.overlay_id).filter(Boolean),
-    regulatory_overlay_status: regulatory.status || "NOT_VISIBLE",
+    regulatory_overlay_status: selectionResolved ? regulatory.status || "NOT_VISIBLE" : "NOT_VISIBLE",
     regulatory_overlay_evidence_basis: regulatoryEvidenceBasis(regulatoryCandidates),
-    fusion_bucket_candidates: Array.isArray(fusion.candidates) ? fusion.candidates : [],
-    derivation_limitations: Array.isArray(domain_derivation_profile.limitation_ledger) ? domain_derivation_profile.limitation_ledger : [],
+    fusion_bucket_candidates: selectionResolved && Array.isArray(fusion.candidates) ? fusion.candidates : [],
+    derivation_limitations: unique([
+      ...(Array.isArray(domain_derivation_profile.limitation_ledger) ? domain_derivation_profile.limitation_ledger : []),
+      ...(validation.limitations || []),
+      ...(validation.reinvestigation_items || [])
+    ]),
     contradiction_ledger: Array.isArray(domain_derivation_profile.contradiction_ledger) ? domain_derivation_profile.contradiction_ledger : [],
     domain_derivation_profile_ref: "domain_derivation_profile",
     runtime_flags: runtimeFlags,
+    activation_flags: {
+      pre_phase1_domain_lock_enabled: false,
+      phase3b_package_selection_enabled: true,
+      downstream_package_mounting_enabled: selectionResolved,
+      p2g_source_routing_authority_enabled: true
+    },
     validation: {
-      status: validation.status === "CONTROLLED_FAILURE" ? "WARN" : "PASS",
-      errors: validation.failures || [],
+      status: validation.status === "CONTROLLED_FAILURE"
+        ? "FAIL"
+        : validation.status === "REINVESTIGATION_REQUIRED"
+          ? "REINVESTIGATION_REQUIRED"
+          : validation.status === "LOCKED_WITH_LIMITATIONS"
+            ? "WARN"
+            : "PASS",
+      errors: validation.critical_failures || validation.failures || [],
+      reinvestigation_items: validation.reinvestigation_items || [],
+      limitations: validation.limitations || [],
       warnings: validation.warnings || []
     }
   };
+
   return {
     active_run_package_manifest: after,
     manifest_update: {
       before_selection_stage: before.selection_stage || PRE_PHASE_1_SELECTION_STAGE,
       after_selection_stage: after.selection_stage,
       changed_fields: [
-        "selection_stage",
-        "primary_domain_package",
-        "primary_domain_status",
-        "primary_domain_rule_id",
-        "capability_overlays",
-        "capability_overlay_status",
-        "ai_package_mount",
-        "ai_mount_rule_id",
-        "ai_package_mount_only",
-        "ai_activity_lock_status",
-        "ai_exposure_lock_status",
-        "regulatory_overlays",
-        "regulatory_overlay_status",
-        "regulatory_overlay_evidence_basis",
-        "fusion_bucket_candidates",
-        "domain_derivation_profile_ref"
+        "selection_stage", "primary_domain_package", "primary_domain_status",
+        "primary_domain_rule_id", "primary_domain_lifecycle", "primary_domain_delivery_mode",
+        "capability_overlays", "capability_overlay_status", "ai_package_mount",
+        "ai_mount_rule_id", "ai_package_mount_only", "ai_activity_lock_status",
+        "ai_exposure_lock_status", "regulatory_overlays", "regulatory_overlay_status",
+        "regulatory_overlay_evidence_basis", "fusion_bucket_candidates",
+        "domain_derivation_profile_ref", "activation_flags"
       ],
       unchanged_runtime_flags: runtimeFlags,
-      dynamic_routing_still_disabled: true
+      legacy_pre_phase1_dynamic_routing_disabled: true,
+      phase3b_downstream_package_mounting_enabled: selectionResolved
     }
   };
 }
 
 export function forceAllRuntimeFlagsFalse(existing = {}) {
-  return { ...buildAllFalseRuntimeFlags(), ...Object.fromEntries(Object.keys(existing || {}).map((key) => [key, false])) };
+  return {
+    ...buildAllFalseRuntimeFlags(),
+    ...Object.fromEntries(Object.keys(existing || {}).map((key) => [key, false]))
+  };
 }
 
 function evidenceBasis(rows = []) {
   return (Array.isArray(rows) ? rows : [])
-    .filter((row) => row?.validator_trigger_result === true)
-    .flatMap((row) => (row.evidence_anchors || []).map((anchor) => ({ rule_id: row.rule_id, source_artifact_name: anchor.source_artifact_name || anchor.artifact_name || anchor })))
+    .filter((row) => row?.validator_trigger_result === true && row?.validator_exclude_result !== true)
+    .flatMap((row) => (row.evidence_anchors || []).map((anchor) => ({
+      rule_id: row.rule_id,
+      source_artifact_name: anchor.source_artifact_name || anchor.artifact_name || anchor
+    })))
     .filter((row) => row.source_artifact_name);
 }
 
 function regulatoryEvidenceBasis(candidates = []) {
   return (Array.isArray(candidates) ? candidates : [])
-    .flatMap((candidate) => (candidate.evidence_anchors || []).map((anchor) => ({ overlay_id: candidate.overlay_id, source_artifact_name: anchor.source_artifact_name || anchor.artifact_name || anchor })))
+    .flatMap((candidate) => (candidate.evidence_anchors || []).map((anchor) => ({
+      overlay_id: candidate.overlay_id,
+      source_artifact_name: anchor.source_artifact_name || anchor.artifact_name || anchor
+    })))
     .filter((row) => row.overlay_id && row.source_artifact_name);
+}
+
+function unique(values) {
+  return [...new Set((values || []).filter(Boolean))];
 }
