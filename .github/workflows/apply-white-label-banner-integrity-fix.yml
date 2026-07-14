@@ -1,0 +1,96 @@
+name: Apply White-Label Banner Integrity Fix
+
+on:
+  push:
+    branches:
+      - white-label-banner-integrity-fix
+    paths:
+      - "diligence-artifact-backend/scripts/neutral-white-label-banner.b64"
+      - ".github/workflows/apply-white-label-banner-integrity-fix.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  repair-banner:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+
+      - name: Validate and inject exact neutral PNG
+        run: |
+          python - <<'PY'
+          import base64, hashlib, re, struct, tempfile, zlib
+          from pathlib import Path
+          from zipfile import ZIP_DEFLATED, ZipFile
+
+          backend=Path('diligence-artifact-backend')
+          root=backend/'references/document-templates/ai/v2_1'
+          encoded=(backend/'scripts/neutral-white-label-banner.b64').read_text().strip()
+          banner=base64.b64decode(encoded,validate=True)
+          expected='096e640706605ba2449e04eb3cc0efa692b1d3771f365a09c841a747872b4f32'
+          assert hashlib.sha256(banner).hexdigest()==expected
+          assert banner[:8]==b'\x89PNG\r\n\x1a\n'
+          pos=8;width=height=None
+          while pos<len(banner):
+            length=struct.unpack('>I',banner[pos:pos+4])[0]
+            kind=banner[pos+4:pos+8];payload=banner[pos+8:pos+8+length]
+            crc=struct.unpack('>I',banner[pos+8+length:pos+12+length])[0]
+            assert zlib.crc32(kind+payload)&0xffffffff==crc
+            if kind==b'IHDR':width,height=struct.unpack('>II',payload[:8])
+            pos+=12+length
+            if kind==b'IEND':break
+          assert (width,height)==(1999,476)
+
+          docs=sorted(root.glob('lane-*/*.docx'))
+          assert len(docs)==13
+          for path in docs:
+            temp=path.with_suffix('.banner-fix.tmp.docx')
+            with ZipFile(path) as source,ZipFile(temp,'w',ZIP_DEFLATED,allowZip64=True) as target:
+              found=False
+              for info in source.infolist():
+                data=source.read(info.filename)
+                if info.filename=='word/media/image1.png':data=banner;found=True
+                target.writestr(info,data)
+            assert found
+            with ZipFile(temp) as archive:
+              assert archive.testzip() is None
+              actual=archive.read('word/media/image1.png')
+              assert hashlib.sha256(actual).hexdigest()==expected
+            temp.replace(path)
+
+          manifest=root/'TEMPLATE_MANIFEST.yml'
+          text=manifest.read_text()
+          text=re.sub(r'(neutral_banner_sha256:\s*)[a-f0-9]{64}',rf'\g<1>{expected}',text)
+          manifest.write_text(text)
+          report=root/'WHITE_LABEL_TEMPLATE_VALIDATION_v1.md'
+          report.write_text(re.sub(r'`[a-f0-9]{64}`',f'`{expected}`',report.read_text(),count=1))
+          print(f'VALID_NEUTRAL_BANNER_APPLIED templates={len(docs)} sha256={expected}')
+          PY
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: diligence-artifact-backend/package-lock.json
+
+      - name: Install locked dependencies
+        working-directory: diligence-artifact-backend
+        run: npm ci
+
+      - name: Validate full Phase 16 assembly and branding guard
+        working-directory: diligence-artifact-backend
+        run: npm run check:phase16-assembly
+
+      - name: Commit repaired templates
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add diligence-artifact-backend/references/document-templates/ai/v2_1
+          git commit -m "Repair embedded white-label banner integrity"
+          git push origin HEAD:${GITHUB_REF_NAME}
