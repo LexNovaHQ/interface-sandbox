@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - domain-gate-v0-preflight
-    paths:
+    paths: &post_review_paths
       - "diligence-artifact-backend/src/phases/13-qualified-review/**"
       - "diligence-artifact-backend/src/phases/14-qualified-review-submission/**"
       - "diligence-artifact-backend/src/phases/15-diligence-qa-complete/**"
@@ -17,6 +17,7 @@ on:
       - "diligence-artifact-backend/src/runtime/contracts/pipeline.contract.js"
       - "diligence-artifact-backend/src/runtime/contracts/central-phase.contract.js"
       - "diligence-artifact-backend/src/runtime/contracts/artifact-permissions.contract.js"
+      - "diligence-artifact-backend/src/runtime/contracts/schemas.contract.js"
       - "diligence-artifact-backend/src/runtime/services/async-phase13.service.js"
       - "diligence-artifact-backend/src/runtime/services/qualified-review-*.service.js"
       - "diligence-artifact-backend/src/runtime/services/diligence-qa-complete.service.js"
@@ -33,6 +34,10 @@ on:
       - "diligence-artifact-backend/package.json"
       - "diligence-artifact-backend/package-lock.json"
       - ".github/workflows/phase13-qualified-review-validation.yml"
+  pull_request:
+    branches:
+      - domain-gate-v0-preflight
+    paths: *post_review_paths
   workflow_dispatch:
 
 permissions:
