@@ -1,4 +1,4 @@
-import { compileQualifiedReviewSubmission } from "../../phases/14-qualified-review-submission/qualified-review-submission.compiler.js";
+import { compileQualifiedReviewSubmission } from "../../phases/14-qualified-review-submission/qualified-review-submission.compiler.v2.js";
 import {
   QUALIFIED_REVIEW_SUBMISSION_RUNTIME_READS,
   QUALIFIED_REVIEW_SUBMISSION_RUNTIME_WRITES
@@ -55,6 +55,7 @@ export async function compileQualifiedReviewSubmissionRuntime({ run } = {}) {
     event_type: "QUALIFIED_REVIEW_SUBMISSION_COMPILED",
     actor: "qualified_review_system",
     payload: {
+      compiler_version: compiled.qualified_review_submission.compiler_version,
       final_field_count: compiled.qr_final_value_ledger.counts.final_field_count,
       active_document_count: compiled.document_activation_manifest.counts.active_document_count,
       next_phase: "DILIGENCE_QA_COMPLETE"
