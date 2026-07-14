@@ -15,7 +15,8 @@ const files = Object.freeze({
   qrHtml: read(base + "qualified-review.html"),
   qrCss: read(base + "qualified-review.css"),
   qrJs: read(base + "qualified-review-system/qualified-review.js"),
-  qrRenderer: read("src/qualified-review-system/renderer.js"),
+  qrPresentation: read("src/phases/13-qualified-review/presentation/qualified-review-presentation.builder.js"),
+  publicRoutes: read("src/runtime/routes/public.routes.js"),
   packageJson: JSON.parse(read("package.json"))
 });
 
@@ -38,11 +39,14 @@ console.log(JSON.stringify({
     qualified_review_is_separate_system: true,
     shares_pipeline_run_id: true,
     no_document_assembly: true,
-    matter_summary: true,
-    review_queue: true,
-    confirm_correct_limitation: true,
-    save_state: true,
-    receipt: true
+    confirmation_unit: "SECTION",
+    per_question_confirmation_forbidden: true,
+    active_registry_values: true,
+    editable_atomic_values: true,
+    section_attestation: true,
+    save_draft_state: true,
+    submission_request: true,
+    legacy_renderer_retired: true
   }
 }, null, 2));
 
@@ -94,66 +98,65 @@ function validateAnnexure() {
 
 function validateQualifiedReview() {
   has(files.qrHtml, "interface-ui-shell.css?v=shell-v1-20260713");
-  has(files.qrHtml, "qualified-review.css?v=qr-workspace-v2-20260713");
-  has(files.qrHtml, "Qualified Review Workspace");
+  has(files.qrHtml, "qualified-review.css?v=qr-section-attestation-v3-20260714");
+  has(files.qrHtml, "<title>Qualified Review</title>");
+  has(files.qrHtml, "Review Workspace");
   has(files.qrHtml, "Separate workspace");
   has(files.qrHtml, "Shared run ID");
+  has(files.qrHtml, "Section-level attestation");
   has(files.qrHtml, "No document assembly");
+  has(files.qrHtml, "Review values and attest each section");
   has(files.qrHtml, 'id="handoffMeta"');
   has(files.qrHtml, 'id="handoffBody"');
   has(files.qrHtml, 'id="qrReceiptPanel"');
   has(files.qrHtml, 'id="qrFinalGatePanel"');
   has(files.qrHtml, 'id="openAnnexure"');
   has(files.qrHtml, 'id="qualifiedReviewLiveStatus"');
+  lacks(files.qrHtml, "Qualified Review Workspace");
+  lacks(files.qrHtml, "Proceed to Drafting");
 
-  has(files.qrCss, "INTERFACE_QUALIFIED_REVIEW_WORKSPACE_V2");
-  has(files.qrCss, "interface_qualified_review_workspace.v2");
+  has(files.qrCss, "INTERFACE_QUALIFIED_REVIEW_SECTION_ATTESTATION_V3");
+  has(files.qrCss, "interface_qualified_review_section_attestation.v3");
   has(files.qrCss, ".qr-matter-panel");
   has(files.qrCss, ".qr-review-queue");
-  has(files.qrCss, ".qr-decision-options");
-  has(files.qrCss, '.qr-finding[data-review-mode="limitation"]');
+  has(files.qrCss, ".qr-section-attestation");
+  has(files.qrCss, ".qr-atomic-field");
   has(files.qrCss, ".qr-receipt-panel");
   has(files.qrCss, ".qr-alert-panel");
 
-  has(files.qrRenderer, 'QUALIFIED_REVIEW_RENDERER_VERSION = "qualified_review_renderer_matrix_artifacts_v2.separate_workspace"');
-  has(files.qrRenderer, "qualified_review_is_separate_system: true");
-  has(files.qrRenderer, "shares_pipeline_run_id: true");
-  has(files.qrRenderer, "no_document_assembly: true");
-  has(files.qrRenderer, "limitation_notes: true");
-  has(files.qrRenderer, "save_response_state: true");
-  has(files.qrRenderer, "submission_receipt: true");
-  has(files.qrRenderer, 'reviewer_decisions: ["confirm", "correct", "limitation", "not_applicable"]');
-  has(files.qrRenderer, 'forbidden_public_actions: ["Download JSON", "Assemble Document", "Proceed to Drafting"]');
-  has(files.qrRenderer, "before Qualified Review submission");
-  lacks(files.qrRenderer, "before draft preparation");
-  lacks(files.qrRenderer, "ready_for_assembly");
-  lacks(files.qrRenderer, "assembly-engine.html");
+  has(files.qrPresentation, 'QUALIFIED_REVIEW_PRESENTATION_VERSION = "phase13_qualified_review_presentation.v1"');
+  has(files.qrPresentation, "qualified_review_is_separate_system: true");
+  has(files.qrPresentation, "shares_pipeline_run_id: true");
+  has(files.qrPresentation, "no_document_assembly: true");
+  has(files.qrPresentation, 'confirmation_unit: "SECTION"');
+  has(files.qrPresentation, "per_question_confirmation_forbidden: true");
+  has(files.qrPresentation, "field_edit_resets_section_attestation: true");
+  has(files.qrPresentation, "local_counsel_review_required: true");
+  has(files.qrPresentation, "legal_architect_not_law_firm: true");
 
-  has(files.qrJs, 'const VERSION = "interface_qualified_review_workspace.v2"');
-  has(files.qrJs, "qualified_review_is_separate_system: true");
-  has(files.qrJs, "shares_pipeline_run_id: true");
-  has(files.qrJs, "no_document_assembly: true");
+  has(files.qrJs, 'const VERSION = "interface_qualified_review_section_attestation.v3"');
+  has(files.qrJs, 'confirmation_unit: "SECTION"');
+  has(files.qrJs, "per_question_confirmation_forbidden: true");
   has(files.qrJs, "QUALIFIED_REVIEW_NO_DOCUMENT_ASSEMBLY_NOT_LOCKED");
   has(files.qrJs, "renderMatterSummary");
-  has(files.qrJs, "renderFinding");
-  has(files.qrJs, '["confirm", "Confirm"]');
-  has(files.qrJs, '["correct", "Correct"]');
-  has(files.qrJs, '["limitation", "Add limitation"]');
-  has(files.qrJs, '["not_applicable", "Not applicable"]');
-  has(files.qrJs, "reviewer_limitation");
-  has(files.qrJs, "not_applicable_reason: limitation");
-  has(files.qrJs, "save_reason: reason");
-  has(files.qrJs, "question_responses: responses");
-  has(files.qrJs, "localStorage.setItem");
-  has(files.qrJs, "renderReceipt");
-  has(files.qrJs, "Qualified Review receipt");
-  has(files.qrJs, "No document was assembled");
+  has(files.qrJs, "renderSectionAttestation");
+  has(files.qrJs, "Attest this section");
+  has(files.qrJs, "fieldChanged");
+  has(files.qrJs, "Save draft");
+  has(files.qrJs, "Submit Qualified Review");
+  has(files.qrJs, "DILIGENCE DERIVED");
+  has(files.qrJs, "{MARKET BASED} — not diligence evidence");
   has(files.qrJs, "technical-annexure.html?run_id=");
   has(files.qrJs, "report.html?run_id=");
+  lacks(files.qrJs, '["confirm", "Confirm"]');
+  lacks(files.qrJs, "question_responses");
+  lacks(files.qrJs, "qualified-review-backend-sync");
   lacks(files.qrJs, "assembly-engine.html");
-  lacks(files.qrJs, "Proceed to Drafting");
-  lacks(files.qrJs, "Ready for draft preparation");
-  lacks(files.qrHtml, "Proceed to Drafting");
+
+  has(files.publicRoutes, "qualified-review/:run_id/draft");
+  has(files.publicRoutes, "sections/:section_id/attestation");
+  has(files.publicRoutes, "qualified-review/:run_id/submit");
+  has(files.publicRoutes, "QUALIFIED_REVIEW_MATRIX_SUBMISSION_RETIRED");
 }
 
 function validateScripts() {
@@ -161,7 +164,7 @@ function validateScripts() {
     base + "technical-annexure.js",
     base + "annexure-route-sync.js",
     base + "qualified-review-system/qualified-review.js",
-    "src/qualified-review-system/renderer.js",
+    "src/phases/13-qualified-review/presentation/qualified-review-presentation.builder.js",
     "scripts/check-interface-annex-qr-contract.mjs"
   ]) {
     const result = spawnSync(process.execPath, ["--check", path.join(root, file)], { encoding: "utf8" });
