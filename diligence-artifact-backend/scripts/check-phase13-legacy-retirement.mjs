@@ -34,7 +34,8 @@ const requiredAuthorityPaths = [
   "src/runtime/contracts/phase15-diligence-qa-runtime.contract.js",
   "src/runtime/contracts/phase16-assembly-runtime.contract.js",
   "src/runtime/contracts/post-review-production-cutover.contract.js",
-  "references/registry/qr/v2_1/QR_Registry_Catalog_v2.yml",
+  "references/registry/qr/ACTIVE_QR_REGISTRY.yml",
+  "references/registry/qr/v2_1/QR_Registry_Catalog.yml",
   "references/registry/qr/v2_1/QR_Registry_Validation_Report.md",
   "references/document-templates/ai/v2_1/TEMPLATE_MANIFEST.yml"
 ];
@@ -113,6 +114,7 @@ console.log(JSON.stringify({
   legacy_matrix_removed: true,
   legacy_backend_sync_removed: true,
   retired_responses_endpoint_tombstoned: true,
+  active_catalog: "references/registry/qr/v2_1/QR_Registry_Catalog.yml",
   active_authority: "QR_BRIDGE_REGISTRY_V2_1_SECTION_ATTESTED_RUNTIME"
 }, null, 2));
 
