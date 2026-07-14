@@ -71,67 +71,187 @@ jobs:
               raise SystemExit("missing required live preflight configuration: " + ", ".join(missing))
           PY
 
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v3
-        with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
-          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+      - name: Diagnose GitHub OIDC and Google STS trust
+        id: oidc
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import base64
+          import json
+          import os
+          import urllib.error
+          import urllib.parse
+          import urllib.request
 
-      - name: Setup gcloud
-        uses: google-github-actions/setup-gcloud@v2
+          report_path = "co-final-live-preflight.json"
+          report = json.load(open(report_path, encoding="utf-8"))
+          provider = os.environ["GCP_WORKLOAD_IDENTITY_PROVIDER"].strip()
+          for prefix in ("https://iam.googleapis.com/", "//iam.googleapis.com/"):
+              if provider.startswith(prefix):
+                  provider = provider[len(prefix):]
+          audience = "https://iam.googleapis.com/" + provider
+          request_url = os.environ["ACTIONS_ID_TOKEN_REQUEST_URL"]
+          separator = "&" if "?" in request_url else "?"
+          request_url += separator + "audience=" + urllib.parse.quote(audience, safe="")
+          request = urllib.request.Request(
+              request_url,
+              headers={"Authorization": "Bearer " + os.environ["ACTIONS_ID_TOKEN_REQUEST_TOKEN"]},
+          )
+          with urllib.request.urlopen(request, timeout=30) as response:
+              oidc_token = json.load(response)["value"]
+
+          payload_segment = oidc_token.split(".")[1]
+          payload_segment += "=" * (-len(payload_segment) % 4)
+          claims = json.loads(base64.urlsafe_b64decode(payload_segment.encode("ascii")))
+          report["github_oidc_claims"] = {
+              key: claims.get(key)
+              for key in ("repository", "repository_owner", "ref", "event_name", "sub", "workflow", "job_workflow_ref")
+              if key in claims
+          }
+          report["github_oidc_token_issued"] = True
+
+          sts_payload = urllib.parse.urlencode({
+              "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange",
+              "audience": "//iam.googleapis.com/" + provider,
+              "scope": "https://www.googleapis.com/auth/cloud-platform",
+              "requested_token_type": "urn:ietf:params:oauth:token-type:access_token",
+              "subject_token_type": "urn:ietf:params:oauth:token-type:jwt",
+              "subject_token": oidc_token,
+          }).encode("utf-8")
+          sts_request = urllib.request.Request(
+              "https://sts.googleapis.com/v1/token",
+              data=sts_payload,
+              headers={"Content-Type": "application/x-www-form-urlencoded"},
+              method="POST",
+          )
+          try:
+              with urllib.request.urlopen(sts_request, timeout=30) as response:
+                  sts = json.load(response)
+              federated_token = sts["access_token"]
+              report["google_sts_exchange_succeeded"] = True
+              report["google_sts_error"] = None
+          except urllib.error.HTTPError as error:
+              body = error.read().decode("utf-8", errors="replace")
+              try:
+                  parsed = json.loads(body)
+              except json.JSONDecodeError:
+                  parsed = {"message": body[:1000]}
+              report["google_sts_exchange_succeeded"] = False
+              report["google_sts_http_status"] = error.code
+              report["google_sts_error"] = parsed.get("error", parsed)
+              json.dump(report, open(report_path, "w", encoding="utf-8"), indent=2, sort_keys=True)
+              raise SystemExit("Google STS rejected the GitHub OIDC identity; see redacted artifact")
+
+          service_account = os.environ["GCP_DEPLOY_SERVICE_ACCOUNT"].strip()
+          iam_url = (
+              "https://iamcredentials.googleapis.com/v1/projects/-/serviceAccounts/"
+              + urllib.parse.quote(service_account, safe="")
+              + ":generateAccessToken"
+          )
+          iam_payload = json.dumps({
+              "scope": ["https://www.googleapis.com/auth/cloud-platform"],
+              "lifetime": "1800s",
+          }).encode("utf-8")
+          iam_request = urllib.request.Request(
+              iam_url,
+              data=iam_payload,
+              headers={
+                  "Authorization": "Bearer " + federated_token,
+                  "Content-Type": "application/json",
+              },
+              method="POST",
+          )
+          try:
+              with urllib.request.urlopen(iam_request, timeout=30) as response:
+                  impersonation = json.load(response)
+              access_token = impersonation["accessToken"]
+              report["service_account_impersonation_succeeded"] = True
+              report["service_account_impersonation_error"] = None
+          except urllib.error.HTTPError as error:
+              body = error.read().decode("utf-8", errors="replace")
+              try:
+                  parsed = json.loads(body)
+              except json.JSONDecodeError:
+                  parsed = {"message": body[:1000]}
+              report["service_account_impersonation_succeeded"] = False
+              report["service_account_impersonation_http_status"] = error.code
+              report["service_account_impersonation_error"] = parsed.get("error", parsed)
+              json.dump(report, open(report_path, "w", encoding="utf-8"), indent=2, sort_keys=True)
+              raise SystemExit("Google service-account impersonation rejected the federated identity; see redacted artifact")
+
+          with open("/tmp/co-final-gcp-access-token", "w", encoding="utf-8") as handle:
+              handle.write(access_token)
+          json.dump(report, open(report_path, "w", encoding="utf-8"), indent=2, sort_keys=True)
+          PY
 
       - name: Verify deployed service queue and runtime contract
         shell: bash
         run: |
           set -euo pipefail
-          gcloud config set project "$GCP_PROJECT_ID" >/dev/null
-          gcloud config set run/region "$GCP_REGION" >/dev/null
-          SERVICE_JSON=$(mktemp)
-          QUEUE_JSON=$(mktemp)
-          gcloud run services describe "$GCP_ARTIFACT_CLOUD_RUN_SERVICE" \
-            --project "$GCP_PROJECT_ID" \
-            --region "$GCP_REGION" \
-            --format=json > "$SERVICE_JSON"
-          gcloud tasks queues describe "$CLOUD_TASKS_QUEUE" \
-            --project "$GCP_PROJECT_ID" \
-            --location "$GCP_REGION" \
-            --format=json > "$QUEUE_JSON"
-          python - "$SERVICE_JSON" "$QUEUE_JSON" <<'PY'
-          import json, sys
-          service = json.load(open(sys.argv[1], encoding="utf-8"))
-          queue = json.load(open(sys.argv[2], encoding="utf-8"))
-          template = service.get("spec", {}).get("template", {}).get("spec", {})
-          containers = template.get("containers", [])
+          python - <<'PY'
+          import json
+          import os
+          import urllib.error
+          import urllib.parse
+          import urllib.request
+
+          token = open("/tmp/co-final-gcp-access-token", encoding="utf-8").read().strip()
+          project = os.environ["GCP_PROJECT_ID"]
+          region = os.environ["GCP_REGION"]
+          service_name = os.environ["GCP_ARTIFACT_CLOUD_RUN_SERVICE"]
+          queue_name = os.environ["CLOUD_TASKS_QUEUE"]
+
+          def get_json(url):
+              request = urllib.request.Request(url, headers={"Authorization": "Bearer " + token})
+              with urllib.request.urlopen(request, timeout=30) as response:
+                  return json.load(response)
+
+          service = get_json(
+              "https://run.googleapis.com/v2/projects/"
+              + urllib.parse.quote(project, safe="")
+              + "/locations/"
+              + urllib.parse.quote(region, safe="")
+              + "/services/"
+              + urllib.parse.quote(service_name, safe="")
+          )
+          queue = get_json(
+              "https://cloudtasks.googleapis.com/v2/projects/"
+              + urllib.parse.quote(project, safe="")
+              + "/locations/"
+              + urllib.parse.quote(region, safe="")
+              + "/queues/"
+              + urllib.parse.quote(queue_name, safe="")
+          )
+
+          containers = service.get("template", {}).get("containers", [])
           env_names = sorted({entry.get("name") for container in containers for entry in container.get("env", []) if entry.get("name")})
           required_env_names = {
               "GCP_PROJECT_ID", "GCP_REGION", "DRIVE_PARENT_FOLDER_ID", "SHEETS_SPREADSHEET_ID",
               "GPT_ACTION_API_KEY", "GEMINI_API_KEYS", "CLOUD_TASKS_QUEUE", "CLOUD_TASKS_LOCATION"
           }
           missing_env_names = sorted(required_env_names.difference(env_names))
-          status = service.get("status", {})
           report = json.load(open("co-final-live-preflight.json", encoding="utf-8"))
           report.update({
-              "cloud_run_service_ready": bool(status.get("url")),
-              "cloud_run_latest_ready_revision": status.get("latestReadyRevisionName", ""),
+              "cloud_run_service_ready": bool(service.get("uri")),
+              "cloud_run_latest_ready_revision": service.get("latestReadyRevision", ""),
               "cloud_run_runtime_env_names_present": sorted(required_env_names.intersection(env_names)),
               "cloud_run_runtime_env_names_missing": missing_env_names,
               "cloud_tasks_queue_state": queue.get("state", "UNKNOWN"),
               "cloud_tasks_queue_name_present": bool(queue.get("name")),
           })
           json.dump(report, open("co-final-live-preflight.json", "w", encoding="utf-8"), indent=2, sort_keys=True)
-          if not status.get("url") or missing_env_names:
+          if not service.get("uri") or missing_env_names:
               raise SystemExit("deployed service runtime contract incomplete")
+          with open("/tmp/co-final-cloud-run-uri", "w", encoding="utf-8") as handle:
+              handle.write(service["uri"])
           PY
 
       - name: Health smoke
         shell: bash
         run: |
           set -euo pipefail
-          URL=$(gcloud run services describe "$GCP_ARTIFACT_CLOUD_RUN_SERVICE" \
-            --project "$GCP_PROJECT_ID" \
-            --region "$GCP_REGION" \
-            --format='value(status.url)')
+          URL=$(cat /tmp/co-final-cloud-run-uri)
           HTTP_STATUS=$(curl --silent --show-error --location --output co-final-health.json --write-out '%{http_code}' "${URL%/}/health")
           test "$HTTP_STATUS" = "200"
           python - <<'PY'
