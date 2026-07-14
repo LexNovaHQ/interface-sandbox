@@ -1,26 +1,8 @@
-import { PHASE12_RENDERER_READ_ARTIFACT_NAMES } from "../contracts/artifact-permissions.contract.js";
+import { QUALIFIED_REVIEW_RUNTIME_READS, QUALIFIED_REVIEW_RUNTIME_WRITES } from "../contracts/phase13-runtime.contract.js";
 import { saveJsonArtifactToDrive, readJsonArtifactFromDrive } from "./storage/drive.service.js";
 import { getArtifactMetadata, getNextArtifactVersion, saveArtifactMetadata, updateRunRecord, logEvent } from "./storage/firestore.service.js";
 import { updateRunDashboardRow } from "./storage/sheets.service.js";
 import { runQualifiedReviewPhase, QUALIFIED_REVIEW_PAUSE_PHASE } from "../../phases/13-qualified-review/qualified-review.runner.js";
-
-export const QUALIFIED_REVIEW_RUNTIME_READS = Object.freeze([
-  "domain_derivation_profile",
-  "active_run_package_manifest",
-  ...PHASE12_RENDERER_READ_ARTIFACT_NAMES
-]);
-
-export const QUALIFIED_REVIEW_RUNTIME_WRITES = Object.freeze([
-  "qr_registry_load_manifest",
-  "qr_registry_structural_validation",
-  "qr_registry_resolution_manifest",
-  "qr_phase12_value_resolution",
-  "qr_active_field_ledger",
-  "phase13_domain_field_resolution_summary",
-  "qualified_review_handoff",
-  "qualified_review_renderer_payload",
-  "qualified_review_validation_manifest"
-]);
 
 export async function rebuildQualifiedReviewWorkspace({ run, reviewer_values = {} } = {}) {
   const artifacts = {};
