@@ -205,8 +205,9 @@
     state.saving = true; renderWorkflow();
     try {
       const payload = await request(`${endpoint}/sections/${encodeURIComponent(section.section_id)}/attestation`, { method: "PUT", body: JSON.stringify({ attested, reviewer_identity: "public_qualified_review_ui" }) });
-      state.draft = payload.qualified_review_draft || state.draft;
-      render(); announce(attested ? `${section.section_title} attested.` : `${section.section_title} attestation removed.`);
+      if (payload.qualified_review_handoff) applyPayload(payload, section.section_id);
+      else { state.draft = payload.qualified_review_draft || state.draft; render(); }
+      announce(attested ? `${section.section_title} attested.` : `${section.section_title} attestation removed.`);
     } finally { state.saving = false; renderWorkflow(); renderNavigation(); }
   }
 
