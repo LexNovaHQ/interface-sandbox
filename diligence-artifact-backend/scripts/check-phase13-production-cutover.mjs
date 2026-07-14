@@ -69,7 +69,9 @@ const asyncRuntime = read("src/runtime/services/async-phase13.service.js");
 assert.match(asyncRuntime, /AWAITING_ASSEMBLY/);
 assert.match(asyncRuntime, /ASSEMBLY_ENGINE/);
 assert.match(asyncRuntime, /runAssemblyEngineRuntime/);
-assert.match(asyncRuntime, /ASSEMBLY_AUTHORIZATION_REQUIRED/);
+assert.match(asyncRuntime, /assemblyAuthorizationRequested/);
+assert.match(asyncRuntime, /ASSEMBLY_AUTHORIZATION_DILIGENCE_QA_INCOMPLETE/);
+assert.match(asyncRuntime, /ASSEMBLY_ENGINE_AUTHORIZED/);
 
 const productionManifest = read("scripts/production-gate.manifest.mjs");
 for (const requiredScript of [
@@ -94,6 +96,7 @@ console.log(JSON.stringify({
   diligence_qa_active: true,
   explicit_assembly_authorization_active: true,
   authorization_action_owned_by_schema: true,
+  qa_guard_owned_by_async_runtime: true,
   terminal_phase: "COMPLETE",
   source_certification_command: POST_REVIEW_PRODUCTION_CUTOVER_CONTRACT.source_certification_command,
   live_cloud_execution_separate: true
