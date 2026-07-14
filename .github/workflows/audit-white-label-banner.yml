@@ -1,0 +1,45 @@
+name: Audit White-Label Banner
+
+on:
+  pull_request:
+    branches:
+      - domain-gate-v0-preflight
+    paths:
+      - ".github/workflows/audit-white-label-banner.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  extract-banner:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract and validate embedded PNG
+        run: |
+          python - <<'PY'
+          import hashlib, json, struct, zlib
+          from pathlib import Path
+          from zipfile import ZipFile
+          doc=Path('diligence-artifact-backend/references/document-templates/ai/v2_1/lane-a/DOC_AI_A_TOS_QR_READY_v2_1.docx')
+          out=Path('banner-audit');out.mkdir()
+          with ZipFile(doc) as z:data=z.read('word/media/image1.png')
+          assert data[:8]==b'\x89PNG\r\n\x1a\n'
+          pos=8;chunks=[];width=height=None
+          while pos<len(data):
+            length=struct.unpack('>I',data[pos:pos+4])[0];kind=data[pos+4:pos+8];payload=data[pos+8:pos+8+length];crc=struct.unpack('>I',data[pos+8+length:pos+12+length])[0]
+            assert zlib.crc32(kind+payload)&0xffffffff==crc,(kind,crc)
+            chunks.append(kind.decode('ascii'))
+            if kind==b'IHDR':width,height=struct.unpack('>II',payload[:8])
+            pos+=12+length
+            if kind==b'IEND':break
+          (out/'embedded-banner.png').write_bytes(data)
+          report={'sha256':hashlib.sha256(data).hexdigest(),'size_bytes':len(data),'width':width,'height':height,'chunks':chunks,'png_crc_valid':True}
+          (out/'audit.json').write_text(json.dumps(report,indent=2))
+          print(json.dumps(report,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: embedded-white-label-banner
+          path: banner-audit/
+          retention-days: 7
