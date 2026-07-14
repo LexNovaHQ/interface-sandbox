@@ -6,13 +6,11 @@ import {
 import { updateRunRecord, logEvent } from "./storage/firestore.service.js";
 import { updateRunDashboardRow } from "./storage/sheets.service.js";
 import {
-  assertPostReviewArtifactsAbsent,
   persistImmutablePostReviewArtifact,
   readPostReviewArtifact
 } from "./immutable-post-review-artifacts.service.js";
 
 export async function compileQualifiedReviewSubmissionRuntime({ run } = {}) {
-  await assertPostReviewArtifactsAbsent(run.run_id, QUALIFIED_REVIEW_SUBMISSION_RUNTIME_WRITES);
   const artifacts = {};
   for (const artifactName of QUALIFIED_REVIEW_SUBMISSION_RUNTIME_READS) {
     artifacts[artifactName] = await readPostReviewArtifact(run.run_id, artifactName);
