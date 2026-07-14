@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import yaml from "js-yaml";
 import { loadPackageCatalogV0, packageIdSet } from "./package-catalog.loader.js";
-import { isSelectableLifecycle, loadPackageLifecycleV1, selectablePackageIds } from "./package-lifecycle.loader.js";
+import { loadPackageLifecycleV1, mountablePackageIds } from "./package-lifecycle.loader.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const BACKEND_ROOT = path.resolve(__dirname, "../../..");
@@ -47,14 +47,18 @@ export async function loadDomainDerivationRegistryV0() {
   const registry = {
     registry_id: DOMAIN_REGISTRY_ID,
     schema_version: String(grammar.schema_version || fdr?.registry?.version || "v2"),
-    status: "ASSEMBLED_FROM_LIFECYCLE_GATED_KEYS_AND_FDR_GRAMMAR",
+    status: "MODEL_LED_REGISTRY_LADDER_WITH_DETERMINISTIC_SUPPORT_VALIDATION",
+    derivation_authority: "MODEL_SEMANTIC_JUDGMENT",
+    deterministic_role: "STRUCTURE_EVIDENCE_CONSISTENCY_AND_MOUNT_VALIDATION_ONLY",
     rules,
     grammar,
     keys_by_package: keysByPackage,
     key_files: Object.fromEntries(Object.entries(discovered).map(([pkg, v]) => [pkg, v.file])),
     regulatory_overlays_by_package: collectRegulatoryOverlays(keysByPackage),
     package_lifecycle_by_id: lifecycle.packages,
-    selectable_primary_packages: selectablePackageIds(lifecycle)
+    catalog_primary_packages: [...(catalog.primary_domain_packages || [])],
+    mountable_primary_packages: mountablePackageIds(lifecycle),
+    selectable_primary_packages: mountablePackageIds(lifecycle)
   };
   validateAssembledRegistry({ registry, catalog, lifecycle });
   return { registry, catalog, grammar, lifecycle };
@@ -65,11 +69,18 @@ function assembleRules({ keysByPackage, grammar, lifecycle }) {
   for (const [pkg, key] of Object.entries(keysByPackage)) {
     const ddr = key.domain_derivation_rules || {};
     const lifecycleRecord = lifecycle?.packages?.[pkg];
-    if (ddr.primary_domain_rule && isSelectableLifecycle(lifecycleRecord)) {
-      rules.push(normalizeRule(ddr.primary_domain_rule, { rule_type: "PRIMARY_DOMAIN", package_id: pkg, package_lifecycle: lifecycleRecord.lifecycle }));
+    if (ddr.primary_domain_rule) {
+      rules.push(normalizeRule(ddr.primary_domain_rule, {
+        rule_type: "PRIMARY_DOMAIN",
+        package_id: pkg,
+        package_lifecycle: lifecycleRecord?.lifecycle || ""
+      }));
     }
-    if (lifecycleRecord?.lifecycle !== "DECLARED_NOT_INSTALLED") {
-      for (const r of ddr.capability_overlay_mount_rules || []) rules.push(normalizeRule(r, { rule_type: r.rule_type || "AI_MOUNT", package_lifecycle: lifecycleRecord?.lifecycle || "" }));
+    for (const r of ddr.capability_overlay_mount_rules || []) {
+      rules.push(normalizeRule(r, {
+        rule_type: r.rule_type || "AI_MOUNT",
+        package_lifecycle: lifecycleRecord?.lifecycle || ""
+      }));
     }
   }
   if (grammar.fallback_rule) rules.push(normalizeRule(grammar.fallback_rule, { rule_type: "FALLBACK" }));
@@ -112,48 +123,40 @@ function collectRegulatoryOverlays(keysByPackage) {
   return out;
 }
 
-export function validateAssembledRegistry({ registry, catalog, lifecycle } = {}) {
+export function validateAssembledRegistry({ registry, catalog } = {}) {
   const errors = [];
   const packages = packageIdSet(catalog || {});
-  const lifecyclePackages = lifecycle?.packages || registry?.package_lifecycle_by_id || {};
   const ids = new Set();
-  const primaryByPackage = new Map();
+  const primaryByDiscoveredPackage = new Map();
   for (const rule of registry?.rules || []) {
     if (!rule.rule_id) { errors.push("rule_id missing"); continue; }
     if (ids.has(rule.rule_id)) errors.push(`duplicate rule_id: ${rule.rule_id}`);
     ids.add(rule.rule_id);
     if (!rule.rule_type) errors.push(`${rule.rule_id} missing rule_type`);
     if (!rule.trigger_if) errors.push(`${rule.rule_id} trigger_if missing`);
-    if (!rule.exclude_if_present || !isMachineExclusion(rule.exclude_if)) errors.push(`${rule.rule_id} exclude_if must use machine grammar`);
+    if (!rule.exclude_if_present) errors.push(`${rule.rule_id} exclude_if missing`);
     if (rule.rule_type !== "FALLBACK" && !Object.keys(rule.conditions).length) errors.push(`${rule.rule_id} conditions empty`);
     if (rule.rule_type === "PRIMARY_DOMAIN") {
       if (!packages.has(rule.package_id)) errors.push(`${rule.rule_id} package_id not in catalog: ${rule.package_id || "missing"}`);
-      if (!isSelectableLifecycle(lifecyclePackages[rule.package_id])) errors.push(`${rule.rule_id} package is not selectable:${rule.package_id || "missing"}`);
-      primaryByPackage.set(rule.package_id, (primaryByPackage.get(rule.package_id) || 0) + 1);
+      primaryByDiscoveredPackage.set(rule.package_id, (primaryByDiscoveredPackage.get(rule.package_id) || 0) + 1);
     }
     for (const ref of conditionRefs(rule.trigger_if)) if (!(ref in rule.conditions)) errors.push(`${rule.rule_id} trigger_if references undeclared ${ref}`);
   }
-  for (const packageId of Object.values(lifecyclePackages).filter(isSelectableLifecycle).map((record) => record.package_id)) {
-    if (!registry?.keys_by_package?.[packageId]) errors.push(`selectable package missing registry key:${packageId}`);
-    if (primaryByPackage.get(packageId) !== 1) errors.push(`selectable package must have exactly one primary rule:${packageId}:${primaryByPackage.get(packageId) || 0}`);
+  for (const packageId of Object.keys(registry?.keys_by_package || {})) {
+    if (!packages.has(packageId)) errors.push(`discovered registry key package absent from catalog:${packageId}`);
+    if (primaryByDiscoveredPackage.get(packageId) !== 1) errors.push(`discovered package must have exactly one primary rule:${packageId}:${primaryByDiscoveredPackage.get(packageId) || 0}`);
   }
   if (!ids.has("NO_SUPPORTED_PRIMARY_DOMAIN_LOCK")) errors.push("fallback rule missing");
   if (!ids.has("DOMAIN_FUSION_CANDIDATE")) errors.push("fusion rule missing");
+  if (registry?.derivation_authority !== "MODEL_SEMANTIC_JUDGMENT") errors.push("model derivation authority missing");
   if (errors.length) throw new Error(`INVALID_DOMAIN_REGISTRY:${errors.join("|")}`);
-  return { status: "PASS", rule_count: registry.rules.length, selectable_package_count: registry.selectable_primary_packages?.length || 0 };
-}
-
-function isMachineExclusion(value) {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
-  if (Object.prototype.hasOwnProperty.call(value, "condition")) return typeof value.condition === "string";
-  if (Object.prototype.hasOwnProperty.call(value, "rule_fired")) return typeof value.rule_fired === "string";
-  if (Object.prototype.hasOwnProperty.call(value, "rule_fired_any")) return Array.isArray(value.rule_fired_any);
-  if (Object.prototype.hasOwnProperty.call(value, "rule_fired_any_type")) return typeof value.rule_fired_any_type === "string";
-  if (Object.prototype.hasOwnProperty.call(value, "literal")) return typeof value.literal === "boolean";
-  if (Object.prototype.hasOwnProperty.call(value, "not")) return isMachineExclusion(value.not);
-  if (Object.prototype.hasOwnProperty.call(value, "any")) return Array.isArray(value.any) && value.any.length > 0 && value.any.every(isMachineExclusion);
-  if (Object.prototype.hasOwnProperty.call(value, "all")) return Array.isArray(value.all) && value.all.length > 0 && value.all.every(isMachineExclusion);
-  return false;
+  return {
+    status: "PASS",
+    rule_count: registry.rules.length,
+    discovered_key_count: Object.keys(registry.keys_by_package || {}).length,
+    catalog_domain_count: registry.catalog_primary_packages?.length || 0,
+    mountable_package_count: registry.mountable_primary_packages?.length || 0
+  };
 }
 
 function conditionRefs(expr) {
