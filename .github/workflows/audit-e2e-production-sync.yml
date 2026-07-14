@@ -1,0 +1,42 @@
+name: End-to-End Production Sync Audit
+
+on:
+  pull_request:
+    branches:
+      - domain-gate-v0-preflight
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit-production-pipeline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: diligence-artifact-backend/package-lock.json
+
+      - name: Install locked dependencies
+        working-directory: diligence-artifact-backend
+        run: npm ci
+
+      - name: Run universal production gate
+        working-directory: diligence-artifact-backend
+        run: npm run check:critical
+
+      - name: Run end-to-end contract and blocker audit
+        working-directory: diligence-artifact-backend
+        run: node scripts/audit-e2e-production-sync.mjs
+
+      - name: Upload audit evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-production-sync-audit
+          path: diligence-artifact-backend/audit-output/
+          if-no-files-found: error
