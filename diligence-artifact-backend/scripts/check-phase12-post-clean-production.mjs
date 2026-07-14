@@ -13,6 +13,7 @@ const EXPECTED_PACKAGE_SCRIPTS = Object.freeze([
   "start",
   "check",
   "check:critical",
+  "check:phase1-16-production",
   "check:production-gate-severity",
   "check:syntax:active",
   "check:domain-gate-v0",
@@ -30,6 +31,14 @@ const EXPECTED_PACKAGE_SCRIPTS = Object.freeze([
   "check:phase11-critical",
   "check:phase12-production",
   "check:phase12-post-clean",
+  "check:phase13-authority",
+  "check:phase13-domain-field-resolution",
+  "check:phase13-qr-runtime-ui",
+  "check:phase13-submission-qa",
+  "check:phase13-legacy-retirement",
+  "check:phase16-assembly",
+  "check:phase13-production-cutover",
+  "check:phase13-production",
   "check:interface-ui",
   "check:interface-report-ui-contract",
   "check:interface-report-visual-regression",
@@ -67,8 +76,10 @@ const pkg = JSON.parse(read("package.json"));
 assert.deepEqual(Object.keys(pkg.scripts), EXPECTED_PACKAGE_SCRIPTS, "package scripts must stay rationalized and deterministic");
 assert.equal(pkg.scripts.check, "npm run check:critical");
 assert.equal(pkg.scripts["check:critical"], "node scripts/run-production-gate.mjs");
+assert.equal(pkg.scripts["check:phase1-16-production"], "node scripts/run-production-gate.mjs");
 assert.equal(pkg.scripts["check:phase12-production"], "node scripts/check-phase12-production.mjs");
 assert.equal(pkg.scripts["check:phase12-post-clean"], "node scripts/check-phase12-post-clean-production.mjs");
+assert.equal(pkg.scripts["check:phase13-production"], "npm run check:phase13-authority && npm run check:phase13-domain-field-resolution && npm run check:phase13-qr-runtime-ui && npm run check:phase13-submission-qa && npm run check:phase13-legacy-retirement && npm run check:phase16-assembly && npm run check:phase13-production-cutover");
 assert.equal(pkg.scripts["check:interface-ui"], "node scripts/check-interface-ui-universal.mjs && node scripts/check-interface-report-ui-contract.mjs && node scripts/check-interface-annex-qr-contract.mjs && node scripts/check-interface-assembly-signals-contract.mjs && node scripts/check-interface-report-visual-regression.mjs");
 assert.equal(pkg.dependencies.cors, "^2.8.5", "cors dependency must remain on the real cors package line, not Express version drift");
 
@@ -79,6 +90,8 @@ for (const forbiddenScript of ["check:p12:co1", "check:p12:co2", "check:p12:co3"
 const gateManifest = read("scripts/production-gate.manifest.mjs");
 assert.ok(gateManifest.includes('gate("phase12-production", "Phase 12 production compiler and renderer", "check:phase12-production"'));
 assert.ok(gateManifest.includes('gate("phase12-post-clean", "Phase 12 post-clean production hygiene", "check:phase12-post-clean"'));
+assert.ok(gateManifest.includes('gate("phase13-legacy-retirement", "Phase 13 legacy matrix retirement", "check:phase13-legacy-retirement"'));
+assert.ok(gateManifest.includes('gate("phase16-assembly", "Phase 16 Review-Ready document assembly", "check:phase16-assembly"'));
 assert.ok(gateManifest.includes('gate("interface-ui", "Universal Interface UI contract", "check:interface-ui"'));
 
 const coClean02 = assertNoUnreferencedCleaningArtifacts();
@@ -139,6 +152,7 @@ console.log(JSON.stringify({
   phase12_compiler: "DIRECT_PROFILE_COMPILER_ACTIVE",
   phase12_renderer: "CLEAN_PROFILE_RENDERER_ACTIVE",
   route_contract_status: "CO_P12_03_ROUTE_CONTRACT_ACTIVE",
+  phase13_16_gates_registered: true,
   interface_ui_gate: "ACTIVE",
   closeout_stale_markers: "ABSENT",
   legacy_normalized_aliases: "ABSENT",
