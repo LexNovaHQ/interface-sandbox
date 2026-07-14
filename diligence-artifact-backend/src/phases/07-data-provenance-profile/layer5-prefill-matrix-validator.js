@@ -1,7 +1,7 @@
 import { PHASE7_PREFILL_STATUSES } from "./layer5-prefill-status-policy.js";
 
 const FORBIDDEN_KEYS = Object.freeze(["excerpt", "excerpts", "raw_text", "clean_text", "content", "body", "html", "markdown", "text", "final_value", "final_dap_value", "profile_value"]);
-const UNRESOLVED_STATUSES = Object.freeze(["NAVIGATION_DEFECT_REINVESTIGATION_REQUIRED", "SOURCE_NOT_ROUTED_BY_M6", "NOT_VISIBLE_AFTER_TARGETED_SCAN", "REQUIRES_PRIVATE_CONFIRMATION"]);
+const UNRESOLVED_STATUSES = Object.freeze(["REINVESTIGATION_REQUIRED", "SOURCE_NOT_ROUTED_BY_M6", "NOT_VISIBLE_AFTER_TARGETED_SCAN", "REQUIRES_PRIVATE_CONFIRMATION"]);
 
 export function validatePhase7DeterministicFieldPrefillMatrix(prefillMatrix) {
   const errors = [];
@@ -40,6 +40,22 @@ function validateRow(row, ids, errors) {
   if (!row.missing_proof_trigger) errors.push(`missing_missing_proof_trigger:${row.field_id}`);
   if (row.deterministic_prefill_eligible && row.supporting_atom_ids?.length && UNRESOLVED_STATUSES.includes(row.prefill_candidate_status)) errors.push(`eligible_row_with_atoms_unresolved:${row.field_id}`);
   if (row.model_packet_required !== (row.prefill_candidate_status === "MODEL_PACKET_REQUIRED")) errors.push(`model_packet_flag_mismatch:${row.field_id}`);
+  validateReinvestigationMetadata(row, errors);
+}
+
+function validateReinvestigationMetadata(row, errors) {
+  const metadata = row.reinvestigation_metadata;
+  if (row.prefill_candidate_status !== "REINVESTIGATION_REQUIRED") {
+    if (metadata !== null) errors.push(`unexpected_reinvestigation_metadata:${row.field_id}`);
+    return;
+  }
+  if (!metadata || typeof metadata !== "object") { errors.push(`missing_reinvestigation_metadata:${row.field_id}`); return; }
+  if (metadata.status !== "REINVESTIGATION_REQUIRED") errors.push(`bad_reinvestigation_status:${row.field_id}`);
+  if (!metadata.reinvestigation_owner_phase) errors.push(`missing_reinvestigation_owner:${row.field_id}`);
+  if (!metadata.reinvestigation_scope) errors.push(`missing_reinvestigation_scope:${row.field_id}`);
+  if (!metadata.reinvestigation_reason_code) errors.push(`missing_reinvestigation_reason:${row.field_id}`);
+  if (metadata.attempt_limit !== 2) errors.push(`bad_reinvestigation_attempt_limit:${row.field_id}`);
+  if (metadata.blocking !== false) errors.push(`reinvestigation_must_be_non_blocking:${row.field_id}`);
 }
 
 function assertNoForbiddenKeys(value, path, errors) {
