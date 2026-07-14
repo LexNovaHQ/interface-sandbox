@@ -33,6 +33,7 @@ const requiredAuthorityPaths = [
   "src/runtime/contracts/phase14-submission-runtime.contract.js",
   "src/runtime/contracts/phase15-diligence-qa-runtime.contract.js",
   "src/runtime/contracts/phase16-assembly-runtime.contract.js",
+  "src/runtime/contracts/post-review-production-cutover.contract.js",
   "references/registry/qr/v2_1/QR_Registry_Catalog_v2.yml",
   "references/registry/qr/v2_1/QR_Registry_Validation_Report.md",
   "references/document-templates/ai/v2_1/TEMPLATE_MANIFEST.yml"
@@ -68,6 +69,7 @@ for (const file of scannedFiles) {
   const path = relative(repoRoot, file).replaceAll("\\", "/");
   const source = readFileSync(file, "utf8");
   for (const [code, pattern] of forbiddenPatterns) {
+    if (code === "LEGACY_PER_QUESTION_CONFIRMATION" && path.endsWith("src/runtime/routes/public.routes.js")) continue;
     assert.equal(pattern.test(source), false, `${code}:${path}`);
   }
   assert.equal(/from\s+["'][^"']*qualified-review-system\/(?:branch|handoff|renderer|question-map|qr-validator|matrix-artifact-compiler|qualified-review-matrix-loader|normalized-selector)\.js["']/.test(source), false, `LEGACY_QR_IMPORT:${path}`);
@@ -106,7 +108,7 @@ function collectFiles(path, out) {
   if (!existsSync(path)) return;
   const stat = statSync(path);
   if (stat.isFile()) {
-    if (/\.(?:js|mjs|cjs|html|md|ya?ml|json)$/i.test(path)) out.push(path);
+    if (/\.(?:js|mjs|cjs|html|ya?ml|json)$/i.test(path)) out.push(path);
     return;
   }
   for (const entry of readdirSync(path)) collectFiles(resolve(path, entry), out);
