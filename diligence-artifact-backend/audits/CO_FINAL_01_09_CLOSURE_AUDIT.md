@@ -99,24 +99,36 @@ Disposition: `FIXED`
 
 Current disposition: `CRITICAL_UNRESOLVED`
 
-Confirmed:
+Direct-cloud preflight confirmed:
 
 - Every required GCP/runtime secret is present in GitHub.
 - GitHub issues valid OIDC tokens in both PR and branch-push contexts.
 - Google STS rejects both identities with `unauthorized_client`.
-- The branch identity is `repo:LexNovaHQ/interface-sandbox:ref:refs/heads/co-e2e-01-03-critical-authority`.
+- The rejected branch identity is `repo:LexNovaHQ/interface-sandbox:ref:refs/heads/co-e2e-01-03-critical-authority`.
 
-Consequence:
+Real public transport smoke confirmed:
 
-- This PR cannot authenticate to Google Cloud to inspect Cloud Run, Cloud Tasks, Firestore or Drive directly.
-- The eight-scenario live matrix is not certified.
-- No fixture or source test is being represented as live certification.
+- Run ID: `LN-20260714-115746-CO-FINAL-PUBLIC-TRANSPOR-848890`.
+- Synthetic target: `https://example.com`; no client data.
+- Worker health returned HTTP 200.
+- Run creation returned HTTP 201 in `CLOUD_TASKS_RUNNER` mode.
+- Asynchronous advance returned HTTP 202 with `queued: true`.
+- Polling observed a recorded Cloud Tasks task name.
+- Phase 1A moved from `RUNNING` to `LOCKED` and advanced to Phase 1B.
+- A locked `deduped_url_manifest` artifact, version 1, was recorded through the Drive-backed artifact path.
+- Firestore state polling observed the run transition from `RUNNING` to `IDLE` without a runner error.
 
-A separate public transport smoke is being used only to test the external Worker/API route. Even a successful one-phase smoke would prove transport/custody reachability, not the complete eight-scenario semantic matrix.
+The public technical annexure correctly returned HTTP 409 because only one phase was executed and the report renderer had not run.
+
+Unresolved:
+
+- Direct GCP inspection cannot verify the deployed revision, queue configuration, Firestore documents or Drive file IDs from this PR identity.
+- The mandatory eight-scenario semantic live matrix is not certified.
+- Scenarios covering AI primary, FinTech report-only, uninstalled domain, unresolved primary with AI overlay, unresolved universal, exhausted semantic reinvestigation, retryable infrastructure failure and genuine critical failure were not all executed live.
 
 Required infrastructure action:
 
-- Authorize a controlled non-main certification identity or run the live matrix from the already trusted main/deployment context after an approved merge/deployment boundary.
+- Authorize a controlled non-main certification identity or run the complete live matrix from the already trusted main/deployment context after an approved deployment boundary.
 - Do not broaden WIF trust generally; scope it to the certification workflow and branch/environment required for the test.
 
 ### CO-FINAL-09 — Deployment and merge certification
@@ -126,34 +138,35 @@ Current disposition: `CRITICAL_UNRESOLVED`
 Confirmed:
 
 - The repository's intended Cloudflare deployment is a Worker proxy with a `wrangler.toml` and custom Worker routes.
+- The Worker route is live: the public health and one-phase matter smoke succeeded after using an accepted browser signature.
 - The attached Cloudflare Pages project continues attempting—and failing—to build the repository as a Pages site.
 - No Cloudflare API token or account ID is installed in GitHub, so the Pages project cannot be disabled or reconfigured from this branch.
 - Adding a fake root static build merely to satisfy Pages is prohibited because it would misrepresent the deployment architecture and risk exposing internal surfaces.
 
 Required external action:
 
-- Disable the stale Pages project or point it at the correct deployable asset intentionally.
+- Disable the stale Pages project or intentionally point it at a valid Pages asset.
 - Keep the Worker proxy as the public backend front door unless the architecture is deliberately amended.
 
 ## 4. Certification evidence
 
-Permanent clean-head certification obtained after semantic corrections and temporary-tool removal:
+Permanent certification obtained after semantic corrections:
 
 - Phase 1–16 Production Certification: `PASS`.
 - Phase 13–16 Post-Review Validation: `PASS`.
 - Semantic outcome integrity gate: `PASS`.
 - Corrected Phase 3B authority and lifecycle fixtures: `PASS`.
 
-Final run IDs and final head SHA must be written into the PR description after all temporary live-probe files are removed and the permanent suites rerun at the actual final head.
+The permanent suites must be rerun once more after all temporary probe workflows and scripts are removed. The actual final head SHA and final run IDs must then replace the stale values in the PR description.
 
 ## 5. Merge verdict
 
 **BLOCKED.**
 
-The code-level and architecture-level `0047` defects are corrected. The remaining blockers are external production-certification blockers:
+The code-level and architecture-level `0047` defects are corrected. A real transport/custody step has been proven. The remaining production-certification blockers are:
 
-1. the trusted GCP identity does not authorize PR or feature-branch certification;
-2. the eight-scenario real live matrix has not been executed;
+1. the trusted GCP identity does not authorize PR or feature-branch direct inspection;
+2. the eight-scenario real semantic live matrix has not been executed;
 3. the stale Cloudflare Pages integration is still failing and cannot be administered from GitHub with the available credentials.
 
 PR #95 must remain draft and unmerged until those blockers are resolved or the founder explicitly amends the production acceptance standard.
