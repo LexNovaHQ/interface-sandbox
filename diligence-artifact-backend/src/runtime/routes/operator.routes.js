@@ -7,7 +7,7 @@ import { sendError } from "../errors.js";
 import { CENTRAL_PHASES } from "../contracts/central-phase.contract.js";
 import { listInternalJobContracts } from "../contracts/internal-job.contract.js";
 import { createDiligenceRun, publicRunCreatedResponse } from "../services/runs.service.js";
-import { requestPipelineAdvance, runPipelineWorkerOnce } from "../services/async.service.js";
+import { requestPipelineAdvance, runPipelineWorkerOnce } from "../services/async-phase13.service.js";
 
 export const operatorRouter = express.Router();
 
