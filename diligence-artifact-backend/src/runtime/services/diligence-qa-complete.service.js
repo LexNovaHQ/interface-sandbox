@@ -1,7 +1,7 @@
 import {
   DILIGENCE_QA_PAUSE_PHASE,
   runDiligenceQaComplete
-} from "../../phases/15-diligence-qa-complete/diligence-qa-complete.runner.js";
+} from "../../phases/15-diligence-qa-complete/diligence-qa-complete.runner.v2.js";
 import {
   DILIGENCE_QA_COMPLETE_RUNTIME_READS
 } from "../contracts/phase15-diligence-qa-runtime.contract.js";
@@ -52,6 +52,7 @@ export async function runDiligenceQaCompleteRuntime({ run } = {}) {
     event_type: "DILIGENCE_QA_COMPLETE",
     actor: "diligence_qa_gate",
     payload: {
+      runner_version: receipt.runner_version,
       status: receipt.status,
       active_document_count: receipt.counts.active_document_count,
       warning_count: receipt.counts.warning_count,
