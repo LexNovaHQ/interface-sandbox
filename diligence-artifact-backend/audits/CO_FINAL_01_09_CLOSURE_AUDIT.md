@@ -150,14 +150,14 @@ Required external action:
 
 ## 4. Certification evidence
 
-Permanent certification obtained after semantic corrections:
+After all temporary applicators, export workflows and live probes were removed, the permanent suites passed at the clean closure head:
 
 - Phase 1–16 Production Certification: `PASS`.
 - Phase 13–16 Post-Review Validation: `PASS`.
 - Semantic outcome integrity gate: `PASS`.
 - Corrected Phase 3B authority and lifecycle fixtures: `PASS`.
 
-The permanent suites must be rerun once more after all temporary probe workflows and scripts are removed. The actual final head SHA and final run IDs must then replace the stale values in the PR description.
+The exact final head SHA and final workflow run IDs are maintained in PR #95's description. Updating the PR description does not mutate the certified branch head.
 
 ## 5. Merge verdict
 
