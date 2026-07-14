@@ -33,7 +33,10 @@ jobs:
           fetch-depth: 0
 
       - name: Apply exact-count semantic fixes
-        run: python diligence-artifact-backend/scripts/apply-co-final-semantic-fixes.py
+        shell: bash
+        run: |
+          set -o pipefail
+          python diligence-artifact-backend/scripts/apply-co-final-semantic-fixes.py 2>&1 | tee co-final-semantic-fix.log
 
       - name: Validate corrected JavaScript syntax
         run: |
@@ -63,4 +66,14 @@ jobs:
             exit 0
           fi
           git commit -m "Apply CO-FINAL semantic outcome corrections"
+          git pull --rebase origin co-e2e-01-03-critical-authority
           git push origin HEAD:co-e2e-01-03-critical-authority
+
+      - name: Upload semantic fix diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: co-final-semantic-fix-diagnostic-${{ github.sha }}
+          path: co-final-semantic-fix.log
+          if-no-files-found: warn
+          retention-days: 1
