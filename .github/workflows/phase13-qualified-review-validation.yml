@@ -1,0 +1,75 @@
+name: Phase 13 Qualified Review Validation
+
+on:
+  push:
+    branches:
+      - domain-gate-v0-preflight
+    paths:
+      - "diligence-artifact-backend/src/phases/13-qualified-review/**"
+      - "diligence-artifact-backend/src/phases/14-qualified-review-submission/**"
+      - "diligence-artifact-backend/src/phases/15-diligence-qa-complete/**"
+      - "diligence-artifact-backend/src/runtime/contracts/phase13-runtime.contract.js"
+      - "diligence-artifact-backend/src/runtime/contracts/phase14-submission-runtime.contract.js"
+      - "diligence-artifact-backend/src/runtime/contracts/phase15-diligence-qa-runtime.contract.js"
+      - "diligence-artifact-backend/src/runtime/contracts/internal-job.contract.js"
+      - "diligence-artifact-backend/src/runtime/services/async-phase13.service.js"
+      - "diligence-artifact-backend/src/runtime/services/qualified-review-*.service.js"
+      - "diligence-artifact-backend/src/runtime/services/diligence-qa-complete.service.js"
+      - "diligence-artifact-backend/src/runtime/services/immutable-post-review-artifacts.service.js"
+      - "diligence-artifact-backend/src/runtime/routes/public.routes.js"
+      - "diligence-artifact-backend/public/interface-diligence/diligence-system/qualified-review*"
+      - "diligence-artifact-backend/public/interface-diligence/diligence-system/qualified-review-system/**"
+      - "diligence-artifact-backend/references/registry/qr/**"
+      - "diligence-artifact-backend/references/document-templates/ai/v2_1/**"
+      - "diligence-artifact-backend/scripts/check-phase13-*.mjs"
+      - "diligence-artifact-backend/package.json"
+      - "diligence-artifact-backend/package-lock.json"
+      - ".github/workflows/phase13-qualified-review-validation.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phase13-qualified-review-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-phase13:
+    name: Validate QR runtime, submission and QA
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: diligence-artifact-backend/package-lock.json
+
+      - name: Install locked dependencies
+        working-directory: diligence-artifact-backend
+        run: npm ci
+
+      - name: Active syntax check
+        working-directory: diligence-artifact-backend
+        run: npm run check:syntax:active
+
+      - name: Phase 13 authority
+        working-directory: diligence-artifact-backend
+        run: npm run check:phase13-authority
+
+      - name: Phase 13 domain field resolution
+        working-directory: diligence-artifact-backend
+        run: npm run check:phase13-domain-field-resolution
+
+      - name: Phase 13 QR runtime and UI
+        working-directory: diligence-artifact-backend
+        run: npm run check:phase13-qr-runtime-ui
+
+      - name: Phase 13 immutable submission and Diligence QA
+        working-directory: diligence-artifact-backend
+        run: npm run check:phase13-submission-qa
