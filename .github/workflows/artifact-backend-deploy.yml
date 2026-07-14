@@ -2,9 +2,20 @@ name: Artifact Backend Deploy
 
 on:
   push:
-    branches: [main]
-    paths: [".github/workflows/artifact-backend-deploy.yml"]
+    branches:
+      - main
+    paths:
+      - "diligence-artifact-backend/**"
+      - ".github/workflows/artifact-backend-deploy.yml"
   workflow_dispatch:
+    inputs:
+      mode:
+        description: "Run mode"
+        required: true
+        default: "deploy"
+        type: choice
+        options:
+          - deploy
 
 permissions:
   contents: read
@@ -17,37 +28,39 @@ env:
   CLOUD_TASKS_QUEUE: ${{ vars.CLOUD_TASKS_QUEUE || 'diligence-reviewer-worker' }}
 
 jobs:
-  certification_matrix:
-    name: Isolated CO-FINAL eight-scenario live matrix
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+  check:
+    name: Build and syntax check
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        working-directory: diligence-artifact-backend
+        run: npm install
+
+      - name: Syntax check
+        working-directory: diligence-artifact-backend
+        run: npm run check
+
+  deploy:
+    name: Deploy Cloud Run artifact backend
+    needs: check
+    if: github.event_name == 'push' || inputs.mode == 'deploy'
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
-      issues: write
-    env:
-      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-      GCP_REGION: ${{ secrets.GCP_REGION }}
-      GCP_ARTIFACT_RUNTIME_SERVICE_ACCOUNT: ${{ secrets.GCP_ARTIFACT_RUNTIME_SERVICE_ACCOUNT }}
-      GCP_DEPLOY_SERVICE_ACCOUNT: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
-      GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-      GPT_ACTION_API_KEY: ${{ secrets.GPT_ACTION_API_KEY }}
-      GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
-      GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}
-      GEMINI_MODELS: ${{ secrets.GEMINI_MODELS }}
-      DRIVE_PARENT_FOLDER_ID: ${{ secrets.DRIVE_PARENT_FOLDER_ID }}
-      SHEETS_SPREADSHEET_ID: ${{ secrets.SHEETS_SPREADSHEET_ID }}
-      GH_TOKEN: ${{ github.token }}
-      CERT_BRANCH: co-e2e-01-03-critical-authority
     steps:
-      - name: Checkout exact PR tree
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: co-e2e-01-03-critical-authority
-          fetch-depth: 0
 
-      - name: Authenticate with trusted main workflow identity
+      - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v3
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
@@ -57,225 +70,196 @@ jobs:
       - name: Setup gcloud
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Prepare isolated certification context
-        id: context
-        shell: bash
+      - name: Verify deploy context
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          GCP_REGION: ${{ secrets.GCP_REGION }}
+          GCP_ARTIFACT_CLOUD_RUN_SERVICE: ${{ secrets.GCP_ARTIFACT_CLOUD_RUN_SERVICE }}
+          GCP_ARTIFACT_RUNTIME_SERVICE_ACCOUNT: ${{ secrets.GCP_ARTIFACT_RUNTIME_SERVICE_ACCOUNT }}
         run: |
           set -euo pipefail
-          test "$(git branch --show-current)" = "$CERT_BRANCH"
-          HEAD_SHA=$(git rev-parse HEAD)
-          MATRIX_ID="cofinal_pr95_${GITHUB_RUN_ID}"
-          CERT_SERVICE="interface-diligence-cert-${GITHUB_RUN_ID}"
-          CERT_QUEUE="diligence-cert-${GITHUB_RUN_ID}"
-          CERT_TOKEN=$(python - <<'PY2'
-          import secrets
-          print(secrets.token_urlsafe(32))
-          PY2
-          )
-          echo "head_sha=$HEAD_SHA" >> "$GITHUB_OUTPUT"
-          echo "matrix_id=$MATRIX_ID" >> "$GITHUB_OUTPUT"
-          echo "cert_token=$CERT_TOKEN" >> "$GITHUB_OUTPUT"
-          echo "CERT_TOKEN=$CERT_TOKEN" >> "$GITHUB_ENV"
-          echo "MATRIX_ID=$MATRIX_ID" >> "$GITHUB_ENV"
-          echo "EXPECTED_HEAD_SHA=$HEAD_SHA" >> "$GITHUB_ENV"
-          echo "CERT_SERVICE=$CERT_SERVICE" >> "$GITHUB_ENV"
-          echo "CERT_QUEUE=$CERT_QUEUE" >> "$GITHUB_ENV"
-          printf '%s\n' '{"status":"STARTED"}' > /tmp/co-final-live-matrix.json
+          test -n "$GCP_PROJECT_ID"
+          test -n "$GCP_REGION"
+          test -n "$GCP_ARTIFACT_CLOUD_RUN_SERVICE"
+          test -n "$GCP_ARTIFACT_RUNTIME_SERVICE_ACCOUNT"
+          gcloud config set project "$GCP_PROJECT_ID"
+          gcloud config set run/region "$GCP_REGION"
+          gcloud auth list --filter=status:ACTIVE --format="value(account)"
 
-      - name: Ensure isolated Cloud Tasks queue
-        shell: bash
+      - name: Ensure Cloud Tasks queue
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          GCP_REGION: ${{ secrets.GCP_REGION }}
+          GCP_ARTIFACT_RUNTIME_SERVICE_ACCOUNT: ${{ secrets.GCP_ARTIFACT_RUNTIME_SERVICE_ACCOUNT }}
+          CLOUD_TASKS_QUEUE: ${{ vars.CLOUD_TASKS_QUEUE || 'diligence-reviewer-worker' }}
         run: |
           set -euo pipefail
-          gcloud tasks queues create "$CERT_QUEUE" \
-            --location "$GCP_REGION" --project "$GCP_PROJECT_ID" \
-            --max-dispatches-per-second=1 --max-concurrent-dispatches=1 \
-            --max-attempts=3 --min-backoff=5s --max-backoff=15s --max-retry-duration=300s
 
-      - name: Deploy exact PR tree to isolated certification service
+          gcloud services enable cloudresourcemanager.googleapis.com \
+            --project "$GCP_PROJECT_ID" \
+            --quiet
+
+          gcloud services enable cloudtasks.googleapis.com \
+            --project "$GCP_PROJECT_ID" \
+            --quiet
+
+          if gcloud tasks queues describe "$CLOUD_TASKS_QUEUE" \
+            --location "$GCP_REGION" \
+            --project "$GCP_PROJECT_ID" >/dev/null 2>&1; then
+            gcloud tasks queues update "$CLOUD_TASKS_QUEUE" \
+              --location "$GCP_REGION" \
+              --project "$GCP_PROJECT_ID" \
+              --max-dispatches-per-second=1 \
+              --max-concurrent-dispatches=1 \
+              --max-attempts=3 \
+              --min-backoff=30s \
+              --max-backoff=300s \
+              --max-retry-duration=1800s
+          else
+            gcloud tasks queues create "$CLOUD_TASKS_QUEUE" \
+              --location "$GCP_REGION" \
+              --project "$GCP_PROJECT_ID" \
+              --max-dispatches-per-second=1 \
+              --max-concurrent-dispatches=1 \
+              --max-attempts=3 \
+              --min-backoff=30s \
+              --max-backoff=300s \
+              --max-retry-duration=1800s
+          fi
+
+          gcloud projects add-iam-policy-binding "$GCP_PROJECT_ID" \
+            --member="serviceAccount:$GCP_ARTIFACT_RUNTIME_SERVICE_ACCOUNT" \
+            --role="roles/cloudtasks.enqueuer" \
+            --quiet
+
+          echo "Cloud Tasks queue ready: $CLOUD_TASKS_QUEUE"
+
+      - name: Deploy source to Cloud Run
         working-directory: diligence-artifact-backend
-        shell: bash
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          GCP_REGION: ${{ secrets.GCP_REGION }}
+          GCP_ARTIFACT_CLOUD_RUN_SERVICE: ${{ secrets.GCP_ARTIFACT_CLOUD_RUN_SERVICE }}
+          GCP_ARTIFACT_RUNTIME_SERVICE_ACCOUNT: ${{ secrets.GCP_ARTIFACT_RUNTIME_SERVICE_ACCOUNT }}
+          GPT_ACTION_API_KEY: ${{ secrets.GPT_ACTION_API_KEY }}
+          GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
+          GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}
+          GEMINI_MODELS: ${{ secrets.GEMINI_MODELS }}
+          DRIVE_PARENT_FOLDER_ID: ${{ secrets.DRIVE_PARENT_FOLDER_ID }}
+          SHEETS_SPREADSHEET_ID: ${{ secrets.SHEETS_SPREADSHEET_ID }}
+          ALLOWED_ORIGIN: ${{ secrets.ALLOWED_ORIGIN }}
+          PUBLIC_RENDERER_BASE_URL: ${{ secrets.PUBLIC_RENDERER_BASE_URL }}
+          REVIEWER_PUBLIC_BASE_URL: ${{ secrets.REVIEWER_PUBLIC_BASE_URL }}
+          CLOUD_TASKS_QUEUE: ${{ vars.CLOUD_TASKS_QUEUE || 'diligence-reviewer-worker' }}
         run: |
           set -euo pipefail
-          npm pkg set scripts.start="node co-final-live-matrix-server.mjs"
-          python - <<'PY2'
+          python - <<'PY'
           import os
           from pathlib import Path
-          def q(v): return "'" + str(v or '').replace("'", "''") + "'"
-          primary=os.environ.get('GEMINI_MODEL') or 'gemini-2.5-flash'
-          models=os.environ.get('GEMINI_MODELS') or primary
-          env={
-            'GCP_PROJECT_ID':os.environ['GCP_PROJECT_ID'],
-            'GCP_REGION':os.environ['GCP_REGION'],
-            'GCP_CLOUD_RUN_SERVICE':os.environ['CERT_SERVICE'],
-            'FIRESTORE_DATABASE_ID':'(default)',
-            'DRIVE_PARENT_FOLDER_ID':os.environ['DRIVE_PARENT_FOLDER_ID'],
-            'SHEETS_SPREADSHEET_ID':os.environ['SHEETS_SPREADSHEET_ID'],
-            'RUNS_SHEET_NAME':'runs',
-            'GPT_ACTION_API_KEY':os.environ['GPT_ACTION_API_KEY'],
-            'GEMINI_API_KEYS':os.environ['GEMINI_API_KEYS'],
-            'GEMINI_MODEL':primary,
-            'GEMINI_MODELS':models,
-            'ALLOWED_ORIGIN':'*',
-            'CLOUD_TASKS_QUEUE':os.environ['CERT_QUEUE'],
-            'CLOUD_TASKS_LOCATION':os.environ['GCP_REGION'],
-            'CERT_TOKEN':os.environ['CERT_TOKEN'],
-            'EXPECTED_HEAD_SHA':os.environ['EXPECTED_HEAD_SHA'],
+
+          def quote_yaml(value):
+              value = "" if value is None else str(value)
+              return "'" + value.replace("'", "''") + "'"
+
+          primary_model = os.environ.get("GEMINI_MODEL") or "gemini-2.5-flash"
+          model_chain = os.environ.get("GEMINI_MODELS") or primary_model
+          region = os.environ.get("GCP_REGION", "asia-south1")
+
+          env = {
+              "GCP_PROJECT_ID": os.environ.get("GCP_PROJECT_ID", ""),
+              "GCP_REGION": region,
+              "GCP_CLOUD_RUN_SERVICE": os.environ.get("GCP_ARTIFACT_CLOUD_RUN_SERVICE", "interface-diligence-artifacts"),
+              "FIRESTORE_DATABASE_ID": "(default)",
+              "DRIVE_PARENT_FOLDER_ID": os.environ.get("DRIVE_PARENT_FOLDER_ID", ""),
+              "SHEETS_SPREADSHEET_ID": os.environ.get("SHEETS_SPREADSHEET_ID", ""),
+              "RUNS_SHEET_NAME": "runs",
+              "GPT_ACTION_API_KEY": os.environ.get("GPT_ACTION_API_KEY", ""),
+              "GEMINI_API_KEYS": os.environ.get("GEMINI_API_KEYS", ""),
+              "GEMINI_MODEL": primary_model,
+              "GEMINI_MODELS": model_chain,
+              "GEMINI_RETRY_ROUNDS": os.environ.get("GEMINI_RETRY_ROUNDS", "2"),
+              "GEMINI_KEYS_PER_MODEL_PER_ROUND": os.environ.get("GEMINI_KEYS_PER_MODEL_PER_ROUND", "2"),
+              "GEMINI_RETRY_BASE_DELAY_MS": os.environ.get("GEMINI_RETRY_BASE_DELAY_MS", "750"),
+              "GEMINI_RETRY_MAX_DELAY_MS": os.environ.get("GEMINI_RETRY_MAX_DELAY_MS", "5000"),
+              "ALLOWED_ORIGIN": os.environ.get("ALLOWED_ORIGIN") or "https://sandbox.lexnovahq.com",
+              "PUBLIC_RENDERER_BASE_URL": os.environ.get("PUBLIC_RENDERER_BASE_URL", ""),
+              "REVIEWER_PUBLIC_BASE_URL": os.environ.get("REVIEWER_PUBLIC_BASE_URL") or "https://sandbox.lexnovahq.com",
+              "PUBLIC_REVIEWER_ENABLED": "true",
+              "EXPRESS_JSON_LIMIT": "50mb",
+              "USE_M9_HYBRID": "true",
+              "CLOUD_TASKS_QUEUE": os.environ.get("CLOUD_TASKS_QUEUE") or "diligence-reviewer-worker",
+              "CLOUD_TASKS_LOCATION": region,
+              "CLOUD_TASKS_DISPATCH_DEADLINE_SECONDS": "1800",
+              "EARLY_PHASE_STALE_MS": "300000",
+              "WORKER_STALE_MS": "1200000",
           }
-          missing=[k for k,v in env.items() if not v]
-          if missing: raise SystemExit('missing certification configuration: '+','.join(missing))
-          Path('/tmp/co-final-cert-env.yaml').write_text('\n'.join(f'{k}: {q(v)}' for k,v in env.items())+'\n',encoding='utf-8')
-          PY2
-          gcloud run deploy "$CERT_SERVICE" \
-            --source . --project "$GCP_PROJECT_ID" --region "$GCP_REGION" \
+
+          missing = [key for key in [
+              "GCP_PROJECT_ID",
+              "GCP_REGION",
+              "GCP_CLOUD_RUN_SERVICE",
+              "DRIVE_PARENT_FOLDER_ID",
+              "SHEETS_SPREADSHEET_ID",
+              "GPT_ACTION_API_KEY",
+              "GEMINI_API_KEYS",
+              "GEMINI_MODEL",
+              "GEMINI_MODELS",
+              "CLOUD_TASKS_QUEUE",
+          ] if not env.get(key)]
+          if missing:
+              raise SystemExit("Missing artifact backend deploy secret/value(s): " + ", ".join(missing))
+
+          path = Path("/tmp/interface-artifact-backend-env.yaml")
+          path.write_text("\n".join(f"{key}: {quote_yaml(value)}" for key, value in env.items()) + "\n", encoding="utf-8")
+          PY
+
+          gcloud run deploy "$GCP_ARTIFACT_CLOUD_RUN_SERVICE" \
+            --source . \
+            --project "$GCP_PROJECT_ID" \
+            --region "$GCP_REGION" \
             --service-account "$GCP_ARTIFACT_RUNTIME_SERVICE_ACCOUNT" \
-            --no-invoker-iam-check --timeout=900s --concurrency=1 \
-            --env-vars-file /tmp/co-final-cert-env.yaml --quiet
-          CERT_URL=$(gcloud run services describe "$CERT_SERVICE" --project "$GCP_PROJECT_ID" --region "$GCP_REGION" --format='value(status.url)')
-          test -n "$CERT_URL"
-          echo "CERT_URL=$CERT_URL" >> "$GITHUB_ENV"
+            --no-invoker-iam-check \
+            --timeout=1800s \
+            --env-vars-file /tmp/interface-artifact-backend-env.yaml \
+            --quiet
 
-      - name: Smoke isolated certification service
-        shell: bash
+      - name: Resolve deployed URL
+        id: artifact_backend
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          GCP_REGION: ${{ secrets.GCP_REGION }}
+          GCP_ARTIFACT_CLOUD_RUN_SERVICE: ${{ secrets.GCP_ARTIFACT_CLOUD_RUN_SERVICE }}
+          CLOUD_TASKS_QUEUE: ${{ vars.CLOUD_TASKS_QUEUE || 'diligence-reviewer-worker' }}
         run: |
           set -euo pipefail
-          READY=false
-          : > /tmp/cert-health.json
-          for i in $(seq 1 30); do
-            HTTP_STATUS=$(curl --silent --show-error --location --output /tmp/cert-health.json --write-out '%{http_code}' "$CERT_URL/health" || true)
-            printf '%s' "$HTTP_STATUS" > /tmp/cert-health-status.txt
-            if [ "$HTTP_STATUS" = "200" ]; then READY=true; break; fi
-            sleep 5
-          done
-          gcloud run services describe "$CERT_SERVICE" --project "$GCP_PROJECT_ID" --region "$GCP_REGION" --format=json > /tmp/cert-service.json || true
-          gcloud run services logs read "$CERT_SERVICE" --project "$GCP_PROJECT_ID" --region "$GCP_REGION" --limit=100 > /tmp/cert-service-logs.txt 2>&1 || true
-          test "$READY" = "true"
-          python - <<'PY2'
-          import json,os
-          h=json.load(open('/tmp/cert-health.json',encoding='utf-8'))
-          assert h.get('ok') is True
-          assert h.get('expected_head_sha')==os.environ['EXPECTED_HEAD_SHA']
-          PY2
+          URL=$(gcloud run services describe "$GCP_ARTIFACT_CLOUD_RUN_SERVICE" \
+            --project "$GCP_PROJECT_ID" \
+            --region "$GCP_REGION" \
+            --format="value(status.url)")
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+          echo "worker_url=${URL%/}/v1/reviewer/jobs/{run_id}/worker" >> "$GITHUB_OUTPUT"
+          echo "Deployed artifact backend URL: $URL"
+          echo "Cloud Tasks queue: $CLOUD_TASKS_QUEUE"
+          echo "Cloud Tasks worker URL pinned to Cloud Run origin."
 
-      - name: Enqueue all eight live scenarios through the worker
-        shell: bash
+      - name: Pin Cloud Tasks worker URL
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          GCP_REGION: ${{ secrets.GCP_REGION }}
+          GCP_ARTIFACT_CLOUD_RUN_SERVICE: ${{ secrets.GCP_ARTIFACT_CLOUD_RUN_SERVICE }}
+          CLOUD_TASKS_WORKER_URL: ${{ steps.artifact_backend.outputs.worker_url }}
         run: |
           set -euo pipefail
-          HTTP_STATUS=$(curl --silent --show-error --output /tmp/co-final-start.json --write-out '%{http_code}' \
-            --request POST \
-            --header "x-co-final-cert-token:$CERT_TOKEN" \
-            "$CERT_URL/start/$MATRIX_ID")
-          test "$HTTP_STATUS" = "202"
-          python - <<'PY2'
-          import json
-          d=json.load(open('/tmp/co-final-start.json',encoding='utf-8'))
-          assert d.get('ok') is True
-          assert d.get('queued') is True
-          assert d.get('task_name_count')==8
-          PY2
+          test -n "$CLOUD_TASKS_WORKER_URL"
+          gcloud run services update "$GCP_ARTIFACT_CLOUD_RUN_SERVICE" \
+            --project "$GCP_PROJECT_ID" \
+            --region "$GCP_REGION" \
+            --update-env-vars "CLOUD_TASKS_WORKER_URL=$CLOUD_TASKS_WORKER_URL" \
+            --quiet
+          echo "Pinned Cloud Tasks worker URL to Cloud Run origin."
 
-      - name: Poll and validate eight-scenario matrix
-        shell: bash
-        run: |
-          set -euo pipefail
-          COMPLETE=false
-          for i in $(seq 1 120); do
-            curl --silent --show-error --fail \
-              --header "x-co-final-cert-token:$CERT_TOKEN" \
-              "$CERT_URL/status/$MATRIX_ID" -o /tmp/co-final-live-matrix.json
-            RESULT=$(python - <<'PY2'
-          import json
-          d=json.load(open('/tmp/co-final-live-matrix.json',encoding='utf-8'))
-          print(d.get('matrix_validation','PENDING'))
-          PY2
-            )
-            if [ "$RESULT" = "FAILED" ]; then cat /tmp/co-final-live-matrix.json; exit 1; fi
-            if [ "$RESULT" = "PASS" ]; then COMPLETE=true; break; fi
-            sleep 10
-          done
-          test "$COMPLETE" = "true"
-          python - <<'PY2'
-          import json,os
-          d=json.load(open('/tmp/co-final-live-matrix.json',encoding='utf-8'))
-          assert d['expected_head_sha']==os.environ['EXPECTED_HEAD_SHA']
-          assert d.get('matrix_validation')=='PASS'
-          rows={r['scenario_id']:r for r in d['scenarios']}
-          assert set(rows)==set('ABCDEFGH')
-          for r in rows.values():
-            assert r['status']=='COMPLETE'
-            assert r['tested_head_sha']==os.environ['EXPECTED_HEAD_SHA']
-            assert r['task_name_present'] is True
-            assert r['drive_folder_id_present'] is True
-            assert r['receipt_drive_file_id_present'] is True
-            assert r['receipt_artifact_version']==1
-          assert rows['A']['delivery_mode']=='FULL_REVIEW_READY'
-          assert rows['A']['phase16_complete'] is True
-          assert rows['A']['review_ready_document_drive_file_id_present'] is True
-          assert rows['A']['run_blocked'] is False
-          assert rows['B']['delivery_mode']=='REPORT_ONLY' and rows['B']['run_blocked'] is False
-          assert rows['C']['delivery_mode']=='UNIVERSAL_REPORT_ONLY'
-          assert rows['C']['derived_primary_domain']=='saas' and rows['C']['mounted_primary_package'] is None
-          assert rows['D']['delivery_mode']=='AI_OVERLAY_FULL_REVIEW_READY' and rows['D']['ai_overlay'] is True
-          assert rows['D']['reinvestigation_attempt_count']==2 and rows['D']['run_blocked'] is False
-          assert rows['E']['delivery_mode']=='UNIVERSAL_REPORT_ONLY'
-          assert rows['E']['reinvestigation_attempt_count']==2 and rows['E']['run_blocked'] is False
-          assert rows['F']['execution_outcome']=='LIMITATION'
-          assert rows['F']['reinvestigation_attempt_count']==2 and rows['F']['run_blocked'] is False
-          assert rows['G']['execution_outcome']=='TECHNICAL_RETRY_REQUIRED'
-          assert rows['G']['delivery_attempt_count']>=2 and rows['G']['duplicate_write_count']==0 and rows['G']['run_blocked'] is False
-          assert rows['H']['execution_outcome']=='CRITICAL_FAILURE' and rows['H']['run_blocked'] is True
-          d['matrix_validation']='PASS'
-          d['isolated_service']=os.environ['CERT_SERVICE']
-          d['isolated_queue']=os.environ['CERT_QUEUE']
-          d['production_service_modified']=False
-          json.dump(d,open('/tmp/co-final-live-matrix.json','w',encoding='utf-8'),indent=2,sort_keys=True)
-          PY2
-
-      - name: Upload matrix evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: co-final-eight-scenario-live-matrix-${{ steps.context.outputs.head_sha }}
-          path: |
-            /tmp/co-final-live-matrix.json
-            /tmp/cert-health.json
-            /tmp/cert-health-status.txt
-            /tmp/cert-service.json
-            /tmp/cert-service-logs.txt
-          if-no-files-found: warn
-          retention-days: 30
-
-      - name: Publish matrix result to PR 95
-        if: always()
-        continue-on-error: true
-        shell: bash
-        run: |
-          if python -c "import json; d=json.load(open('/tmp/co-final-live-matrix.json')); raise SystemExit(0 if d.get('matrix_validation')=='PASS' else 1)" 2>/dev/null; then
-            python - <<'PY2' > /tmp/comment.md
-          import json
-          d=json.load(open('/tmp/co-final-live-matrix.json',encoding='utf-8'))
-          rows={r['scenario_id']:r for r in d['scenarios']}
-          print('## CO-FINAL eight-scenario live matrix: PASS')
-          print()
-          print('- Tested branch: `co-e2e-01-03-critical-authority`')
-          print(f"- Tested head: `{d['expected_head_sha']}`")
-          print(f"- Matrix ID: `{d['matrix_id']}`")
-          print('- Transport: real Cloud Tasks')
-          print('- State/custody: real Firestore and Drive-backed artifacts')
-          print('- Production service modified: `false`')
-          print()
-          labels={'A':'AI primary → Phase 16 Review-Ready','B':'FinTech report-only','C':'Uninstalled domain → universal report-only','D':'Unresolved primary + AI overlay','E':'Unresolved primary → universal report-only','F':'Two reinvestigations → limitation','G':'Technical retry → resume, no duplicate','H':'Critical failure → blocked'}
-          for key in 'ABCDEFGH':
-            r=rows[key]
-            print(f"- {key}: **PASS** — {labels[key]}; run `{r['run_id']}`, outcome `{r['execution_outcome']}`, delivery `{r['delivery_mode']}`")
-          PY2
-          else
-            printf '%s\n' '## CO-FINAL eight-scenario live matrix: FAILED' '' 'The isolated certification matrix did not satisfy every live assertion. The evidence artifact contains the exact failed scenario.' > /tmp/comment.md
-          fi
-          gh api repos/LexNovaHQ/interface-sandbox/issues/95/comments -f body="$(cat /tmp/comment.md)"
-
-      - name: Remove isolated certification infrastructure
-        if: always()
-        shell: bash
-        run: |
-          gcloud run services delete "$CERT_SERVICE" --project "$GCP_PROJECT_ID" --region "$GCP_REGION" --quiet || true
-          gcloud tasks queues delete "$CERT_QUEUE" --project "$GCP_PROJECT_ID" --location "$GCP_REGION" --quiet || true
+      - name: Smoke deployed backend
+        working-directory: diligence-artifact-backend
+        env:
+          ARTIFACT_BACKEND_URL: ${{ steps.artifact_backend.outputs.url }}
+        run: npm run smoke:health
