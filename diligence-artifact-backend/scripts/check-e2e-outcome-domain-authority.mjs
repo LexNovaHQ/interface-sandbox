@@ -61,6 +61,45 @@ assert.equal(fintech.phase_lock_status, "LOCKED");
 assert.equal(fintech.output.active_run_package_manifest.primary_domain_package, "fintech");
 assert.equal(fintech.output.active_run_package_manifest.post_review_delivery_mode, "REPORT_ONLY");
 
+// Deterministic support may detect a model/registry inconsistency but may not
+// substitute, null, or re-rank the model-selected package.
+const inconsistentModelClaim = await compileDomainDerivationArtifacts({
+  run: { run_id: "model-claim-trigger-conflict" }, artifacts, registryPacket: packet,
+  modelOutput: profile({
+    primary: primary("fintech", "PRIMARY_DOMAIN_FINTECH", row("PRIMARY_DOMAIN_FINTECH", allFalseFintechConditions())),
+    ai: { ai_package_mount: "AI_NOT_VISIBLE", evaluated_rules: [] }
+  })
+});
+assert.equal(inconsistentModelClaim.phase_lock_status, "REINVESTIGATION_REQUIRED");
+assert.equal(inconsistentModelClaim.output.domain_derivation_profile.primary_domain_derivation.selected_package, "fintech");
+assert.equal(inconsistentModelClaim.validation.reinvestigation_items.some((item) => item.includes("PRIMARY_DOMAIN_CONDITION_TRIGGER_INCONSISTENT:fintech")), true);
+assert.equal(inconsistentModelClaim.validation.run_blocked, undefined);
+
+// Competing positive model claims are returned to the model for targeted
+// reinvestigation. Deterministic code must preserve the explicit model choice
+// rather than choosing the other package by priority or trigger evaluation.
+const competingModelClaims = await compileDomainDerivationArtifacts({
+  run: { run_id: "competing-primary-model-claims" }, artifacts, registryPacket: packet,
+  modelOutput: profile({
+    primary: {
+      selected_package: "fintech",
+      selected_rule_id: "PRIMARY_DOMAIN_FINTECH",
+      status: "LOCKED",
+      evidence_anchors: anchors(),
+      evaluated_rules: [
+        row("PRIMARY_DOMAIN_FINTECH", fintechConditions()),
+        row("PRIMARY_DOMAIN_AI_GOVERNANCE", aiPrimaryConditions())
+      ],
+      final_basis: "The model selected FinTech while preserving a competing AI-primary claim for reinvestigation."
+    },
+    ai: { ai_package_mount: "AI_NOT_VISIBLE", evaluated_rules: [] }
+  })
+});
+assert.equal(competingModelClaims.phase_lock_status, "REINVESTIGATION_REQUIRED");
+assert.equal(competingModelClaims.output.domain_derivation_profile.primary_domain_derivation.selected_package, "fintech");
+assert.equal(competingModelClaims.validation.reinvestigation_items.some((item) => item.startsWith("MULTIPLE_PRIMARY_DOMAIN_MODEL_CLAIMS:")), true);
+assert.notEqual(competingModelClaims.output.domain_derivation_profile.primary_domain_derivation.selected_package, "ai-governance");
+
 const uninstalled = await compileDomainDerivationArtifacts({
   run: { run_id: "saas-derived" }, artifacts, registryPacket: packet,
   modelOutput: profile({
@@ -128,6 +167,8 @@ console.log(JSON.stringify({
   status: "PASS",
   model_derivation_authority: true,
   deterministic_support_only: true,
+  deterministic_substitution_forbidden_fixture: true,
+  model_conflict_routes_to_reinvestigation_fixture: true,
   mountable_packages: packet.registry.mountable_primary_packages,
   unresolved_primary_blocks: false,
   ai_overlay_without_primary_continues: true,
@@ -147,6 +188,7 @@ function row(rule_id, condition_results, exclude_result = false) {
 function anchors() { return [{ source_artifact_name: "lossless_root__product_service" }]; }
 function aiPrimaryConditions() { return { C1: true, C2: true, C3: false, C4: false, C5: false, C6: false, C7: true, C8: true }; }
 function fintechConditions() { return { C1: true, C2: true, C3: false, C4: false, C5: false, C6: false, C7: false, C8: false, C9: true, C10: true }; }
+function allFalseFintechConditions() { return { C1: false, C2: false, C3: false, C4: false, C5: false, C6: false, C7: false, C8: false, C9: false, C10: false }; }
 function aiOverlayConditions() { return { C1: true, C2: true, C3: false, C4: false, C5: false, C6: false, C7: true, C8: true }; }
 function baseArtifacts() {
   const value = {
