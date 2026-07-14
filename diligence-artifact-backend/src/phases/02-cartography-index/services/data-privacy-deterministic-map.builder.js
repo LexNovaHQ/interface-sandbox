@@ -59,7 +59,7 @@ export function buildDataPrivacySemanticProfile({ deterministicMap, strategicDer
     }),
     validation_quality_control_result: validateSemanticProfile({ batchNavigationPointers, dataSourceRoutes, legalIndexRoutes }),
     downstream_rules: P2D_DATA_PRIVACY_DOWNSTREAM_RULES,
-    lock_status: batchNavigationPointers.length ? "LOCKED" : "REPAIR_REQUIRED"
+    lock_status: batchNavigationPointers.length ? "LOCKED" : "REINVESTIGATION_REQUIRED"
   });
   return { [DATA_PRIVACY_SEMANTIC_ARTIFACT]: semanticProfile };
 }
@@ -204,7 +204,7 @@ function validateSemanticProfile({ batchNavigationPointers, dataSourceRoutes, le
     if (!batch.selective_legal_route_ids?.length) errors.push(`batch_pointer_missing_legal_routes:${batch.batch_id || "missing"}`);
     if (!batch.selective_l_family_route_ids?.length) errors.push(`batch_pointer_missing_legacy_l_routes:${batch.batch_id || "missing"}`);
   }
-  return Object.freeze({ status: errors.length ? "REPAIR_REQUIRED" : "PASS", errors: Object.freeze(errors) });
+  return Object.freeze({ status: errors.length ? "REINVESTIGATION_REQUIRED" : "PASS", errors: Object.freeze(errors) });
 }
 
 function unwrap(value, artifactName) {

@@ -56,7 +56,7 @@ export function compileDomainDerivationSourceIndex({ deterministicMap, semanticP
       excerpts_allowed: false,
       legal_or_compliance_conclusions_allowed: false
     },
-    lock_status: semantic?.lock_status === "REPAIR_REQUIRED" ? "REPAIR_REQUIRED" : deterministic?.lock_status || "LOCKED_WITH_LIMITATIONS"
+    lock_status: semantic?.lock_status === "REINVESTIGATION_REQUIRED" ? "REINVESTIGATION_REQUIRED" : deterministic?.lock_status || "LOCKED_WITH_LIMITATIONS"
   };
 
   const final = enforceExactKeyOrder(compiled);

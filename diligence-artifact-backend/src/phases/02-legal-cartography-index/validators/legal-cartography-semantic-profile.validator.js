@@ -4,7 +4,7 @@ const MIN_QUEUE_COVERAGE = 0.8;
 const ALLOWED_SUBCATS = new Set(["CNS", "LIA", "HAL", "INF", "PRV", "BIO", "DEC", "HRM", "FRD", "TRD", "REGULATORY_DISCLOSURE", "LICENSING_REGISTRATION", "GRIEVANCE_REDRESSAL", "COMPLAINTS_ESCALATION", "CONSUMER_DISCLOSURE", "COUNTERPARTY_INSTITUTION", "FINANCIAL_TERMS_DISCLOSURE"]);
 const ALLOWED_CONTROL_FAMILIES = new Set(["FORMATION_CONTRACT", "ACTIVITY_SPECIFIC_DISCLOSURE", "DATA_PRIVACY", "VENDORS_TRANSFER", "SECURITY", "USE_SAFETY", "AGENT_AUTHORITY", "IP_CONTENT", "COMMERCIAL_LEGAL_ALLOCATION", "CONTACT_ROUTES", "INDEMNITY", "REGULATORY_GOVERNANCE", "GRIEVANCE_REDRESSAL", "CONSUMER_DISCLOSURE", "COUNTERPARTY_INSTITUTION", "FINANCIAL_TERMS_DISCLOSURE", "UNKNOWN_CONTROL_LANGUAGE"]);
 const ALLOWED_CONFIDENCE = new Set(["CLEAR", "PARTIAL", "UNCLEAR"]);
-const ALLOWED_LOCK_STATUS = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS", "REPAIR_REQUIRED", "CONTROLLED_FAILURE"]);
+const ALLOWED_LOCK_STATUS = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS", "REINVESTIGATION_REQUIRED", "CONTROLLED_FAILURE"]);
 const ALLOWED_PROFILE_KEYS = new Set(["run_id", "schema_version", "semantic_navigation_index", "semantic_integrity", "lock_status"]);
 const ALLOWED_NAV_ROW_KEYS = new Set(["queue_id", "unit_id", "subcats", "control_families", "confidence"]);
 const ALLOWED_INTEGRITY_KEYS = new Set(["required_queue_count", "labeled_queue_count", "coverage_ratio", "ready_for_compiler"]);
@@ -114,4 +114,4 @@ function isRequiredQueueRow(row) { return row?.semantic_label_required === true 
 function containsKey(value, key) { if (!value || typeof value !== "object") return false; if (Object.prototype.hasOwnProperty.call(value, key)) return true; if (Array.isArray(value)) return value.some((item) => containsKey(item, key)); return Object.values(value).some((item) => containsKey(item, key)); }
 function unwrap(value) { if (!value || typeof value !== "object") return value; if (value.artifact && typeof value.artifact === "object") return value.artifact; return value; }
 function asArray(value) { return Array.isArray(value) ? value : []; }
-function result(errors, warnings) { return { ok: errors.length === 0, errors, warnings, status: errors.length ? "REPAIR_REQUIRED" : warnings.length ? "LOCKED_WITH_LIMITATIONS" : "LOCKED" }; }
+function result(errors, warnings) { return { ok: errors.length === 0, errors, warnings, status: errors.length ? "REINVESTIGATION_REQUIRED" : warnings.length ? "LOCKED_WITH_LIMITATIONS" : "LOCKED" }; }

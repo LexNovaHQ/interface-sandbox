@@ -65,7 +65,7 @@ function validateCoverage({ profile, queue, rows, errors }) {
   if (Math.abs(Number(integrity.coverage_ratio ?? -1) - ratio) > 0.001) errors.push("semantic_integrity.coverage_ratio must match deterministic queue coverage");
   if (requiredCount && ratio < MIN_COVERAGE_RATIO && integrity.ready_for_compiler !== false) errors.push("ready_for_compiler must be false when semantic coverage is below 0.80");
   if (ratio >= MIN_COVERAGE_RATIO && integrity.ready_for_compiler !== true) errors.push("ready_for_compiler must be true when semantic coverage meets the threshold");
-  if (ratio < MIN_COVERAGE_RATIO && profile?.lock_status !== "REPAIR_REQUIRED") errors.push("lock_status must be REPAIR_REQUIRED when coverage is below threshold");
+  if (ratio < MIN_COVERAGE_RATIO && profile?.lock_status !== "REINVESTIGATION_REQUIRED") errors.push("lock_status must be REINVESTIGATION_REQUIRED when coverage is below threshold");
 }
 
 function validateNoForbiddenMarkers(value, errors) {

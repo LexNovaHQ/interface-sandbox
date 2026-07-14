@@ -71,8 +71,8 @@ phase_local_gate:
 
   allowed_gate_outcomes:
     - PASS
-    - REPAIR_REQUIRED
-    - REINVESTIGATE_REQUIRED
+    - REINVESTIGATION_REQUIRED
+    - REINVESTIGATION_REQUIRED
     - PASS_WITH_LIMITATION
     - CONTROLLED_FAILURE
 
@@ -120,14 +120,14 @@ validator_action:
   fail_behavior: repair M8 only; do not advance to M9/M10/M11
 
 repair_policy:
-  - If the local gate returns REPAIR_REQUIRED, repair M8 only and rerun the local gate.
-  - If the local gate returns REINVESTIGATE_REQUIRED, emit a scoped targeted re-extraction request and do not advance.
+  - If the local gate returns REINVESTIGATION_REQUIRED, repair M8 only and rerun the local gate.
+  - If the local gate returns REINVESTIGATION_REQUIRED, emit a scoped targeted re-extraction request and do not advance.
   - If the necessary Product / Activity route is absent from M6, route repair back to M6/Agent 1 instead of inventing or searching.
   - Do not recompute unrelated upstream objects.
 
 stop_condition:
   Stop local M8 phase only; return control to the Agent 2 resolver in 00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED.md.
-  The Agent 2 resolver may lock Agent 2 and provide the next-agent command only after `target_feature_profile` and `target_feature_profile_forensics` are saved and M8 returns PASS, PASS_WITH_LIMITATION, or CONTROLLED_FAILURE that is expressly safe for downstream use. If M8 returns REPAIR_REQUIRED or REINVESTIGATE_REQUIRED, do not advance.
+  The Agent 2 resolver may lock Agent 2 and provide the next-agent command only after `target_feature_profile` and `target_feature_profile_forensics` are saved and M8 returns PASS, PASS_WITH_LIMITATION, or CONTROLLED_FAILURE that is expressly safe for downstream use. If M8 returns REINVESTIGATION_REQUIRED or REINVESTIGATION_REQUIRED, do not advance.
 </phase_call_card>
 
 `M8.S0.C1` This phase call card is the first executable block for this Module when extracted into a standalone phase prompt.
@@ -136,7 +136,7 @@ stop_condition:
 
 `M8.S0.C3` The Module may not advance, hand off, or be treated as locked until its phase-local gate has returned `PASS`, `PASS_WITH_LIMITATION`, or `CONTROLLED_FAILURE` under the rules above.
 
-`M8.S0.C4` `REPAIR_REQUIRED` and `REINVESTIGATE_REQUIRED` are stop states. The Module must repair or route scoped reinvestigation before the next Module begins.
+`M8.S0.C4` `REINVESTIGATION_REQUIRED` and `REINVESTIGATION_REQUIRED` are stop states. The Module must repair or route scoped reinvestigation before the next Module begins.
 
 ## M8.S1 — Function and Hard Rules
 
@@ -284,7 +284,7 @@ stop_condition:
 | M6 `source_discovery_handoff` missing | emit `CONTROLLED_FAILURE` |
 | M6 route universe lacks Product / Activity routes | route to M6 repair or lock with no-activity limitation only where target truly has no public product/activity material |
 | M6 Product / Activity route exists but is gated/broken/non-public | carry inherited limitation and do not invent mechanics |
-| M8-A extraction cannot cover 100% of M8-approved routes | `REPAIR_REQUIRED` before PA application |
+| M8-A extraction cannot cover 100% of M8-approved routes | `REINVESTIGATION_REQUIRED` before PA application |
 | route exists but first extraction is weak for a field/test | targeted re-extraction inside M8 |
 | necessary route is absent from M6 | return to M6 repair; do not search or infer |
 | candidate has no mechanics after targeted re-extraction | omit candidate and ledger reason |

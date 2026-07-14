@@ -44,7 +44,7 @@ const CONTROLLED_FINAL_STATUSES = new Set(["CONTROLLED_BY_VISIBLE_CONTROL", "CON
 const FINAL_MATERIAL_STATUSES = new Set(["TRIGGERED", ...CONTROLLED_FINAL_STATUSES]);
 const ACCEPTED = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS", "COMPLETE", "PASS", "PASS_WITH_LIMITATION"]);
 const ACCEPTED_BATCH_STATUSES = new Set(["PASS", "PASS_WITH_LIMITATION", "LOCKED", "LOCKED_WITH_LIMITATIONS"]);
-const BLOCKING_BATCH_STATUSES = new Set(["REPAIR_REQUIRED", "CONTROLLED_FAILURE"]);
+const BLOCKING_BATCH_STATUSES = new Set(["CONTROLLED_FAILURE"]);
 
 export function buildM12DeterministicChallengeGate({ artifacts = {}, run = {} }) {
   const input_artifact_statuses = {};
@@ -108,11 +108,11 @@ export function buildM12DeterministicChallengeGate({ artifacts = {}, run = {} })
   }
   if (Number(dynamicManifest.batch_count || 0) !== arr(artifacts.m12_batch_validation_artifacts).length) critical_failures.push("M11 batch validation count does not match route plan batch count");
 
-  const status = critical_failures.length ? "REPAIR_REQUIRED" : warnings.length ? "LOCKED_WITH_LIMITATIONS" : "LOCKED";
+  const status = critical_failures.length ? "CONTROLLED_FAILURE" : warnings.length ? "LOCKED_WITH_LIMITATIONS" : "LOCKED";
   return { challenge_gate: {
     schema_version: "challenge_gate.v3.phase10_dynamic",
     status,
-    gate: critical_failures.length ? "REPAIR_REQUIRED" : warnings.length ? "PASS_WITH_LIMITATIONS" : "PASS",
+    gate: critical_failures.length ? "CONTROLLED_FAILURE" : warnings.length ? "PASS_WITH_LIMITATIONS" : "PASS",
     generated_by: "m12_deterministic_challenge_phase2g_dynamic_compound_identity",
     run_id: run.run_id || "",
     target: run.target || null,
@@ -151,7 +151,7 @@ function validateM11MaterialOutputs({ workpadRows, controlledRows, triggeredRows
     if (status === "CONTROLLED") failures.push(`plain CONTROLLED status forbidden in workpad: ${rowKey(row) || "unknown"}`);
     if (status && status !== "NOT_TRIGGERED_NOT_APPLICABLE" && !FINAL_MATERIAL_STATUSES.has(status)) warnings.push(`non-material workpad status carried: ${rowKey(row) || "unknown"}:${status}`);
   }
-  return { status: failures.length ? "REPAIR_REQUIRED" : warnings.length ? "PASS_WITH_LIMITATION" : "PASS", failures, warnings, controlled_statuses: [...CONTROLLED_FINAL_STATUSES], triggered_status: "TRIGGERED", identity_field: "registry_row_key" };
+  return { status: failures.length ? "REINVESTIGATION_REQUIRED" : warnings.length ? "PASS_WITH_LIMITATION" : "PASS", failures, warnings, controlled_statuses: [...CONTROLLED_FINAL_STATUSES], triggered_status: "TRIGGERED", identity_field: "registry_row_key" };
 }
 function validateProfileRow(row, label, seen, allowedStatuses, failures) {
   const key = rowKey(row);

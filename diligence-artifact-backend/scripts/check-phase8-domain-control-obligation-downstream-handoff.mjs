@@ -127,7 +127,7 @@ const overlayChallenge = buildM12DomainControlObligationChallenge({
   domainControlObligationProfile: overlayMisuse,
   sourceLockStatus: "LOCKED"
 }).phase8_domain_control_obligation_challenge;
-assert.equal(overlayChallenge.status, "REPAIR_REQUIRED");
+assert.equal(overlayChallenge.status, "REINVESTIGATION_REQUIRED");
 assert.ok(overlayChallenge.critical_failures.some((failure) => failure.includes("framework not present in authority_dependency")));
 
 const compiler = buildDomainControlObligationCompilerHandoff({

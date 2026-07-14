@@ -45,7 +45,7 @@ function joinActivity({ activity, sourceNavigationInventory, evidenceAtomInvento
     supporting_route_ids: Object.freeze(routeIds),
     supporting_atom_ids: Object.freeze(atomIds),
     join_status: atomIds.length ? "ACTIVITY_DAP_JOIN_READY" : "ACTIVITY_DAP_JOIN_REQUIRES_NAVIGATION_REPAIR",
-    anti_unknown_status: atomIds.length ? "DERIVED_CROSS_ROUTE" : "NAVIGATION_DEFECT_REPAIR_REQUIRED"
+    anti_unknown_status: atomIds.length ? "DERIVED_CROSS_ROUTE" : "NAVIGATION_DEFECT_REINVESTIGATION_REQUIRED"
   });
 }
 

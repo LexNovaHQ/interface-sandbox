@@ -8,7 +8,7 @@ import { advanceCentralPipelineRun } from "./pipeline.service.js";
 
 const { CloudTasksClient } = cloudTasks;
 const TERMINAL_PHASES = new Set(["COMPLETE"]);
-const TERMINAL_STATUSES = new Set(["COMPLETE", "REPAIR_REQUIRED", "CONTROLLED_FAILURE"]);
+const TERMINAL_STATUSES = new Set(["COMPLETE", "COMPLETE_WITH_WARNINGS", "COMPLETE_WITH_COUNSEL_ACTIONS", "CONTROLLED_FAILURE"]);
 const SOURCE_DISCOVERY_CENTRAL_PHASE = "SOURCE_DISCOVERY";
 
 let cloudTasksClient;

@@ -18,7 +18,7 @@ import { updateRunDashboardRow } from "./storage/sheets.service.js";
 import { getRunRecord, updateRunRecord, getNextArtifactVersion, saveArtifactMetadata, getArtifactMetadata, listArtifactMetadata, logEvent } from "./storage/firestore.service.js";
 import { requireRuntimeConfig } from "../config.js";
 
-const LOCK_STATUSES = new Set(["CREATED", "RUNNING", "LOCKED", "LOCKED_WITH_LIMITATIONS", "REPAIR_REQUIRED", "CONTROLLED_FAILURE", "COMPLETE"]);
+const LOCK_STATUSES = new Set(["CREATED", "RUNNING", "LOCKED", "LOCKED_WITH_LIMITATIONS", "REINVESTIGATION_REQUIRED", "CONTROLLED_FAILURE", "COMPLETE"]);
 const LOCK_ADVANCE_STATUSES = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS", "COMPLETE"]);
 const RUNTIME_ARTIFACT_EXTRAS = new Set(["qualified_review_validation_manifest", "diligence_qa_completion_receipt"]);
 const ART = Object.freeze({
@@ -228,7 +228,7 @@ function assertRuntimePhaseCanWriteArtifact(phaseContext, artifactName) {
   if (M11_BATCH_ARTIFACT_PATTERN.test(artifactName) || M11_BATCH_VALIDATION_ARTIFACT_PATTERN.test(artifactName) || PHASE7_DAP_BATCH_VALIDATION_ARTIFACT_PATTERN.test(artifactName)) return;
   assertPhaseCanWriteArtifact(phaseContext.persistence_phase, artifactName);
 }
-function normalizeArtifactLockStatus(parsed) { if (parsed.artifact_name === ART.exposureForensics && parsed.lock_status === "REPAIR_REQUIRED") return "LOCKED_WITH_LIMITATIONS"; return parsed.lock_status; }
+function normalizeArtifactLockStatus(parsed) { if (parsed.artifact_name === ART.exposureForensics && parsed.lock_status === "REINVESTIGATION_REQUIRED") return "LOCKED_WITH_LIMITATIONS"; return parsed.lock_status; }
 
 async function assertArtifactSaveOrder(parsed) {
   const { run_id, artifact_name } = parsed;

@@ -42,7 +42,7 @@ assert.ok(validated.semantic_ledger.semantic_output_fingerprint);
 
 const badOrder = structuredClone(good);
 badOrder.operator_challenge_semantic_ledger.challenge_reviews.reverse();
-assert.equal(validateOperatorChallengeSemanticLedger({ semanticOutput: badOrder, inventory }).status, "REPAIR_REQUIRED");
+assert.equal(validateOperatorChallengeSemanticLedger({ semanticOutput: badOrder, inventory }).status, "REINVESTIGATION_REQUIRED");
 
 const forbidden = structuredClone(good);
 forbidden.operator_challenge_semantic_ledger.challenge_reviews[0].lock_status = "CONTROLLED_FAILURE";

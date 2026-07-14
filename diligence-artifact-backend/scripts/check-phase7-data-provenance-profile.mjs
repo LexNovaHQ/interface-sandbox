@@ -86,7 +86,7 @@ assert.equal(gateOutput.dap_semantic_batch_validation_manifest.expected_batch_co
 assert.equal(gateOutput.dap_semantic_batch_validation_manifest.expected_field_count, 150);
 assert.equal(gateOutput.dap_semantic_batch_validation_manifest.observed_field_count, 150);
 assert.equal(gateOutput.data_provenance_profile_semantic_batch_gate.all_fields_covered_once, true);
-assert.notEqual(gateOutput.data_provenance_profile_semantic_batch_gate.status, "REPAIR_REQUIRED");
+assert.notEqual(gateOutput.data_provenance_profile_semantic_batch_gate.status, "REINVESTIGATION_REQUIRED");
 
 assertNoLegacyArtifactsOrPrompts();
 

@@ -6787,7 +6787,7 @@ domain_derivation_grammar:
     evidence_must_be_lossless_phase_1_artifacts: true
   rule_schema:
     required_fields: [rule_id, rule_type, normalized_name, priority, conditions, trigger_if, exclude_if, evidence_policy, result, lock_scope]
-    condition_grammar: "CONDITION_N -> TRIGGER_IF -> EXCLUDE_IF; trigger_if may use AND/OR/NOT/parentheses over declared condition ids; exclude_if must use machine grammar operators any/all/not/condition/rule_fired/rule_fired_any/rule_fired_any_type/literal; conditions must be concrete public-footprint criteria; no Phase 2 index as evidence."
+    condition_grammar: "CONDITION_N -> TRIGGER_IF -> EXCLUDE_IF; trigger_if may use AND/OR/NOT/parentheses over declared condition ids; exclude_if mandatory; conditions must be concrete public-footprint criteria; no Phase 2 index as evidence."
   resolution_policy:
     evaluation_order: [PRIMARY_DOMAIN, AI_MOUNT, REGULATORY_OVERLAY, FUSION_CANDIDATE, FALLBACK]
     primary_domain_resolution: "Evaluate all mounted-key PRIMARY_DOMAIN rules; apply exclude_if before priority; exactly one fires -> lock/limit; multiple unfenced -> REVIEW_REQUIRED."
@@ -6800,9 +6800,7 @@ domain_derivation_grammar:
     priority: 0
     conditions: {C1: "No mounted-key PRIMARY_DOMAIN rule fires.", C2: "Evidence too thin/gated/contradictory, or points to a package that does not exist yet."}
     trigger_if: "C1 OR C2"
-    exclude_if:
-      any:
-        - rule_fired_any_type: PRIMARY_DOMAIN
+    exclude_if: ["Any mounted-key PRIMARY_DOMAIN rule fires."]
     result: {primary_domain_status: REVIEW_REQUIRED, active_run_package_manifest_status: PROVISIONAL_OR_LIMITED}
     lock_scope: REVIEW_REQUIRED
     defer_to: PHASE_12_QUALIFIED_REVIEW_OR_PACKAGE_BUILD
@@ -6811,13 +6809,9 @@ domain_derivation_grammar:
     rule_type: FUSION_CANDIDATE
     priority: 60
     owner: locked_primary_domain_package
-    conditions: {C1: "non-AI primary locked", C2: "AI_OVERLAY_MOUNTED fires", C3: "AI used inside a primary-domain activity", C4: "candidate depends on both primary activity and AI mechanics", C5: "duty (if later confirmed) is created by the primary domain's law/regulator/control framework", C6: "Fully pure-AI exposure.", C7: "Fully pure-domain exposure.", C8: "AI mount is AI_CANDIDATE_ONLY or AI_NOT_VISIBLE."}
+    conditions: {C1: "non-AI primary locked", C2: "AI_OVERLAY_MOUNTED fires", C3: "AI used inside a primary-domain activity", C4: "candidate depends on both primary activity and AI mechanics", C5: "duty (if later confirmed) is created by the primary domain's law/regulator/control framework"}
     trigger_if: "C1 AND C2 AND C3 AND C4 AND C5"
-    exclude_if:
-      any:
-        - condition: C6
-        - condition: C7
-        - condition: C8
+    exclude_if: ["Fully pure-AI exposure.", "Fully pure-domain exposure.", "AI mount is AI_CANDIDATE_ONLY or AI_NOT_VISIBLE."]
     result: {fusion_bucket_status: FUSION_CANDIDATE_ONLY, fusion_owner: locked_primary_domain_package}
     lock_scope: CANDIDATE_ONLY
     defer_to: PHASE_5_ACTIVITY_PROFILE_AND_PHASE_9_EXPOSURE_PROFILE

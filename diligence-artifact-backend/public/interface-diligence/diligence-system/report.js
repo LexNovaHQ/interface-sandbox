@@ -51,7 +51,7 @@ const STATUS_LABELS = Object.freeze({
   LOCKED_WITH_LIMITATIONS: "Completed with limitations",
   "LOCKED WITH LIMITATIONS": "Completed with limitations",
   "Locked with limitations": "Completed with limitations",
-  REPAIR_REQUIRED: "Needs repair before reliance",
+  REINVESTIGATION_REQUIRED: "Needs repair before reliance",
   CONTROLLED_FAILURE: "Controlled failure",
   TRIGGERED: "Visible exposure signal",
   CONTROLLED: "Visible control or limitation signal",

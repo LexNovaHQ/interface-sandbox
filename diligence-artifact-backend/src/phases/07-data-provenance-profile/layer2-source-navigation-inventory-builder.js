@@ -105,12 +105,12 @@ function buildCoverageMatrix({ obligationMatrix, routeInventory }) {
 }
 
 function buildTargetedScanQueue({ coverageMatrix }) {
-  return coverageMatrix.filter((row) => row.family_navigation_status === "UPSTREAM_SOURCE_REPAIR_REQUIRED" || row.family_navigation_status === "SOURCE_NOT_ROUTED_BY_M6").map((row) => Object.freeze({ registry_family: row.registry_family, reason: row.family_navigation_status, required_document_types: row.primary_required_document_types }));
+  return coverageMatrix.filter((row) => row.family_navigation_status === "UPSTREAM_SOURCE_REINVESTIGATION_REQUIRED" || row.family_navigation_status === "SOURCE_NOT_ROUTED_BY_M6").map((row) => Object.freeze({ registry_family: row.registry_family, reason: row.family_navigation_status, required_document_types: row.primary_required_document_types }));
 }
 
 function buildAbsenceLedger({ routeInventory, coverageMatrix }) {
-  const badLegal = routeInventory.filter((row) => row.legal_cartography_locator_required && !row.legal_cartography_locator_present).map((row) => Object.freeze({ route_id: row.route_id, status: "NAVIGATION_DEFECT_REPAIR_REQUIRED", reason: "legal_lossless_without_legal_cartography_locator" }));
-  const gaps = coverageMatrix.filter((row) => row.family_navigation_status === "UPSTREAM_SOURCE_REPAIR_REQUIRED" || row.family_navigation_status === "SOURCE_NOT_ROUTED_BY_M6").map((row) => Object.freeze({ registry_family: row.registry_family, status: row.family_navigation_status, reason: "no_pinpoint_route" }));
+  const badLegal = routeInventory.filter((row) => row.legal_cartography_locator_required && !row.legal_cartography_locator_present).map((row) => Object.freeze({ route_id: row.route_id, status: "NAVIGATION_DEFECT_REINVESTIGATION_REQUIRED", reason: "legal_lossless_without_legal_cartography_locator" }));
+  const gaps = coverageMatrix.filter((row) => row.family_navigation_status === "UPSTREAM_SOURCE_REINVESTIGATION_REQUIRED" || row.family_navigation_status === "SOURCE_NOT_ROUTED_BY_M6").map((row) => Object.freeze({ registry_family: row.registry_family, status: row.family_navigation_status, reason: "no_pinpoint_route" }));
   return Object.freeze([...badLegal, ...gaps]);
 }
 

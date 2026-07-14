@@ -95,7 +95,7 @@ function buildDefaultSemanticProfile(deterministicMap = {}) {
         mechanics_proof_allowed: false,
         source_text_copy_allowed: false
       },
-      lock_status: deterministicMap.lock_status === "CONTROLLED_FAILURE" ? "REPAIR_REQUIRED" : "LOCKED"
+      lock_status: deterministicMap.lock_status === "CONTROLLED_FAILURE" ? "REINVESTIGATION_REQUIRED" : "LOCKED"
     }
   };
 }

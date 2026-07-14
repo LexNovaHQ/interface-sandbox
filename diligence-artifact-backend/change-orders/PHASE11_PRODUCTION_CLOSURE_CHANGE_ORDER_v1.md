@@ -64,9 +64,9 @@ An owner runtime error is converted into `UNRESOLVED` and recorded as an attempt
 
 After one output-repair call, malformed Layer 2 output throws into the central runtime, which marks the run as `CONTROLLED_FAILURE`. This is a false blocker because no deterministic critical failure was established.
 
-### P11-DEF-008 — `REPAIR_REQUIRED` remains a terminal run status
+### P11-DEF-008 — `REINVESTIGATION_REQUIRED` remains a terminal run status
 
-The async runtime still treats `REPAIR_REQUIRED` as terminal, contrary to the locked doctrine.
+The async runtime still treats `REINVESTIGATION_REQUIRED` as terminal, contrary to the locked doctrine.
 
 ### P11-DEF-009 — Dispatch lease ownership is unsafe
 
@@ -731,10 +731,10 @@ After bounded technical retries and one output-format repair:
 
 The fallback must not let the model create or suppress criticality.
 
-### 12.2 Top-level `REPAIR_REQUIRED`
+### 12.2 Top-level `REINVESTIGATION_REQUIRED`
 
-1. Remove `REPAIR_REQUIRED` from async terminal run statuses.
-2. Prevent `REPAIR_REQUIRED` from being used as a final phase lock.
+1. Remove `REINVESTIGATION_REQUIRED` from async terminal run statuses.
+2. Prevent `REINVESTIGATION_REQUIRED` from being used as a final phase lock.
 3. Retain it only as a transient internal validation state.
 4. After bounded repair:
    - noncritical exhaustion maps to `LOCKED_WITH_LIMITATIONS`;
@@ -744,8 +744,8 @@ The fallback must not let the model create or suppress criticality.
 
 - Two malformed Layer 2 responses do not block the run.
 - Material candidates still reach reinvestigation under fallback.
-- `REPAIR_REQUIRED` does not make `isTerminal(run)` true.
-- No production phase can finish with top-level `REPAIR_REQUIRED`.
+- `REINVESTIGATION_REQUIRED` does not make `isTerminal(run)` true.
+- No production phase can finish with top-level `REINVESTIGATION_REQUIRED`.
 
 ---
 
@@ -933,7 +933,7 @@ Phase 11 is production-closed only when:
 6. the complete actual write set is guarded;
 7. technical failures do not consume substantive attempts;
 8. malformed semantic output cannot falsely block the run;
-9. `REPAIR_REQUIRED` is not a terminal production run status;
+9. `REINVESTIGATION_REQUIRED` is not a terminal production run status;
 10. lease and checkpoint concurrency are safe;
 11. multi-owner routing is deterministic;
 12. the compiler receives only a safe final gate;

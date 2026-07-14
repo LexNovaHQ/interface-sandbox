@@ -14,7 +14,7 @@ export function validatePhase7EvidenceAtomInventory(atomInventory) {
   if (plan?.access_policy?.excerpts_allowed !== false) errors.push("excerpt_output_not_disabled_in_plan");
   for (const atom of atoms) validateAtom(atom, errors);
   return Object.freeze({
-    status: errors.length ? "REPAIR_REQUIRED" : "PASS",
+    status: errors.length ? "REINVESTIGATION_REQUIRED" : "PASS",
     checked_atoms: atoms.length,
     full_family_access_preserved_for_navigation: plan?.access_policy?.full_d_family_access_allowed_for_navigation === true && plan?.access_policy?.full_l_family_access_allowed_for_navigation === true,
     output_is_atomized: !errors.some((error) => error.includes("output_not_disabled") || error.includes("forbidden_atom_key")),

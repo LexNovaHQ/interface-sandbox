@@ -35,7 +35,7 @@ terminal_required_inputs:
   next_phase_or_backend_advance_instruction: required for successful non-final phases
 ```
 
-`TERM.S1.C2` If validator status is `REPAIR_REQUIRED`, `SOURCE_REPAIR_REQUIRED`, or `CONTROLLED_FAILURE`, terminal must not emit a next-phase or next-agent command.
+`TERM.S1.C2` If validator status is `REINVESTIGATION_REQUIRED`, `SOURCE_REINVESTIGATION_REQUIRED`, or `CONTROLLED_FAILURE`, terminal must not emit a next-phase or next-agent command.
 
 `TERM.S1.C3` If validator status is `PASS_WITH_LIMITATION`, `PASS_WITH_WARNING`, or `REINVESTIGATION_COMPLETED_WITH_LIMITATION`, terminal may emit the backend advance instruction only if validator result sets `next_agent_command_allowed: true` or equivalent downstream-safe flag.
 
@@ -93,9 +93,9 @@ NEXT STEP:
 
 # SECTION 3 — FAILURE AND REPAIR RECEIPTS
 
-## 3.1 REPAIR_REQUIRED Receipt
+## 3.1 REINVESTIGATION_REQUIRED Receipt
 
-`TERM.S3.C1` If validator status is `REPAIR_REQUIRED` or `SOURCE_REPAIR_REQUIRED`, emit in manual mode:
+`TERM.S3.C1` If validator status is `REINVESTIGATION_REQUIRED` or `SOURCE_REINVESTIGATION_REQUIRED`, emit in manual mode:
 
 ```text
 PHASE REPAIR REQUIRED: <phase_lock_or_active_phase>
@@ -115,7 +115,7 @@ NEXT STEP:
 Repair this phase before continuing. Do not move to the next phase yet.
 ```
 
-`TERM.S3.C2` Do not include a next-agent command in `REPAIR_REQUIRED` or `SOURCE_REPAIR_REQUIRED` receipts.
+`TERM.S3.C2` Do not include a next-agent command in `REINVESTIGATION_REQUIRED` or `SOURCE_REINVESTIGATION_REQUIRED` receipts.
 
 ## 3.2 CONTROLLED_FAILURE Receipt
 

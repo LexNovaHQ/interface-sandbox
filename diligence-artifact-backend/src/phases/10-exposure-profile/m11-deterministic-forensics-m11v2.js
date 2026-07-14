@@ -109,7 +109,7 @@ function mergeGate(gate = {}, failures = [], warnings = []) {
   const mergedWarnings = dedupeWarnings([...asArray(gate.warnings), ...warnings]);
   return {
     ...gate,
-    status: mergedFailures.length ? "REPAIR_REQUIRED" : mergedWarnings.length ? "PASS_WITH_LIMITATION" : gate.status || "PASS",
+    status: mergedFailures.length ? "CONTROLLED_FAILURE" : mergedWarnings.length ? "PASS_WITH_LIMITATION" : gate.status || "PASS",
     failures: mergedFailures,
     warnings: mergedWarnings
   };

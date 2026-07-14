@@ -150,7 +150,7 @@ Use `LOCKED` only when the compiled index is complete against the loaded legal-g
 
 Use `LOCKED_WITH_LIMITATIONS` when the index is usable but contains unresolved ordinary limitations.
 
-Use `REPAIR_REQUIRED` only for repairable schema or source-discipline problems.
+Use `REINVESTIGATION_REQUIRED` only for repairable schema or source-discipline problems.
 
 Use `CONTROLLED_FAILURE` only when the legal-governance corpus or source custody is unusable.
 

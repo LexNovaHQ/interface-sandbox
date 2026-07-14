@@ -12,8 +12,8 @@ export const PHASE7_CONTROLLED_NAVIGATION_STATUSES = Object.freeze([
   "CONFLICTING_PUBLIC_SIGNALS",
   "NOT_APPLICABLE_WITH_BASIS",
   "REQUIRES_PRIVATE_CONFIRMATION",
-  "NAVIGATION_DEFECT_REPAIR_REQUIRED",
-  "UPSTREAM_SOURCE_REPAIR_REQUIRED",
+  "NAVIGATION_DEFECT_REINVESTIGATION_REQUIRED",
+  "UPSTREAM_SOURCE_REINVESTIGATION_REQUIRED",
   "PINPOINT_NAVIGATION_READY"
 ]);
 
@@ -36,7 +36,7 @@ export function controlledStatusForRoute(row = {}) {
 export function controlledStatusForFamilyCoverage({ primaryRoutes = [], secondaryRoutes = [], mandatory = true } = {}) {
   if (primaryRoutes.length) return "PINPOINT_NAVIGATION_READY";
   if (secondaryRoutes.length) return "DERIVED_CROSS_ROUTE";
-  return mandatory ? "UPSTREAM_SOURCE_REPAIR_REQUIRED" : "SOURCE_NOT_ROUTED_BY_M6";
+  return mandatory ? "UPSTREAM_SOURCE_REINVESTIGATION_REQUIRED" : "SOURCE_NOT_ROUTED_BY_M6";
 }
 
 export function navigationMustPrecedeUnknown(familyRow = {}) {

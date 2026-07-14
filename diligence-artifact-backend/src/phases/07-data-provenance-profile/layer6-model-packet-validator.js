@@ -17,7 +17,7 @@ export function validatePhase7ModelWorkPacketManifest(manifest, { dapFieldPrefil
   for (const row of requiredRows) if (!routedIds.has(row.field_id)) errors.push(`model_required_field_not_routed:${row.field_id}`);
   for (const packet of manifest?.packets || []) validatePacket(packet, errors);
   return Object.freeze({
-    status: errors.length ? "REPAIR_REQUIRED" : "PASS",
+    status: errors.length ? "REINVESTIGATION_REQUIRED" : "PASS",
     packet_count: manifest?.packet_count || 0,
     model_required_field_count: manifest?.model_required_field_count || 0,
     all_model_required_fields_routed: requiredRows.every((row) => routedIds.has(row.field_id)),

@@ -63,7 +63,7 @@ assert.equal(validation.checked_rows, routePacket.expected_field_count);
 
 const invalidBatchRoot = { data_provenance_profile: {}, ...validBatchRoot };
 const invalid = validatePhase7Layer4SemanticBatchArtifact(invalidBatchRoot, { routePacket });
-assert.equal(invalid.status, "REPAIR_REQUIRED");
+assert.equal(invalid.status, "REINVESTIGATION_REQUIRED");
 assert.ok(invalid.errors.some((error) => error.includes("forbidden_root:data_provenance_profile")));
 
 console.log("Phase 7 Layer 4 semantic batch surgery: PASS");

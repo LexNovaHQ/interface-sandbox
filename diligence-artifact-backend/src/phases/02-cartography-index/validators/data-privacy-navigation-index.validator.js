@@ -99,5 +99,5 @@ function unwrap(value, artifactName) {
 }
 
 function result(errors) {
-  return Object.freeze({ status: errors.length ? "REPAIR_REQUIRED" : "PASS", errors: Object.freeze(errors) });
+  return Object.freeze({ status: errors.length ? "REINVESTIGATION_REQUIRED" : "PASS", errors: Object.freeze(errors) });
 }

@@ -8,7 +8,7 @@ import {
 
 const FINAL_ROOT = P2A_TARGET_PROFILE_ARTIFACTS.finalIndex;
 const REQUIRED_ARRAY_KEYS = new Set(P2A_TARGET_PROFILE_FINAL_INDEX_KEYS.filter((key) => !["downstream_rules", "lock_status"].includes(key)));
-const ALLOWED_LOCK_STATUS = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS", "REPAIR_REQUIRED", "CONTROLLED_FAILURE"]);
+const ALLOWED_LOCK_STATUS = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS", "REINVESTIGATION_REQUIRED", "CONTROLLED_FAILURE"]);
 const FORBIDDEN_COPY_KEYS = Object.freeze(["summary", "excerpt", "snippet", "lossless_text", "clean_text", "raw_text", "body", "content", "derived_value"]);
 
 export function validateTargetProfileSourceIndex(rawOutput) {
@@ -95,4 +95,4 @@ function containsStringValue(value, marker) {
 
 function unwrap(value) { if (!value || typeof value !== "object") return value; if (value.artifact && typeof value.artifact === "object") return value.artifact; if (value.data && typeof value.data === "object") return value.data; if (value.payload && typeof value.payload === "object") return value.payload; return value; }
 function asArray(value) { return Array.isArray(value) ? value : []; }
-function result(errors, warnings) { return { ok: errors.length === 0, errors, warnings, status: errors.length ? "REPAIR_REQUIRED" : warnings.length ? "LOCKED_WITH_LIMITATIONS" : "LOCKED" }; }
+function result(errors, warnings) { return { ok: errors.length === 0, errors, warnings, status: errors.length ? "REINVESTIGATION_REQUIRED" : warnings.length ? "LOCKED_WITH_LIMITATIONS" : "LOCKED" }; }

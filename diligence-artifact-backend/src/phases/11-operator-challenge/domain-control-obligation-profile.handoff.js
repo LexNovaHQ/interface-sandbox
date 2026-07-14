@@ -173,11 +173,11 @@ function challengeRow(row, path) {
 }
 
 function receipt({ criticalFailures, warnings, lockStatus, challengedRows = [], profile = {} }) {
-  const status = criticalFailures.length ? "REPAIR_REQUIRED" : warnings.length ? "LOCKED_WITH_LIMITATIONS" : "LOCKED";
+  const status = criticalFailures.length ? "CONTROLLED_FAILURE" : warnings.length ? "LOCKED_WITH_LIMITATIONS" : "LOCKED";
   return deepFreeze({
     phase8_domain_control_obligation_challenge: {
       status,
-      gate: criticalFailures.length ? "REPAIR_REQUIRED" : warnings.length ? "PASS_WITH_LIMITATIONS" : "PASS",
+      gate: criticalFailures.length ? "CONTROLLED_FAILURE" : warnings.length ? "PASS_WITH_LIMITATIONS" : "PASS",
       handoff_version: DOMAIN_CONTROL_OBLIGATION_DOWNSTREAM_HANDOFF_VERSION,
       source_artifact: SOURCE_ARTIFACT,
       source_lock_status: lockStatus || "UNACCEPTED",

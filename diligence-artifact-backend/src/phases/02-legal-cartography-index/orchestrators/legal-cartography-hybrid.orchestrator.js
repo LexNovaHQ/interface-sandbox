@@ -43,7 +43,7 @@ export async function runM9HybridOrchestrator({ run = {}, artifacts = {}, runSem
 
   const finalWrapper = compileM9HybridCartography({ deterministicMap: deterministicWrapper, semanticProfile: semanticWrapper, reinvestigationWorkpad: reinvestigationWrapper });
   const finalValidation = validateFinalIndex ? validateFinalIndex(finalWrapper) : { ok: true, warnings: [], errors: [], status: finalWrapper[M9_FINAL_ARTIFACT_NAME]?.lock_status || "LOCKED_WITH_LIMITATIONS" };
-  if (finalValidation?.ok === false || finalValidation?.status === "REPAIR_REQUIRED" && finalValidation.failed_gates?.length) {
+  if (finalValidation?.ok === false || finalValidation?.status === "REINVESTIGATION_REQUIRED" && finalValidation.failed_gates?.length) {
     const error = new Error("M9 hybrid final legal_cartography_index failed validation.");
     error.phase = "M9";
     error.artifact_name = M9_FINAL_ARTIFACT_NAME;
@@ -61,7 +61,7 @@ export async function runM9HybridOrchestrator({ run = {}, artifacts = {}, runSem
 
 function shouldRunReinvestigation(validation, semanticWrapper) {
   const semantic = unwrapRoot(semanticWrapper, M9_SEMANTIC_ARTIFACT_NAME);
-  return Boolean(validation?.errors?.length || validation?.warnings?.length || semantic.lock_status === "REPAIR_REQUIRED");
+  return Boolean(validation?.errors?.length || validation?.warnings?.length || semantic.lock_status === "REINVESTIGATION_REQUIRED");
 }
 
 async function buildOrRunReinvestigation({ run, artifacts, deterministicWrapper, semanticWrapper, semanticValidation, runReinvestigationModel, logger }) {
@@ -90,7 +90,7 @@ function normalizeSemanticWrapper({ semanticRaw, runId, deterministicWrapper }) 
   }
   const map = unwrapRoot(deterministicWrapper, M9_DETERMINISTIC_ARTIFACT_NAME);
   const required = asArray(map.semantic_label_queue).filter((row) => row.semantic_label_required === true || ["P0", "P1"].includes(row.priority));
-  return { [M9_SEMANTIC_ARTIFACT_NAME]: { run_id: runId, schema_version: "M9_SEMANTIC_PROFILE_EMPTY_REPAIR_REQUIRED_v2_PHASE1_V5", semantic_navigation_index: [], semantic_integrity: { required_queue_count: required.length, labeled_queue_count: 0, coverage_ratio: required.length ? 0 : 1, ready_for_compiler: required.length === 0 }, lock_status: required.length ? "REPAIR_REQUIRED" : "LOCKED_WITH_LIMITATIONS" } };
+  return { [M9_SEMANTIC_ARTIFACT_NAME]: { run_id: runId, schema_version: "M9_SEMANTIC_PROFILE_EMPTY_REINVESTIGATION_REQUIRED_v2_PHASE1_V5", semantic_navigation_index: [], semantic_integrity: { required_queue_count: required.length, labeled_queue_count: 0, coverage_ratio: required.length ? 0 : 1, ready_for_compiler: required.length === 0 }, lock_status: required.length ? "REINVESTIGATION_REQUIRED" : "LOCKED_WITH_LIMITATIONS" } };
 }
 
 function normalizeReinvestigationWrapper({ raw, runId, semanticValidation }) {

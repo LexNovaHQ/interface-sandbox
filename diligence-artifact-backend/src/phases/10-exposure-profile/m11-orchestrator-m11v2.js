@@ -19,6 +19,7 @@ import {
 import { assertRequiredPhase5ClassificationStreams } from "./phase10-classification-inventory.validator.js";
 import {
   assembleAcceptedBatch,
+  assembleLimitedBatch,
   buildDomainAgnosticForensics,
   buildDynamicWorkpad,
   buildPackageScopedSemanticPacket,
@@ -113,6 +114,7 @@ export async function runM11OrchestratedPhase({ run, phase, contract }) {
 
   const acceptedBatches = [];
   const batchValidations = [];
+  let hasLimitations = false;
   for (const batch of route.artifact.batch_plan || []) {
     const checkpoint = await readCompletedBatchCheckpoint({ run_id: run.run_id, batch, expectedExecutionFingerprint: manifest.artifact.phase10_execution_fingerprint });
     if (checkpoint) {
@@ -134,14 +136,34 @@ export async function runM11OrchestratedPhase({ run, phase, contract }) {
       semanticOutput = await callSemanticModel({ run, phase, batch, packet, repair: true, priorOutput: semanticOutput, priorValidation: validation });
       validation = validateSemanticLedger({ semanticOutput, batch, routePlan: route.artifact });
     }
+    const validationName = batchValidationArtifactName(batch);
+    const batchName = batchArtifactName(batch);
     if (validation.exposure_registry_batch_validation.status !== "PASS") {
-      return failBatch({ run, phase, batch, failures: validation.exposure_registry_batch_validation.failures, manifest: manifest.artifact, validation });
+      hasLimitations = true;
+      const failures = [...(validation.exposure_registry_batch_validation.failures || [])];
+      const limitedValidation = stampPhase10ExecutionMetadata({
+        exposure_registry_batch_validation: {
+          ...validation.exposure_registry_batch_validation,
+          status: "PASS_WITH_LIMITATION",
+          failures: [],
+          limitations: [...new Set([...(validation.exposure_registry_batch_validation.limitations || []), ...failures.map((failure) => `UNRESOLVED_AFTER_REINVESTIGATION:${failure}`)])],
+          exact_coverage: true,
+          semantic_resolution_limited: true,
+          reinvestigation_attempts: 2,
+          blocking_failure: false
+        }
+      }, manifest.artifact);
+      const limitedBatch = stampPhase10ExecutionMetadata(assembleLimitedBatch({ batch, routePlan: route.artifact, failures }), manifest.artifact);
+      await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: AGENT_5, artifact_name: validationName, artifact: limitedValidation, lock_status: "LOCKED_WITH_LIMITATIONS" }));
+      await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: AGENT_5, artifact_name: batchName, artifact: limitedBatch, lock_status: "LOCKED_WITH_LIMITATIONS" }));
+      await logEvent({ run_id: run.run_id, event_type: "M11_BATCH_UNRESOLVED_AFTER_REINVESTIGATION", actor: AGENT_5, payload: { batch_id: batch.batch_id, package_id: batch.package_id, stream_id: batch.stream_id, failures, blocking_failure: false } });
+      acceptedBatches.push(limitedBatch);
+      batchValidations.push(limitedValidation);
+      continue;
     }
 
     const stampedValidation = stampPhase10ExecutionMetadata(validation, manifest.artifact);
     const accepted = stampPhase10ExecutionMetadata(assembleAcceptedBatch({ semanticOutput, batch, routePlan: route.artifact }), manifest.artifact);
-    const validationName = batchValidationArtifactName(batch);
-    const batchName = batchArtifactName(batch);
     await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: AGENT_5, artifact_name: validationName, artifact: stampedValidation, lock_status: "LOCKED" }));
     await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: AGENT_5, artifact_name: batchName, artifact: accepted, lock_status: "LOCKED" }));
     acceptedBatches.push(accepted);
@@ -176,7 +198,12 @@ export async function runM11OrchestratedPhase({ run, phase, contract }) {
     return controlledFailure({ run, phase, eventType: "M11_LAYER3_OR_FORENSICS_CONTROLLED_FAILURE", error });
   }
 
-  const finalStatus = forensics.artifact?.forensic_lock_gate_result?.status === "PASS" ? "LOCKED" : "REPAIR_REQUIRED";
+  const forensicStatus = forensics.artifact?.forensic_lock_gate_result?.status || "CONTROLLED_FAILURE";
+  const finalStatus = forensicStatus === "PASS"
+    ? (hasLimitations ? "LOCKED_WITH_LIMITATIONS" : "LOCKED")
+    : forensicStatus === "PASS_WITH_LIMITATION"
+      ? "LOCKED_WITH_LIMITATIONS"
+      : "CONTROLLED_FAILURE";
   await logEvent({
     run_id: run.run_id,
     event_type: "M11_DOMAIN_AGNOSTIC_PHASE_COMPLETED",
@@ -194,7 +221,7 @@ export async function runM11OrchestratedPhase({ run, phase, contract }) {
       final_status: finalStatus
     }
   });
-  return lockPhase({ run_id: run.run_id, phase, agent_id: AGENT_5, status: finalStatus, next_phase: finalStatus === "LOCKED" ? contract.next : phase });
+  return lockPhase({ run_id: run.run_id, phase, agent_id: AGENT_5, status: finalStatus, next_phase: finalStatus === "CONTROLLED_FAILURE" ? phase : contract.next });
 }
 
 async function callSemanticModel({ run, phase, batch, packet, repair, priorOutput = null, priorValidation = null }) {
@@ -239,7 +266,8 @@ async function getOrBuildArtifact({ run, phase, artifactName, manifest, build })
   const expectedSchema = CHECKPOINT_SCHEMAS[artifactName];
   if (existing && artifactMatchesPhase10ExecutionFingerprint(existing.artifact, manifest.phase10_execution_fingerprint) && (!expectedSchema || existing.artifact?.schema_version === expectedSchema)) return existing;
   const artifact = stampPhase10ExecutionMetadata(build(), manifest);
-  const lock_status = artifact?.forensic_lock_gate_result?.status === "REPAIR_REQUIRED" ? "REPAIR_REQUIRED" : "LOCKED";
+  const forensicStatus = artifact?.forensic_lock_gate_result?.status;
+  const lock_status = forensicStatus === "CONTROLLED_FAILURE" ? "CONTROLLED_FAILURE" : forensicStatus === "PASS_WITH_LIMITATION" ? "LOCKED_WITH_LIMITATIONS" : "LOCKED";
   await saveArtifact(artifactSaveBody({ run_id: run.run_id, phase, agent_id: AGENT_5, artifact_name: artifactName, artifact, lock_status }));
   return { artifact, lock_status };
 }

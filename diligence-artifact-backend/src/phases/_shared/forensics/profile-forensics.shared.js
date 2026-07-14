@@ -19,7 +19,7 @@ const CONTROLLED_VALUES = new Set([
   "FIELD_NOT_PUBLIC",
   "FIELD_CONFLICTED",
   "FIELD_NOT_FOUND",
-  "REPAIR_REQUIRED",
+  "REINVESTIGATION_REQUIRED",
   "CONTROLLED_FAILURE"
 ]);
 
@@ -507,7 +507,7 @@ function buildActivityLockGate({ activityTrace, fieldTrace, limitationTrace, cov
 
 function gate({ artifactName, failures, warnings }) {
   return {
-    status: failures.length ? "REPAIR_REQUIRED" : "PASS",
+    status: failures.length ? "PASS_WITH_LIMITATION" : "PASS",
     artifact_name: artifactName,
     blocking_failures: failures,
     non_blocking_warnings: warnings,

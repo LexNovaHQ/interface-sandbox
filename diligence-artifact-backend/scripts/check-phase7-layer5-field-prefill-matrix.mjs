@@ -58,7 +58,7 @@ assert.equal(validation.no_excerpts, true);
 
 const contact = prefillMatrix.prefill_rows.find((row) => row.field_id === "DAP.CONTACT.001");
 assert.ok(contact);
-assert.notEqual(contact.prefill_candidate_status, "NAVIGATION_DEFECT_REPAIR_REQUIRED");
+assert.notEqual(contact.prefill_candidate_status, "NAVIGATION_DEFECT_REINVESTIGATION_REQUIRED");
 assert.ok(contact.supporting_atom_ids.length > 0);
 
 const exec = prefillMatrix.prefill_rows.find((row) => row.field_id === "DAP.EXEC.001");

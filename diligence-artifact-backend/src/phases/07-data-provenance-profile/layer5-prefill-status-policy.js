@@ -6,7 +6,7 @@ export const PHASE7_PREFILL_STATUSES = Object.freeze([
   "MODEL_PACKET_REQUIRED",
   "NOT_VISIBLE_AFTER_TARGETED_SCAN",
   "SOURCE_NOT_ROUTED_BY_M6",
-  "NAVIGATION_DEFECT_REPAIR_REQUIRED",
+  "NAVIGATION_DEFECT_REINVESTIGATION_REQUIRED",
   "REQUIRES_PRIVATE_CONFIRMATION"
 ]);
 
@@ -19,7 +19,7 @@ export function selectPhase7PrefillStatus({ rule, routeIds = [], atomIds = [], a
   if (rule?.deterministic_prefill_eligible && routeIds.length) return "PREFILL_DERIVED_CROSS_ROUTE";
   if (activityJoinIds.length && atomIds.length) return "PREFILL_DERIVED_CROSS_ROUTE";
   if (routeIds.length || atomIds.length || activityJoinIds.length) return "MODEL_PACKET_REQUIRED";
-  return "NAVIGATION_DEFECT_REPAIR_REQUIRED";
+  return "NAVIGATION_DEFECT_REINVESTIGATION_REQUIRED";
 }
 
 export function phase7ModelRequiredForPrefillStatus(status) {

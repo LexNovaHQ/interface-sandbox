@@ -179,7 +179,7 @@ When the expected write artifact is `target_profile_semantic_profile`, return st
       "coverage_ratio": 0,
       "ready_for_compiler": false
     },
-    "lock_status": "REPAIR_REQUIRED"
+    "lock_status": "REINVESTIGATION_REQUIRED"
   }
 }
 ```
@@ -194,7 +194,7 @@ The raw source unit map is not the semantic coverage source. The deterministic `
 
 `semantic_integrity.coverage_ratio` must be at least `0.80` for compiler readiness.
 
-If coverage is below `0.80`, `semantic_integrity.ready_for_compiler` must be false and `lock_status` must be `REPAIR_REQUIRED`.
+If coverage is below `0.80`, `semantic_integrity.ready_for_compiler` must be false and `lock_status` must be `REINVESTIGATION_REQUIRED`.
 
 Empty semantic output cannot satisfy required deterministic queue rows.
 

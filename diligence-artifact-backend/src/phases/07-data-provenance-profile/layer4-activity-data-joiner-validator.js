@@ -19,10 +19,10 @@ export function validatePhase7ActivityDataFlowCandidateMap(candidateMap) {
     if (!Array.isArray(row.candidate_dap_families) || row.candidate_dap_families.length < 3) errors.push(`missing_candidate_families:${row.activity_join_id}`);
     for (const family of ["DAP.PARTY", "DAP.OBJ", "DAP.FLOW"]) if (!row.candidate_dap_families.includes(family)) errors.push(`missing_base_family:${row.activity_join_id}:${family}`);
     if (!["ACTIVITY_DAP_JOIN_READY", "ACTIVITY_DAP_JOIN_REQUIRES_NAVIGATION_REPAIR"].includes(row.join_status)) errors.push(`bad_join_status:${row.activity_join_id}:${row.join_status}`);
-    if (!["DERIVED_CROSS_ROUTE", "NAVIGATION_DEFECT_REPAIR_REQUIRED"].includes(row.anti_unknown_status)) errors.push(`bad_anti_unknown_status:${row.activity_join_id}:${row.anti_unknown_status}`);
+    if (!["DERIVED_CROSS_ROUTE", "NAVIGATION_DEFECT_REINVESTIGATION_REQUIRED"].includes(row.anti_unknown_status)) errors.push(`bad_anti_unknown_status:${row.activity_join_id}:${row.anti_unknown_status}`);
   }
   return Object.freeze({
-    status: errors.length ? "REPAIR_REQUIRED" : "PASS",
+    status: errors.length ? "REINVESTIGATION_REQUIRED" : "PASS",
     checked_activities: activities.length,
     checked_joined_candidates: joined.length,
     deterministic_only: candidateMap?.join_policy?.deterministic_only === true,

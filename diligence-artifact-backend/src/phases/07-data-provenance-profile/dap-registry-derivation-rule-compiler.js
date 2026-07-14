@@ -239,7 +239,7 @@ function validateCompiledRules({ metadata, materialRules, sectionCounts, require
   const unrouted = materialRules.filter((row) => String(row.model_packet_family || "").startsWith("UNROUTED_PACKET"));
   if (unrouted.length) errors.push(`unrouted_model_packet:${unrouted.map((row) => row.field_id).join(",")}`);
   return Object.freeze({
-    status: errors.length ? "REPAIR_REQUIRED" : "PASS",
+    status: errors.length ? "REINVESTIGATION_REQUIRED" : "PASS",
     expected_dap_field_count: expectedCount,
     actual_dap_field_count: materialRules?.length || 0,
     expected_section_count: PHASE7_DAP_MATERIAL_SECTION_MATRIX.length,
@@ -268,7 +268,7 @@ function countBy(rows, keyFn) {
 }
 
 function fail(reason) {
-  return Object.freeze({ status: "REPAIR_REQUIRED", errors: [reason] });
+  return Object.freeze({ status: "REINVESTIGATION_REQUIRED", errors: [reason] });
 }
 
 function clean(value) {

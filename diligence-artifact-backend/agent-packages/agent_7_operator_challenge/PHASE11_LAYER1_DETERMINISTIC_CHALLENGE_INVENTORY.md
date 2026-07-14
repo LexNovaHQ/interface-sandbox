@@ -81,6 +81,6 @@ The object becomes an independently persisted artifact when the full Phase 11 ar
 
 ## BLOCKING DOCTRINE
 
-Layer 1 never blocks a run and never emits `REPAIR_REQUIRED`.
+Layer 1 never blocks a run and never emits `REINVESTIGATION_REQUIRED`.
 
 Only Layer 3 may classify a validated challenge as a critical failure. Material-field candidates must follow the maximum-two-attempt reinvestigation doctrine before an unresolved warning is carried forward.

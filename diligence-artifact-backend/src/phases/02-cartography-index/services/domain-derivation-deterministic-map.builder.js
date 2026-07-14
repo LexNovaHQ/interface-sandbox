@@ -320,7 +320,7 @@ function matchedTerms(patterns, text) {
 }
 
 function resolveStatus({ coverageIndex, missingLimited, qualityRepairQueue }) {
-  if (!coverageIndex.length) return "REPAIR_REQUIRED";
+  if (!coverageIndex.length) return "REINVESTIGATION_REQUIRED";
   if (missingLimited.length || qualityRepairQueue.length) return "LOCKED_WITH_LIMITATIONS";
   return "LOCKED";
 }

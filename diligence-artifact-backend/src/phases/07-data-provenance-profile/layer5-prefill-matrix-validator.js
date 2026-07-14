@@ -1,7 +1,7 @@
 import { PHASE7_PREFILL_STATUSES } from "./layer5-prefill-status-policy.js";
 
 const FORBIDDEN_KEYS = Object.freeze(["excerpt", "excerpts", "raw_text", "clean_text", "content", "body", "html", "markdown", "text", "final_value", "final_dap_value", "profile_value"]);
-const UNRESOLVED_STATUSES = Object.freeze(["NAVIGATION_DEFECT_REPAIR_REQUIRED", "SOURCE_NOT_ROUTED_BY_M6", "NOT_VISIBLE_AFTER_TARGETED_SCAN", "REQUIRES_PRIVATE_CONFIRMATION"]);
+const UNRESOLVED_STATUSES = Object.freeze(["NAVIGATION_DEFECT_REINVESTIGATION_REQUIRED", "SOURCE_NOT_ROUTED_BY_M6", "NOT_VISIBLE_AFTER_TARGETED_SCAN", "REQUIRES_PRIVATE_CONFIRMATION"]);
 
 export function validatePhase7DeterministicFieldPrefillMatrix(prefillMatrix) {
   const errors = [];
@@ -18,7 +18,7 @@ export function validatePhase7DeterministicFieldPrefillMatrix(prefillMatrix) {
   const ids = new Set();
   for (const row of rows) validateRow(row, ids, errors);
   return Object.freeze({
-    status: errors.length ? "REPAIR_REQUIRED" : "PASS",
+    status: errors.length ? "REINVESTIGATION_REQUIRED" : "PASS",
     checked_rows: rows.length,
     all_fields_represented: rows.length === 150 && ids.size === 150,
     deterministic_rows_do_not_regress_to_unresolved: !errors.some((error) => error.includes("eligible_row_with_atoms_unresolved")),

@@ -112,7 +112,7 @@ function validateRouteManifestShape(routePackets) {
     if (!packet.selective_l_family_route_ids?.length) errors.push(`route_packet_missing_l_routes:${packet.batch_id}`);
     if (!packet.field_route_rows?.length) errors.push(`route_packet_missing_field_rows:${packet.batch_id}`);
   }
-  return Object.freeze({ status: errors.length ? "REPAIR_REQUIRED" : "PASS", errors: Object.freeze(errors) });
+  return Object.freeze({ status: errors.length ? "REINVESTIGATION_REQUIRED" : "PASS", errors: Object.freeze(errors) });
 }
 
 function familyFromField(fieldId = "") {

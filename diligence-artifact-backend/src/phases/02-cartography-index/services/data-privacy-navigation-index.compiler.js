@@ -78,7 +78,7 @@ function validateCompiledNavigationIndex({ deterministic, semantic }) {
     if (!batch.selective_l_family_route_ids?.length) errors.push(`batch_pointer_missing_legacy_l_routes:${batch.batch_id || "missing"}`);
   }
   if (containsForbiddenText({ deterministic, semantic })) errors.push("data_privacy_navigation_index_contains_forbidden_text_or_retired_inputs");
-  return Object.freeze({ status: errors.length ? "REPAIR_REQUIRED" : "PASS", errors: Object.freeze(errors), downstream_rules: P2D_DATA_PRIVACY_DOWNSTREAM_RULES });
+  return Object.freeze({ status: errors.length ? "REINVESTIGATION_REQUIRED" : "PASS", errors: Object.freeze(errors), downstream_rules: P2D_DATA_PRIVACY_DOWNSTREAM_RULES });
 }
 
 function containsForbiddenText(value) {

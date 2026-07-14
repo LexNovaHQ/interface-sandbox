@@ -52,7 +52,7 @@ export function buildPhaseRouteValidationManifest({ phaseRoutingManifest = {}, v
       runtime_cutover_status: manifest.runtime_cutover_status || "UNKNOWN",
       route_count: Array.isArray(manifest.route_buckets) ? manifest.route_buckets.length : 0,
       validation_status: validation.ok ? "PASS" : "FAIL",
-      status: validation.ok ? "LOCKED" : "REPAIR_REQUIRED",
+      status: validation.ok ? "LOCKED" : "REINVESTIGATION_REQUIRED",
       failures: Object.freeze(validation.errors || []),
       warnings: Object.freeze(validation.warnings || []),
       validated_doctrine: Object.freeze({
@@ -68,7 +68,7 @@ export function buildPhaseRouteValidationManifest({ phaseRoutingManifest = {}, v
         phase12_compiler_excluded: true,
         no_other_routing_authority_allowed: true
       }),
-      lock_status: validation.ok ? "LOCKED" : "REPAIR_REQUIRED"
+      lock_status: validation.ok ? "LOCKED" : "REINVESTIGATION_REQUIRED"
     })
   });
 }

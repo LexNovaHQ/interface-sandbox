@@ -53,7 +53,7 @@ assert.equal(validateSemanticLedger({ semanticOutput: fintechOutput, batch: fint
 assert.equal(validateSemanticLedger({ semanticOutput: aiOutput, batch: aiBatch, routePlan }).exposure_registry_batch_validation.status, "PASS");
 const bad = structuredClone(aiOutput);
 bad.m11_batch_registry_ledger.batch_registry_ledger[0].registry_row_key = "forbidden";
-assert.equal(validateSemanticLedger({ semanticOutput: bad, batch: aiBatch, routePlan }).exposure_registry_batch_validation.status, "REPAIR_REQUIRED");
+assert.equal(validateSemanticLedger({ semanticOutput: bad, batch: aiBatch, routePlan }).exposure_registry_batch_validation.status, "REINVESTIGATION_REQUIRED");
 
 const accepted = [
   assembleAcceptedBatch({ semanticOutput: fintechOutput, batch: fintechBatch, routePlan }),

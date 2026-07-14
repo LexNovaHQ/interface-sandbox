@@ -154,7 +154,7 @@ When the expected write artifact is `domain_derivation_semantic_profile`, return
       "coverage_ratio": 0,
       "ready_for_compiler": false
     },
-    "lock_status": "REPAIR_REQUIRED"
+    "lock_status": "REINVESTIGATION_REQUIRED"
   }
 }
 ```

@@ -99,8 +99,8 @@ phase_local_gate:
 
   allowed_gate_outcomes:
     - PASS
-    - REPAIR_REQUIRED
-    - REINVESTIGATE_REQUIRED
+    - REINVESTIGATION_REQUIRED
+    - REINVESTIGATION_REQUIRED
     - PASS_WITH_LIMITATION
     - CONTROLLED_FAILURE
 
@@ -162,8 +162,8 @@ validator_action:
   fail_behavior: repair M10 only; do not advance to M11
 
 repair_policy:
-  - If local gate returns REPAIR_REQUIRED, repair M10 only and rerun the local gate.
-  - If local gate returns REINVESTIGATE_REQUIRED, emit a scoped reinvestigation request limited to M6-approved routes/materials, locked upstream objects, M9 navigation refs, and documented absence/access records.
+  - If local gate returns REINVESTIGATION_REQUIRED, repair M10 only and rerun the local gate.
+  - If local gate returns REINVESTIGATION_REQUIRED, emit a scoped reinvestigation request limited to M6-approved routes/materials, locked upstream objects, M9 navigation refs, and documented absence/access records.
   - If necessary data/privacy/security/control route is absent from M6, return to M6/Agent 1 repair instead of searching or inventing.
   - Do not recompute unrelated upstream objects.
 
@@ -177,7 +177,7 @@ stop_condition:
 
 `M10.S0.C3` The Module may not advance, hand off, or be treated as locked until its phase-local gate has returned `PASS`, `PASS_WITH_LIMITATION`, or `CONTROLLED_FAILURE`.
 
-`M10.S0.C4` `REPAIR_REQUIRED` and `REINVESTIGATE_REQUIRED` are stop states.
+`M10.S0.C4` `REINVESTIGATION_REQUIRED` and `REINVESTIGATION_REQUIRED` are stop states.
 
 ---
 
@@ -273,7 +273,7 @@ Module X must consume the patched M8 activity card only.
 | Surface/context tokens | `surface_context_tokens[]` | `surface_tokens[]` |
 | Routing limits | `surface_proof_and_routing_limits` | `routing_basis` alone |
 
-`M10.S2B.C1` If the patched M8 fields are missing, return `REPAIR_REQUIRED` to Agent 3 / M8 rather than using retired paths.
+`M10.S2B.C1` If the patched M8 fields are missing, return `REINVESTIGATION_REQUIRED` to Agent 3 / M8 rather than using retired paths.
 
 ### M10.S2C — Route / Material Access Matrix
 
@@ -943,7 +943,7 @@ Lock only if all conditions pass:
 
 `M10.S17B.C2` If usable with limitations, set phase-local lock state to `LOCKED_WITH_LIMITATIONS`.
 
-`M10.S17B.C3` If unsafe or unusable, set phase-local lock state to `CONTROLLED_FAILURE` or `REPAIR_REQUIRED` as appropriate.
+`M10.S17B.C3` If unsafe or unusable, set phase-local lock state to `CONTROLLED_FAILURE` or `REINVESTIGATION_REQUIRED` as appropriate.
 
 ### M10.S17C — PHASE B1 Material Repair / Targeted Reinvestigation Behavior
 
@@ -970,9 +970,9 @@ Allowed Phase B1 outcomes:
 - `PASS_WITH_LIMITATION`
 - `CONTROLLED_FAILURE`
 - `REINVESTIGATION_COMPLETED_WITH_LIMITATION`
-- `SOURCE_REPAIR_REQUIRED` only for upstream source-universe defects
+- `SOURCE_REINVESTIGATION_REQUIRED` only for upstream source-universe defects
 
-Any earlier `REPAIR_REQUIRED` or `REINVESTIGATE_REQUIRED` wording in this module is interpreted as an internal stop-and-repair workflow state, not a handoff-eligible final phase outcome. It does not authorize advancement to M11.
+Any earlier `REINVESTIGATION_REQUIRED` or `REINVESTIGATION_REQUIRED` wording in this module is interpreted as an internal stop-and-repair workflow state, not a handoff-eligible final phase outcome. It does not authorize advancement to M11.
 
 ### M10.S17D — PHASE D Forensic Repair / Targeted Reinvestigation Behavior
 
@@ -998,9 +998,9 @@ Allowed Phase D outcomes:
 - `PASS_WITH_LIMITATION`
 - `CONTROLLED_FAILURE`
 - `REINVESTIGATION_COMPLETED_WITH_LIMITATION`
-- `SOURCE_REPAIR_REQUIRED` only for upstream source-universe defects
+- `SOURCE_REINVESTIGATION_REQUIRED` only for upstream source-universe defects
 
-Any earlier `REPAIR_REQUIRED` or `REINVESTIGATE_REQUIRED` wording in this module is interpreted as an internal stop-and-repair workflow state, not a handoff-eligible final phase outcome. It does not authorize advancement to M11.
+Any earlier `REINVESTIGATION_REQUIRED` or `REINVESTIGATION_REQUIRED` wording in this module is interpreted as an internal stop-and-repair workflow state, not a handoff-eligible final phase outcome. It does not authorize advancement to M11.
 
 ---
 

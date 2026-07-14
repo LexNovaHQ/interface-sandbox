@@ -119,7 +119,7 @@ Semantic coverage is measured against deterministic `semantic_label_queue` rows.
 
 `coverage_ratio` must be at least `0.80` for compiler readiness.
 
-If coverage is below `0.80`, `ready_for_compiler` must be false and `lock_status` must be `REPAIR_REQUIRED`.
+If coverage is below `0.80`, `ready_for_compiler` must be false and `lock_status` must be `REINVESTIGATION_REQUIRED`.
 
 ## Fusion rule
 
