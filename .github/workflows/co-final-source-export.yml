@@ -7,6 +7,12 @@ on:
     paths:
       - ".github/workflows/co-final-source-export.yml"
       - "diligence-artifact-backend/**"
+  pull_request:
+    branches:
+      - domain-gate-v0-preflight
+    paths:
+      - ".github/workflows/co-final-source-export.yml"
+      - "diligence-artifact-backend/**"
   workflow_dispatch:
 
 permissions:
