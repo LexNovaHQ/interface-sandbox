@@ -1,664 +1,263 @@
 (function () {
   "use strict";
 
-  const VERSION = "interface_qualified_review_workspace.v2";
-  const ALLOWED_SERVER_STATES = new Set(["confirmed", "edited", "not_applicable"]);
+  const VERSION = "interface_qualified_review_section_attestation.v3";
   const runId = new URLSearchParams(window.location.search || "").get("run_id") || "";
   const endpoint = runId ? `/public/diligence-system/qualified-review/${encodeURIComponent(runId)}` : "";
-  const submitEndpoint = endpoint ? `${endpoint}/responses` : "";
-  const storageKey = `interface-qualified-review-draft:${runId}`;
-
   const els = {
-    title: document.getElementById("handoffTitle"),
-    subtitle: document.getElementById("handoffSubtitle"),
-    meta: document.getElementById("handoffMeta"),
-    body: document.getElementById("handoffBody"),
-    back: document.getElementById("backToReport"),
-    annexure: document.getElementById("openAnnexure"),
-    rail: document.getElementById("qualifiedReviewRail"),
-    workflow: document.getElementById("qrWorkflowPanel"),
-    nav: document.getElementById("qrNavigationPanel"),
-    receipt: document.getElementById("qrReceiptPanel"),
-    drawer: document.getElementById("qrValidationDrawer"),
-    finalGate: document.getElementById("qrFinalGatePanel"),
-    live: document.getElementById("qualifiedReviewLiveStatus")
+    title: document.getElementById("handoffTitle"), subtitle: document.getElementById("handoffSubtitle"), meta: document.getElementById("handoffMeta"), body: document.getElementById("handoffBody"), back: document.getElementById("backToReport"), annexure: document.getElementById("openAnnexure"), rail: document.getElementById("qualifiedReviewRail"), workflow: document.getElementById("qrWorkflowPanel"), nav: document.getElementById("qrNavigationPanel"), receipt: document.getElementById("qrReceiptPanel"), drawer: document.getElementById("qrValidationDrawer"), finalGate: document.getElementById("qrFinalGatePanel"), live: document.getElementById("qualifiedReviewLiveStatus")
   };
+  const state = { payload: null, handoff: {}, renderer: {}, draft: {}, sections: [], active: 0, saving: false, timer: null };
 
-  const state = {
-    payload: null,
-    renderer: {},
-    handoff: {},
-    questions: new Map(),
-    sections: [],
-    active: 0,
-    serverSubmission: null,
-    receiptMeta: null,
-    local: loadLocal()
-  };
-
-  window.InterfaceQualifiedReview = Object.freeze({
-    version: VERSION,
-    qualified_review_is_separate_system: true,
-    shares_pipeline_run_id: true,
-    no_document_assembly: true,
-    collectResponses,
-    saveLocal
-  });
-
-  document.addEventListener("change", handleChange, true);
-  document.addEventListener("input", handleInput, true);
-  document.addEventListener("click", handleClick, true);
-
-  if (!runId) showError("Missing run_id in the Qualified Review URL.");
-  else boot().catch((error) => showError(error?.message || String(error)));
+  window.InterfaceQualifiedReview = Object.freeze({ version: VERSION, confirmation_unit: "SECTION", per_question_confirmation_forbidden: true, saveDraft, submitReview });
+  if (!runId) return showError("Missing run_id in the Qualified Review URL.");
+  boot().catch((error) => showError(error?.message || String(error)));
 
   async function boot() {
     els.back.href = `report.html?run_id=${encodeURIComponent(runId)}`;
     els.annexure.href = `technical-annexure.html?run_id=${encodeURIComponent(runId)}`;
-    const payload = await request(endpoint);
-    const renderer = payload.qualified_review_renderer_payload || {};
-    const handoff = payload.qualified_review_handoff || {};
-    assertBoundary(renderer, handoff);
-    const questions = Array.isArray(renderer.questions)
-      ? renderer.questions
-      : Array.isArray(handoff.question_handoff?.questions)
-        ? handoff.question_handoff.questions
-        : [];
-    const sectionPages = renderer.question_sections || renderer.section_pages || handoff.question_handoff?.section_pages || handoff.section_pages || [];
+    applyPayload(await request(endpoint));
+    announce(`Qualified Review loaded. ${fieldCount()} fields across ${state.sections.length} active sections.`);
+  }
 
+  function applyPayload(payload, preferredSectionId = "") {
+    const previous = preferredSectionId || state.sections[state.active]?.section_id || "";
     state.payload = payload;
-    state.renderer = renderer;
-    state.handoff = handoff;
-    state.questions = new Map(questions.map((question) => [question.question_id, question]));
-    state.sections = buildSections(sectionPages, questions);
-    state.serverSubmission = payload.qualified_review_submission || null;
-    hydrateServer(state.serverSubmission);
-    renderShell();
-    renderState();
-    announce(`Qualified Review loaded. ${questions.length} review items across ${state.sections.length} sections.`);
+    state.handoff = payload.qualified_review_handoff || {};
+    state.renderer = payload.qualified_review_renderer_payload || {};
+    state.draft = payload.qualified_review_draft || { field_edits: {}, section_attestations: {} };
+    assertBoundary();
+    state.sections = Array.isArray(state.renderer.sections) ? state.renderer.sections : Array.isArray(state.handoff.sections) ? state.handoff.sections : [];
+    const nextIndex = state.sections.findIndex((section) => section.section_id === previous);
+    state.active = nextIndex >= 0 ? nextIndex : Math.min(state.active, Math.max(0, state.sections.length - 1));
+    render();
   }
 
-  function assertBoundary(renderer, handoff) {
-    const contract = renderer.render_contract || {};
-    if (contract.no_document_assembly !== true) throw new Error("QUALIFIED_REVIEW_NO_DOCUMENT_ASSEMBLY_NOT_LOCKED");
-    if (renderer.renderer_type !== "qualified_review_renderer_payload") throw new Error("QUALIFIED_REVIEW_RENDERER_TYPE_INVALID");
-    const explicitSeparate = handoff.qualified_review_is_separate_system ?? renderer.qualified_review_is_separate_system;
-    const explicitShared = handoff.shares_pipeline_run_id ?? renderer.shares_pipeline_run_id;
-    if (explicitSeparate === false) throw new Error("QUALIFIED_REVIEW_SEPARATE_SYSTEM_BOUNDARY_INVALID");
-    if (explicitShared === false) throw new Error("QUALIFIED_REVIEW_RUN_ID_BOUNDARY_INVALID");
+  function assertBoundary() {
+    if (state.renderer.no_document_assembly !== true) throw new Error("QUALIFIED_REVIEW_NO_DOCUMENT_ASSEMBLY_NOT_LOCKED");
+    if (state.renderer.confirmation_unit !== "SECTION" || state.renderer.per_question_confirmation_forbidden !== true) throw new Error("QUALIFIED_REVIEW_SECTION_CONFIRMATION_CONTRACT_INVALID");
   }
 
-  function renderShell() {
+  function render() {
     els.title.textContent = "Qualified Review";
-    els.subtitle.textContent = "Review the diligence findings, confirm or correct the proposed answer, record any reviewer limitation, and submit a review receipt.";
+    els.subtitle.textContent = "Review and edit the active values, then attest each section once. Individual fields do not require confirmation clicks.";
     els.meta.replaceChildren(renderMatterSummary());
     els.body.replaceChildren(...state.sections.map(renderSection));
+    renderRail();
+    renderWorkflow();
+    renderNavigation();
+    renderFinalGate();
+    renderReceipt();
+    renderAlerts();
   }
 
   function renderMatterSummary() {
-    const target = state.renderer.target || state.handoff.target || "Target under review";
-    const contract = state.renderer.render_contract || {};
     const grid = node("div", "qr-summary-grid");
+    const resolution = state.payload?.qr_registry_resolution_manifest || {};
     [
-      ["Target", target],
-      ["Run ID", state.payload?.run_id || state.renderer.run_id || runId],
-      ["Target URL", state.renderer.target_url || state.handoff.target_url],
-      ["Review items", state.questions.size],
-      ["Sections", state.sections.length],
-      ["Workspace", "Qualified Review"],
-      ["Shared pipeline run", "Yes"],
-      ["Document assembly", contract.no_document_assembly === true ? "Not performed" : "Boundary unavailable"]
-    ].forEach(([label, value]) => {
-      if (value === undefined || value === null || value === "") return;
-      const item = node("div", "qr-summary-item");
-      item.append(node("div", "qr-summary-label", label), node("div", "qr-summary-value", String(value)));
-      grid.append(item);
-    });
+      ["Target", state.renderer.target || state.handoff.target || "Target under review"],
+      ["Run ID", runId],
+      ["Active fields", fieldCount()],
+      ["Active sections", state.sections.length],
+      ["Confirmation", "Per section"],
+      ["Unresolved activation probes", resolution.counts?.unresolved_activation_probe_count || 0],
+      ["Document assembly", "Not performed in this workspace"]
+    ].forEach(([label, value]) => { const item = node("div", "qr-summary-item"); item.append(node("div", "qr-summary-label", label), node("div", "qr-summary-value", String(value))); grid.append(item); });
     return grid;
   }
 
   function renderSection(section, index) {
     const root = node("section", `qr-review-section ${index === state.active ? "active" : ""}`);
     root.dataset.qrSectionIndex = String(index);
-    root.id = `qr-section-${stable(section.section_id || index + 1)}`;
+    root.dataset.sectionId = section.section_id;
+    root.id = `qr-section-${stable(section.section_id)}`;
     root.tabIndex = -1;
     const header = node("header", "qr-review-section-header");
-    header.append(
-      node("div", "eyebrow", `Section ${String(index + 1).padStart(2, "0")}`),
-      node("h3", "", section.section_title || section.section_id || "Review section"),
-      node("p", "small-muted", `${section.questions.length} review item${section.questions.length === 1 ? "" : "s"}. Confirm the prefill, correct it, qualify it with a limitation, or mark it not applicable.`)
-    );
+    header.append(node("div", "eyebrow", `Section ${String(index + 1).padStart(2, "0")}`), node("h3", "", section.section_title || section.section_id), node("p", "small-muted", section.operator_task || "Review the active values in this section."));
+    if ((section.activation_probe_field_ids || []).length) header.append(node("div", "qr-activation-probe-banner", "This section contains an applicability probe. Resolve it to activate or suppress the remaining package fields."));
     const list = node("div", "qr-finding-list");
-    section.questions.forEach((question) => list.append(renderFinding(question)));
-    root.append(header, list, renderSectionAttestation(section, index));
+    (section.fields || []).forEach((field) => list.append(renderField(field)));
+    root.append(header, list, renderSectionAttestation(section));
     return root;
   }
 
-  function renderFinding(question) {
-    const draft = localResponse(question.question_id);
-    const saved = serverResponse(question.question_id);
-    const mode = draft?.mode || inferMode(saved, question);
-    const answer = draft?.answer ?? saved?.answer_value ?? prefill(question);
-    const limitation = draft?.limitation ?? saved?.reviewer_limitation ?? saved?.not_applicable_reason ?? "";
+  function renderField(field) {
+    const edit = state.draft.field_edits?.[field.qr_field_id] || {};
     const card = node("article", "qr-finding");
-    card.dataset.questionId = question.question_id || "";
-    card.dataset.reviewMode = mode;
-    card.dataset.originalValue = stableValue(prefill(question));
-
+    card.dataset.fieldId = field.qr_field_id;
+    card.dataset.sectionId = field.section_id;
     const top = node("div", "qr-finding-top");
-    top.append(
-      node("div", "qr-finding-id", question.question_id || question.field_key || "Review item"),
-      node("span", "qr-source-badge", sourceBadge(question))
-    );
-    const title = node("h4", "", question.lawyer_question || question.public_question_label || question.field_key || "Review item");
+    top.append(node("div", "qr-finding-id", field.qr_field_id), node("span", `qr-source-badge ${field.activation_probe ? "probe" : ""}`, field.activation_probe ? "ACTIVATION PROBE" : field.source_badge || "PROPOSED"));
+    const title = node("h4", "", field.ui?.prompt || field.label || field.qr_field_id);
     const layout = node("div", "qr-finding-layout");
-    const answerPanel = node("div", "qr-answer-panel");
-    answerPanel.append(renderDecisionGroup(question, mode), renderAnswerArea(question, answer, limitation), node("div", "qr-item-status", "Needs review"));
+    const answer = node("div", "qr-answer-panel");
+    const controls = node("div", "qr-atomic-grid");
+    (field.atomic_fields || []).forEach((atomic) => controls.append(renderAtomic(field, atomic, edit.atomic_values?.[atomic.atomic_key])));
+    const na = checkboxControl("Not applicable", edit.not_applicable === true, "fieldNotApplicable");
+    const limitation = document.createElement("textarea"); limitation.className = "input"; limitation.rows = 3; limitation.placeholder = "Optional reviewer limitation or qualification"; limitation.value = edit.limitation || ""; limitation.dataset.fieldLimitation = "true";
+    answer.append(controls, na, limitation, node("div", "qr-item-status", "Finality is controlled by the section attestation below."));
     const context = node("aside", "qr-context");
-    context.append(
-      contextBlock("Why this matters", whyThisMatters(question)),
-      contextBlock("Source / basis", sourceBasis(question)),
-      contextBlock("Affected review output", impactText(question))
-    );
-    layout.append(answerPanel, context);
+    context.append(contextBlock("Source / basis", sourceSummary(field)), contextBlock("Affected documents", documentSummary(field)), contextBlock("Review state", edit.review_status || field.review_state || "UNCHANGED"));
+    layout.append(answer, context);
     card.append(top, title, layout);
-    queueMicrotask(() => updateFinding(card));
+    card.addEventListener("input", () => fieldChanged(field.section_id));
+    card.addEventListener("change", () => fieldChanged(field.section_id));
     return card;
   }
 
-  function renderDecisionGroup(question, selected) {
-    const fieldset = node("fieldset", "qr-decision-group");
-    const legend = document.createElement("legend");
-    legend.textContent = "Reviewer decision";
-    const options = node("div", "qr-decision-options");
-    [
-      ["confirm", "Confirm"],
-      ["correct", "Correct"],
-      ["limitation", "Add limitation"],
-      ["not_applicable", "Not applicable"]
-    ].forEach(([value, label]) => {
-      const input = document.createElement("input");
-      input.type = "radio";
-      input.name = `review-mode-${question.question_id}`;
-      input.value = value;
-      input.checked = selected === value;
-      input.dataset.reviewMode = value;
-      const wrapper = node("label", "qr-decision-option");
-      wrapper.append(input, node("span", "", label));
-      options.append(wrapper);
-    });
-    fieldset.append(legend, options);
-    return fieldset;
-  }
-
-  function renderAnswerArea(question, value, limitation) {
-    const area = node("div", "qr-answer-area");
-    const answerWrap = node("div", "qr-answer-control");
-    const answerLabel = document.createElement("label");
-    answerLabel.textContent = "Reviewed answer";
-    const control = answerControl(question, value);
-    control.dataset.qrAnswer = "true";
-    answerWrap.append(answerLabel, control);
-
-    const limitationWrap = node("div", "qr-limitation-field");
-    const limitationLabel = document.createElement("label");
-    limitationLabel.textContent = "Reviewer limitation / qualification";
-    const note = document.createElement("textarea");
-    note.className = "input";
-    note.rows = 4;
-    note.dataset.qrLimitation = "true";
-    note.placeholder = "State the limitation, uncertainty or reason this item is not applicable.";
-    note.value = limitation || "";
-    limitationWrap.append(limitationLabel, note);
-    area.append(answerWrap, limitationWrap);
-    return area;
-  }
-
-  function answerControl(question, value) {
-    const type = String(question.answer_type || "short_answer");
-    if (type === "long_answer") {
-      const control = document.createElement("textarea");
-      control.className = "input";
-      control.rows = 5;
-      control.value = formatAnswer(value);
-      return control;
-    }
-    if ((type === "dropdown" || type === "select") && Array.isArray(question.answer_options) && question.answer_options.length) {
-      const control = document.createElement("select");
-      control.className = "input";
-      control.multiple = type === "select";
-      const selected = new Set(asArray(value).map(String));
-      if (!control.multiple) {
-        const placeholder = document.createElement("option");
-        placeholder.value = "";
-        placeholder.textContent = "Select one";
-        control.append(placeholder);
-      }
-      question.answer_options.forEach((option) => {
-        const item = document.createElement("option");
-        item.value = String(option);
-        item.textContent = String(option);
-        item.selected = selected.has(String(option));
-        control.append(item);
-      });
-      return control;
-    }
-    const control = document.createElement("input");
-    control.className = "input";
-    control.type = "text";
-    control.value = formatAnswer(value);
-    return control;
-  }
-
-  function renderSectionAttestation(section, index) {
-    const wrap = node("div", "qr-section-attestation");
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.dataset.sectionAttestation = String(index);
-    checkbox.checked = state.local.section_attestations?.[String(index)] === true;
-    const label = node("label", "qr-check-label");
-    label.append(checkbox, node("span", "", `I reviewed this section and its ${section.questions.length} item${section.questions.length === 1 ? "" : "s"}.`));
-    wrap.append(label, node("div", "small-muted", "Section attestation records review completion only. It does not assemble or generate any document."));
+  function renderAtomic(field, atomic, editedValue) {
+    const wrap = node("label", "qr-atomic-field");
+    wrap.append(node("span", "qr-atomic-label", humanize(atomic.atomic_key)));
+    const value = editedValue !== undefined ? editedValue : atomic.value;
+    const control = atomicControl(value);
+    control.dataset.atomicKey = atomic.atomic_key;
+    control.dataset.fieldId = field.qr_field_id;
+    wrap.append(control, node("span", "qr-atomic-source", atomic.source === "MARKET_BASED" ? "{MARKET BASED} — not diligence evidence" : atomic.source === "PHASE_12" ? "DILIGENCE DERIVED" : atomic.source || "UNRESOLVED"));
     return wrap;
   }
 
-  function renderState(message = "") {
-    updateAllFindings();
-    applySectionVisibility();
-    renderRail();
-    renderWorkflow(message);
-    renderNavigation();
-    renderFinalGate(message);
-    renderReceipt();
-    renderAlerts();
-    saveLocal();
-  }
-
-  function renderWorkflow(message) {
-    const done = collectResponses().length;
-    const total = state.questions.size;
-    const percent = total ? Math.round(done / total * 100) : 0;
-    const track = node("div", "qr-progress-track");
-    const fill = node("div", "qr-progress-fill");
-    fill.style.width = `${percent}%`;
-    track.append(fill);
-    const progress = node("div", "qr-progress");
-    progress.append(track, node("div", "qr-progress-copy", `${done}/${total} reviewed · ${percent}%`));
-    els.workflow.replaceChildren(progress, message ? node("div", "small-muted", message) : node("div", "small-muted", reviewStatusCopy(done, total)));
-  }
-
-  function renderNavigation() {
-    const row = node("div", "qr-nav-actions");
-    const left = node("div", "qr-nav-group");
-    const right = node("div", "qr-nav-group");
-    const previous = button("btn secondary", "Previous section", () => moveSection(-1));
-    const next = button("btn secondary", "Next section", () => moveSection(1));
-    const save = button("btn secondary", "Save review state", () => persist("save_progress"));
-    previous.disabled = state.active === 0;
-    next.disabled = state.active >= state.sections.length - 1;
-    left.append(previous, next);
-    right.append(save);
-    row.append(left, right);
-    els.nav.replaceChildren(row);
-  }
-
-  function renderFinalGate(message) {
-    const ready = finalReady();
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.dataset.finalAttestation = "true";
-    checkbox.checked = state.local.final_attestation === true;
-    const label = node("label", "qr-check-label");
-    label.append(checkbox, node("span", "", "I confirm this Qualified Review submission is complete for the reviewed questions and limitations."));
-    const submit = button("btn", "Submit Qualified Review", () => persist("submit_final_gate"));
-    submit.disabled = !ready;
-    const actions = node("div", "qr-final-actions");
-    actions.append(submit, linkButton("btn secondary", "Return to Report", els.back.href));
-    els.finalGate.replaceChildren(
-      node("div", "eyebrow", "Final review gate"),
-      node("h2", "", ready ? "Ready to submit the review" : "Complete the review queue"),
-      node("p", "small-muted", "Submission creates a Qualified Review receipt. It does not assemble documents or activate the Assembly Preview."),
-      label,
-      actions
-    );
-    if (message) els.finalGate.append(node("div", "small-muted", message));
-  }
-
-  function renderReceipt() {
-    const submission = state.serverSubmission;
-    if (!submission) {
-      els.receipt.classList.add("hidden");
-      els.receipt.replaceChildren();
-      return;
+  function atomicControl(value) {
+    if (typeof value === "boolean") {
+      const select = document.createElement("select"); select.className = "input";
+      [["true", "Yes"], ["false", "No"]].forEach(([v, label]) => { const option = document.createElement("option"); option.value = v; option.textContent = label; option.selected = String(value) === v; select.append(option); });
+      select.dataset.valueType = "boolean"; return select;
     }
-    const gate = submission.final_gate || {};
-    const validation = submission.validation || {};
-    const receipt = state.receiptMeta || {};
-    els.receipt.classList.remove("hidden");
-    const grid = node("div", "qr-receipt-grid");
-    [
-      ["Receipt status", gate.status || validation.status || "Saved"],
-      ["Run ID", submission.run_id || runId],
-      ["Saved at", submission.submitted_at || receipt.saved_at],
-      ["Artifact", receipt.artifact_name || submission.artifact_type || "qualified_review_submission"],
-      ["Version", receipt.version || submission.artifact_version],
-      ["Responses received", submission.submitted_response_count],
-      ["Resolved items", gate.resolved_question_count],
-      ["Unresolved items", gate.unresolved_question_count],
-      ["Document assembly", "Not performed"]
-    ].forEach(([label, value]) => {
-      if (value === undefined || value === null || value === "") return;
-      const item = node("div", "qr-receipt-item");
-      item.append(node("div", "qr-summary-label", label), node("div", "qr-summary-value", String(value)));
-      grid.append(item);
-    });
-    const actions = node("div", "qr-receipt-actions no-print");
-    actions.append(
-      linkButton("btn", "Return to Report", els.back.href),
-      linkButton("btn secondary", "Open Technical Annexure", els.annexure.href)
-    );
-    els.receipt.replaceChildren(
-      node("div", "eyebrow", "Qualified Review receipt"),
-      node("h2", "", gate.status === "PASS" ? "Review submitted" : "Review state saved"),
-      node("p", "small-muted", "This receipt records the Qualified Review state for the shared run ID. No document was assembled."),
-      grid,
-      actions
-    );
+    if (Array.isArray(value) || (value && typeof value === "object")) {
+      const area = document.createElement("textarea"); area.className = "input"; area.rows = 4; area.value = Array.isArray(value) ? value.join("\n") : JSON.stringify(value, null, 2); area.dataset.valueType = Array.isArray(value) ? "array" : "object"; return area;
+    }
+    const input = document.createElement("input"); input.className = "input"; input.type = typeof value === "number" ? "number" : "text"; input.value = value ?? ""; input.dataset.valueType = typeof value === "number" ? "number" : "string"; return input;
   }
 
-  function renderAlerts() {
-    const errors = state.serverSubmission?.validation?.blocking_errors || [];
-    const warnings = state.serverSubmission?.validation?.warnings || [];
-    if (!errors.length && !warnings.length) {
-      els.drawer.classList.add("hidden");
-      els.drawer.replaceChildren();
-      return;
-    }
-    els.drawer.classList.remove("hidden");
-    const list = node("div", "qr-alert-list");
-    [...errors, ...warnings].slice(0, 30).forEach((item) => list.append(node("div", "qr-alert-item", cleanAlert(item))));
-    els.drawer.replaceChildren(node("div", "eyebrow", "Review alerts"), node("h2", "", "Items requiring attention"), list);
+  function renderSectionAttestation(section) {
+    const saved = state.draft.section_attestations?.[section.section_id];
+    const current = saved?.status === "ATTESTED" && saved.field_state_hash === section.attestation?.field_state_hash;
+    const wrap = node("div", "qr-section-attestation");
+    const buttonEl = button(current ? "btn secondary" : "btn primary", current ? "Section attested" : "Attest this section", () => attestSection(section, !current));
+    buttonEl.disabled = state.saving;
+    wrap.append(node("div", "qr-section-attestation-copy", current ? `Attested ${saved.attested_at ? new Date(saved.attested_at).toLocaleString() : ""}` : "I reviewed the values in this section and confirm the final state."), buttonEl, node("div", "small-muted", "Editing any value after attestation resets this section automatically."));
+    return wrap;
   }
 
   function renderRail() {
     const list = node("div", "qr-rail-list");
     state.sections.forEach((section, index) => {
-      const complete = section.questions.every((question) => responseForCard(question.question_id)) && sectionAttested(index);
-      const item = button(`qr-rail-item ${complete ? "complete" : ""} ${index === state.active ? "active" : ""}`, "");
-      item.dataset.qrSectionIndex = String(index);
-      item.append(
-        node("span", "qr-rail-index", String(index + 1).padStart(2, "0")),
-        node("span", "qr-rail-text", section.section_title || section.section_id || `Section ${index + 1}`),
-        node("span", "qr-rail-count", `${section.questions.filter((question) => responseForCard(question.question_id)).length}/${section.questions.length}`)
-      );
+      const complete = isSectionAttested(section);
+      const item = button(`qr-rail-item ${index === state.active ? "active" : ""} ${complete ? "complete" : ""}`, "", () => moveTo(index));
+      item.append(node("span", "qr-rail-index", String(index + 1).padStart(2, "0")), node("span", "qr-rail-text", section.section_title), node("span", "qr-rail-count", complete ? "Attested" : `${(section.fields || []).length}`));
       list.append(item);
     });
     els.rail.replaceChildren(list);
   }
 
-  async function persist(reason) {
-    const responses = collectResponses();
-    if (reason === "submit_final_gate" && !finalReady()) {
-      renderState("Complete every item, limitation note and attestation before final submission.");
-      return;
-    }
-    renderWorkflow("Saving Qualified Review state...");
+  function renderWorkflow(message = "") {
+    const done = state.sections.filter(isSectionAttested).length;
+    const total = state.sections.length;
+    const percent = total ? Math.round(done / total * 100) : 0;
+    const track = node("div", "qr-progress-track"); const fill = node("div", "qr-progress-fill"); fill.style.width = `${percent}%`; track.append(fill);
+    const progress = node("div", "qr-progress"); progress.append(track, node("div", "qr-progress-copy", `${done}/${total} sections attested · ${percent}%`));
+    els.workflow.replaceChildren(progress, node("div", "small-muted", message || (state.saving ? "Saving review state…" : "All field edits are saved to the shared run. No per-field confirmation is required.")));
+  }
+
+  function renderNavigation() {
+    const row = node("div", "qr-nav-actions");
+    const left = node("div", "qr-nav-group"); const right = node("div", "qr-nav-group");
+    const previous = button("btn secondary", "Previous section", () => moveTo(state.active - 1)); previous.disabled = state.active === 0;
+    const next = button("btn secondary", "Next section", () => moveTo(state.active + 1)); next.disabled = state.active >= state.sections.length - 1;
+    const save = button("btn secondary", state.saving ? "Saving…" : "Save draft", () => saveDraft()); save.disabled = state.saving;
+    left.append(previous, next); right.append(save); row.append(left, right); els.nav.replaceChildren(row);
+  }
+
+  function renderFinalGate() {
+    const ready = finalReady();
+    const unresolved = state.handoff.registry_resolution?.unresolved_activation_probe_field_ids || [];
+    const submit = button("btn primary", state.payload?.qualified_review_submission_request ? "Submitted for compilation" : "Submit Qualified Review", submitReview);
+    submit.disabled = !ready || state.saving || Boolean(state.payload?.qualified_review_submission_request);
+    els.finalGate.replaceChildren(node("div", "eyebrow", "Final section gate"), node("h3", "", ready ? "All active sections are attested" : "Review is not ready for submission"), node("p", "small-muted", unresolved.length ? `Resolve activation probes: ${unresolved.join(", ")}.` : `${state.sections.filter(isSectionAttested).length}/${state.sections.length} active sections attested.`), node("div", "qr-final-actions", ""));
+    els.finalGate.querySelector(".qr-final-actions").append(submit);
+  }
+
+  function renderReceipt() {
+    const requestArtifact = state.payload?.qualified_review_submission_request;
+    if (!requestArtifact) { els.receipt.classList.add("hidden"); els.receipt.replaceChildren(); return; }
+    els.receipt.classList.remove("hidden");
+    els.receipt.replaceChildren(node("div", "eyebrow", "Submission request saved"), node("h3", "", "Qualified Review is queued for final-value compilation"), node("p", "small-muted", `Requested ${requestArtifact.requested_at ? new Date(requestArtifact.requested_at).toLocaleString() : ""}. Document assembly has not started.`));
+  }
+
+  function renderAlerts() {
+    const errors = state.draft.validation?.blocking_errors || [];
+    if (!errors.length) { els.drawer.classList.add("hidden"); els.drawer.replaceChildren(); return; }
+    els.drawer.classList.remove("hidden"); const list = node("div", "qr-alert-list"); errors.forEach((error) => list.append(node("div", "qr-alert-item", error))); els.drawer.replaceChildren(node("h3", "", "Review validation"), list);
+  }
+
+  async function saveDraft() {
+    if (state.saving) return;
+    state.saving = true; renderWorkflow(); renderNavigation();
     try {
-      const result = await request(submitEndpoint, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          submitted_by: "public_qualified_review_ui",
-          submitted_by_label: "Qualified Review UI",
-          save_reason: reason,
-          question_responses: responses,
-          section_attestations: state.local.section_attestations || {},
-          final_attestation: state.local.final_attestation === true,
-          qualified_review_is_separate_system: true,
-          shares_pipeline_run_id: true,
-          no_document_assembly: true
-        })
-      });
-      state.serverSubmission = result.qualified_review_submission || result.submission || result.artifact || null;
-      state.receiptMeta = {
-        artifact_name: result.artifact_name,
-        version: result.version,
-        saved_at: new Date().toISOString()
-      };
-      if (state.serverSubmission) hydrateServer(state.serverSubmission);
-      state.local.last_saved_at = new Date().toISOString();
-      saveLocal();
-      const finalStatus = state.serverSubmission?.final_gate?.status;
-      renderState(finalStatus === "PASS" ? "Qualified Review submitted. Receipt created; no document assembly was performed." : "Review state saved. Continue resolving the remaining items.");
-      announce(finalStatus === "PASS" ? "Qualified Review submitted." : "Qualified Review state saved.");
-    } catch (error) {
-      renderState(`Save failed: ${error?.message || error}`);
-      announce(`Save failed: ${error?.message || error}`);
-    }
+      const preferred = state.sections[state.active]?.section_id || "";
+      const payload = await request(`${endpoint}/draft`, { method: "PUT", body: JSON.stringify({ field_edits: collectFieldEdits(), reviewer_identity: "public_qualified_review_ui" }) });
+      applyPayload(payload, preferred);
+      announce("Qualified Review draft saved.");
+    } finally { state.saving = false; renderWorkflow(); renderNavigation(); }
   }
 
-  function collectResponses() {
-    const rows = [];
-    document.querySelectorAll(".qr-finding").forEach((card) => {
-      const response = responseFromCard(card);
-      if (response) rows.push(response);
-    });
-    return rows;
-  }
-
-  function responseFromCard(card) {
-    const question = state.questions.get(card.dataset.questionId);
-    if (!question) return null;
-    const mode = selectedMode(card);
-    const answer = answerValue(card, question.answer_type);
-    const limitation = String(card.querySelector("[data-qr-limitation]")?.value || "").trim();
-    if (!mode) return null;
-    if (mode === "not_applicable") {
-      if (!limitation) return null;
-      return responseRow(question, "not_applicable", null, limitation, mode);
-    }
-    if (!hasValue(answer)) return null;
-    if (mode === "limitation" && !limitation) return null;
-    const answerState = mode === "confirm" ? "confirmed" : "edited";
-    return responseRow(question, answerState, answer, limitation, mode);
-  }
-
-  function responseRow(question, answerState, answerValue, limitation, reviewMode) {
-    return {
-      question_id: question.question_id,
-      answer_state: answerState,
-      answer_value: answerValue,
-      not_applicable_reason: limitation || "",
-      reviewer_limitation: limitation || "",
-      reviewer_decision: reviewMode,
-      demo_disclaimer_accepted: question.demo_disclaimer_required === true,
-      submitted_at: new Date().toISOString()
-    };
-  }
-
-  function updateAllFindings() { document.querySelectorAll(".qr-finding").forEach(updateFinding); }
-  function updateFinding(card) {
-    const mode = selectedMode(card);
-    card.dataset.reviewMode = mode || "";
-    const answer = card.querySelector("[data-qr-answer]");
-    if (answer) answer.disabled = mode === "confirm" || mode === "not_applicable";
-    const response = responseFromCard(card);
-    const status = card.querySelector(".qr-item-status");
-    if (status) {
-      status.textContent = response ? modeLabel(mode) : "Needs review";
-      status.classList.toggle("ready", Boolean(response));
-    }
-  }
-
-  function handleChange(event) {
-    if (event.target.matches("[data-review-mode], [data-section-attestation], [data-final-attestation]")) {
-      syncLocalFromDom();
-      renderState();
-    }
-  }
-  function handleInput(event) {
-    if (event.target.matches("[data-qr-answer], [data-qr-limitation]")) {
-      syncLocalFromDom();
-      updateFinding(event.target.closest(".qr-finding"));
-      renderWorkflow();
-      renderRail();
-      renderFinalGate();
-    }
-  }
-  function handleClick(event) {
-    const item = event.target.closest?.("[data-qr-section-index]");
-    if (!item) return;
-    const index = Number(item.dataset.qrSectionIndex);
-    if (!Number.isInteger(index) || index < 0 || index >= state.sections.length) return;
-    event.preventDefault();
-    state.active = index;
-    state.local.active_section = index;
-    renderState();
-    document.querySelector(`.qr-review-section[data-qr-section-index="${index}"]`)?.focus({ preventScroll: false });
-  }
-
-  function moveSection(delta) {
-    state.active = Math.max(0, Math.min(state.sections.length - 1, state.active + delta));
-    state.local.active_section = state.active;
-    renderState();
-    document.querySelector(`.qr-review-section[data-qr-section-index="${state.active}"]`)?.focus({ preventScroll: false });
-  }
-
-  function applySectionVisibility() {
-    document.querySelectorAll(".qr-review-section").forEach((section, index) => {
-      const active = index === state.active;
-      section.classList.toggle("active", active);
-      section.setAttribute("aria-hidden", active ? "false" : "true");
-      section.inert = !active;
-    });
-  }
-
-  function finalReady() {
-    return state.questions.size > 0
-      && collectResponses().length === state.questions.size
-      && state.sections.every((_, index) => sectionAttested(index))
-      && finalAttested();
-  }
-  function sectionAttested(index) { return document.querySelector(`[data-section-attestation="${index}"]`)?.checked === true; }
-  function finalAttested() { return document.querySelector("[data-final-attestation]")?.checked === true; }
-
-  function syncLocalFromDom() {
-    const responses = {};
-    document.querySelectorAll(".qr-finding").forEach((card) => {
-      const question = state.questions.get(card.dataset.questionId);
-      if (!question) return;
-      responses[question.question_id] = {
-        mode: selectedMode(card),
-        answer: answerValue(card, question.answer_type),
-        limitation: String(card.querySelector("[data-qr-limitation]")?.value || "").trim()
-      };
-    });
-    const attestations = {};
-    document.querySelectorAll("[data-section-attestation]").forEach((checkbox) => { attestations[checkbox.dataset.sectionAttestation] = checkbox.checked === true; });
-    state.local.responses = responses;
-    state.local.section_attestations = attestations;
-    state.local.final_attestation = finalAttested();
-    state.local.active_section = state.active;
-    saveLocal();
-  }
-
-  function saveLocal() {
-    try { localStorage.setItem(storageKey, JSON.stringify(state.local)); } catch { /* Browser storage is optional. */ }
-  }
-  function loadLocal() {
-    if (!runId) return { responses: {}, section_attestations: {}, final_attestation: false, active_section: 0 };
+  async function attestSection(section, attested) {
+    await saveDraft();
+    state.saving = true; renderWorkflow();
     try {
-      const parsed = JSON.parse(localStorage.getItem(storageKey) || "{}");
-      return {
-        responses: parsed.responses || {},
-        section_attestations: parsed.section_attestations || {},
-        final_attestation: parsed.final_attestation === true,
-        active_section: Number.isInteger(parsed.active_section) ? parsed.active_section : 0,
-        last_saved_at: parsed.last_saved_at || ""
-      };
-    } catch { return { responses: {}, section_attestations: {}, final_attestation: false, active_section: 0 }; }
+      const payload = await request(`${endpoint}/sections/${encodeURIComponent(section.section_id)}/attestation`, { method: "PUT", body: JSON.stringify({ attested, reviewer_identity: "public_qualified_review_ui" }) });
+      state.draft = payload.qualified_review_draft || state.draft;
+      render(); announce(attested ? `${section.section_title} attested.` : `${section.section_title} attestation removed.`);
+    } finally { state.saving = false; renderWorkflow(); renderNavigation(); }
   }
 
-  function hydrateServer(submission) {
-    if (!submission?.question_responses) return;
-    for (const row of submission.question_responses) {
-      if (!row?.question_id || !ALLOWED_SERVER_STATES.has(row.answer_state)) continue;
-      if (!state.local.responses[row.question_id]) {
-        state.local.responses[row.question_id] = {
-          mode: inferMode(row, state.questions.get(row.question_id)),
-          answer: row.answer_value,
-          limitation: row.reviewer_limitation || row.not_applicable_reason || ""
-        };
-      }
-    }
-    state.active = Math.max(0, Math.min(state.sections.length - 1, Number(state.local.active_section) || 0));
+  async function submitReview() {
+    if (!finalReady()) return;
+    await saveDraft();
+    state.saving = true; renderFinalGate();
+    try {
+      await request(`${endpoint}/submit`, { method: "POST", body: JSON.stringify({ submitted_by: "public_qualified_review_ui" }) });
+      applyPayload(await request(endpoint)); announce("Qualified Review submitted for final-value compilation.");
+    } finally { state.saving = false; renderFinalGate(); }
   }
 
-  function buildSections(sectionPages, questions) {
-    const pages = Array.isArray(sectionPages) && sectionPages.length ? sectionPages : inferSections(questions);
-    return pages.map((page) => {
-      const ids = Array.isArray(page.question_ids) ? new Set(page.question_ids) : null;
-      const rows = Array.isArray(page.questions)
-        ? page.questions
-        : ids
-          ? questions.filter((question) => ids.has(question.question_id))
-          : questions.filter((question) => question.section_id === page.section_id);
-      return { ...page, questions: rows, question_count: rows.length };
+  function fieldChanged(sectionId) {
+    if (state.draft.section_attestations?.[sectionId]) delete state.draft.section_attestations[sectionId];
+    clearTimeout(state.timer); state.timer = setTimeout(() => saveDraft().catch((error) => showError(error.message)), 650);
+    renderRail(); renderWorkflow("Section attestation reset because a field changed."); renderFinalGate();
+  }
+
+  function collectFieldEdits() {
+    const edits = {};
+    document.querySelectorAll("[data-field-id].qr-finding").forEach((card) => {
+      const fieldId = card.dataset.fieldId; const atomic_values = {};
+      card.querySelectorAll("[data-atomic-key]").forEach((control) => { atomic_values[control.dataset.atomicKey] = readControl(control); });
+      edits[fieldId] = { atomic_values, limitation: card.querySelector("[data-field-limitation]")?.value || "", not_applicable: card.querySelector("[data-field-not-applicable]")?.checked === true };
     });
-  }
-  function inferSections(questions) {
-    const map = new Map();
-    questions.forEach((question) => {
-      if (!map.has(question.section_id)) map.set(question.section_id, { section_id: question.section_id, section_title: question.section_title, question_ids: [] });
-      map.get(question.section_id).question_ids.push(question.question_id);
-    });
-    return [...map.values()];
+    return edits;
   }
 
-  function localResponse(id) { return state.local.responses?.[id] || null; }
-  function serverResponse(id) { return state.serverSubmission?.question_responses?.find((row) => row.question_id === id) || null; }
-  function responseForCard(id) { const card = document.querySelector(`.qr-finding[data-question-id="${cssEscape(id)}"]`); return card ? responseFromCard(card) : null; }
-  function selectedMode(card) { return card.querySelector("[data-review-mode]:checked")?.value || ""; }
-  function answerValue(card, type) {
-    const control = card.querySelector("[data-qr-answer]");
-    if (!control) return "";
-    if (type === "select" && control.multiple) return [...control.selectedOptions].map((option) => option.value).filter(Boolean);
-    return String(control.value || "").trim();
+  function readControl(control) {
+    const type = control.dataset.valueType;
+    if (type === "boolean") return control.value === "true";
+    if (type === "number") return control.value === "" ? null : Number(control.value);
+    if (type === "array") return control.value.split(/\n|,/).map((item) => item.trim()).filter(Boolean);
+    if (type === "object") { try { return JSON.parse(control.value || "{}"); } catch { return control.value; } }
+    return control.value;
   }
-  function inferMode(saved, question) {
-    if (!saved) return "";
-    if (saved.answer_state === "not_applicable") return "not_applicable";
-    if (saved.reviewer_limitation || saved.not_applicable_reason) return "limitation";
-    if (saved.answer_state === "edited" || stableValue(saved.answer_value) !== stableValue(prefill(question))) return "correct";
-    return "confirm";
-  }
-  function prefill(question) { return question.suggested_answer ?? question.initial_answer_value ?? question.demo_prefill_value ?? ""; }
-  function formatAnswer(value) { if (Array.isArray(value)) return value.join(", "); if (value && typeof value === "object") return ""; return String(value ?? ""); }
-  function sourceBadge(question) { return question.prefill_source === "market_norm_demo" || question.demo_disclaimer_required === true ? "Demo assumption" : "Diligence prefill"; }
-  function whyThisMatters(question) { return question.reviewer_instruction || question.why_this_matters || question.field_purpose || question.public_question_help || "This item requires reviewer confirmation before the review receipt can be final."; }
-  function sourceBasis(question) {
-    const parts = [];
-    if (question.prefill_source) parts.push(`Prefill: ${label(question.prefill_source)}`);
-    if (question.evidence_mode) parts.push(`Evidence: ${label(question.evidence_mode)}`);
-    const sources = asArray(question.source_artifacts || question.source_artifact || question.source_refs).filter(Boolean);
-    if (sources.length) parts.push(`Sources: ${sources.map(label).join(", ")}`);
-    return parts.join("\n") || "Source basis not visible in the review payload.";
-  }
-  function impactText(question) { const impact = asArray(question.document_impact).map(label).filter(Boolean); return impact.length ? impact.join(", ") : "Qualified Review record"; }
-  function contextBlock(labelText, value) { const block = node("div", "qr-context-block"); block.append(node("div", "qr-context-label", labelText), node("div", "qr-context-value", value || "Not stated")); return block; }
-  function reviewStatusCopy(done, total) { if (!total) return "No review items were emitted."; if (done === total) return "All review items have a complete reviewer decision. Complete the attestations to submit."; return `${total - done} review item${total - done === 1 ? "" : "s"} remain unresolved.`; }
-  function modeLabel(mode) { return ({ confirm: "Confirmed", correct: "Corrected", limitation: "Qualified with limitation", not_applicable: "Not applicable" })[mode] || "Needs review"; }
-  function cleanAlert(value) { return String(value || "").replace(/_/g, " ").replace(/:/g, ": "); }
-  function stableValue(value) { if (Array.isArray(value)) return value.map((item) => String(item ?? "").trim()).filter(Boolean).join("\u001f"); if (value === null || value === undefined) return ""; if (typeof value === "object") return JSON.stringify(value); return String(value).trim(); }
-  function hasValue(value) { return Array.isArray(value) ? value.length > 0 : Boolean(String(value ?? "").trim()); }
-  function asArray(value) { return Array.isArray(value) ? value : value === undefined || value === null || value === "" ? [] : [value]; }
-  function label(value) { return String(value || "").replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim().replace(/\b\w/g, (m) => m.toUpperCase()); }
-  function stable(value) { return String(value || "item").replace(/[^a-zA-Z0-9_-]+/g, "-").replace(/^-+|-+$/g, "").toLowerCase() || "item"; }
-  function cssEscape(value) { return window.CSS?.escape ? window.CSS.escape(value) : String(value).replace(/[^a-zA-Z0-9_-]/g, "\\$&"); }
-  function button(className, text, handler) { const item = document.createElement("button"); item.type = "button"; item.className = className; item.textContent = text; if (handler) item.addEventListener("click", handler); return item; }
-  function linkButton(className, text, href) { const item = document.createElement("a"); item.className = className; item.textContent = text; item.href = href || "#"; return item; }
-  function node(tag, className, textContent) { const element = document.createElement(tag); if (className) element.className = className; if (textContent !== undefined && textContent !== null) element.textContent = String(textContent); return element; }
-  async function request(url, init) { const response = await fetch(url, init); const payload = await response.json().catch(() => ({})); if (!response.ok) throw new Error(payload.message || payload.error || "Request failed"); return payload; }
+
+  function finalReady() { return state.sections.length > 0 && state.sections.every(isSectionAttested) && !(state.handoff.registry_resolution?.unresolved_activation_probe_field_ids || []).length; }
+  function isSectionAttested(section) { const saved = state.draft.section_attestations?.[section.section_id]; return saved?.status === "ATTESTED" && saved.field_state_hash === section.attestation?.field_state_hash; }
+  function fieldCount() { return state.sections.reduce((sum, section) => sum + (section.fields || []).length, 0); }
+  function moveTo(index) { if (index < 0 || index >= state.sections.length) return; state.active = index; render(); document.getElementById(`qr-section-${stable(state.sections[index].section_id)}`)?.focus(); }
+  function sourceSummary(field) { return (field.atomic_fields || []).map((atomic) => `${humanize(atomic.atomic_key)}: ${atomic.source === "MARKET_BASED" ? "{MARKET BASED}" : atomic.source === "PHASE_12" ? "Diligence derived" : atomic.source}`).join("\n"); }
+  function documentSummary(field) { return (field.document_impacts || []).map((impact) => `${impact.document_id}: ${(impact.actions || []).join(" + ")}${impact.target ? ` — ${impact.target}` : ""}`).join("\n") || "No document impact registered"; }
+  function contextBlock(label, value) { const root = node("div", "qr-context-block"); root.append(node("div", "qr-context-label", label), node("div", "qr-context-value", value || "Not available")); return root; }
+  function checkboxControl(labelText, checked, dataKey) { const label = node("label", "qr-check-label"); const input = document.createElement("input"); input.type = "checkbox"; input.checked = checked; input.dataset[dataKey] = "true"; label.append(input, node("span", "", labelText)); return label; }
+  function button(className, text, handler) { const item = document.createElement("button"); item.type = "button"; item.className = className; if (text) item.textContent = text; if (handler) item.addEventListener("click", handler); return item; }
+  function node(tag, className = "", text = "") { const item = document.createElement(tag); if (className) item.className = className; if (text !== "") item.textContent = text; return item; }
+  function humanize(value) { return String(value || "").replace(/\[\]$/, "").replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase()); }
+  function stable(value) { return String(value || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""); }
   function announce(message) { if (els.live) els.live.textContent = message; }
-  function showError(message) { els.title.textContent = "Qualified Review unavailable"; els.subtitle.textContent = message; els.meta.textContent = message; els.body.replaceChildren(); els.workflow.textContent = message; els.rail.textContent = message; announce(message); }
+  async function request(url, options = {}) { const response = await fetch(url, { headers: { "Content-Type": "application/json", ...(options.headers || {}) }, ...options }); const payload = await response.json().catch(() => ({})); if (!response.ok) throw new Error(payload.message || payload.error || `Request failed (${response.status})`); return payload; }
+  function showError(message) { els.drawer?.classList.remove("hidden"); els.drawer?.replaceChildren(node("h3", "", "Qualified Review unavailable"), node("div", "qr-alert-item", message)); announce(message); }
 })();
