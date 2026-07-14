@@ -1,0 +1,60 @@
+name: Apply and certify CO-E2E-01-03
+
+on:
+  pull_request:
+    branches: [domain-gate-v0-preflight]
+    types: [opened]
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-certify:
+    if: github.head_ref == 'co-e2e-01-03-critical-authority'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: diligence-artifact-backend
+    steps:
+      - name: Checkout working branch
+        uses: actions/checkout@v4
+        with:
+          ref: co-e2e-01-03-critical-authority
+          fetch-depth: 0
+
+      - name: Apply mechanical contract patches
+        run: |
+          node scripts/apply-co-e2e-01-runtime.mjs
+          node scripts/apply-co-e2e-02-registry-keys.mjs
+          node scripts/apply-co-e2e-02-fdr.mjs
+          node scripts/apply-co-e2e-01-03-gate.mjs
+
+      - name: Remove temporary applicators
+        working-directory: .
+        run: |
+          rm diligence-artifact-backend/scripts/apply-co-e2e-01-runtime.mjs
+          rm diligence-artifact-backend/scripts/apply-co-e2e-02-registry-keys.mjs
+          rm diligence-artifact-backend/scripts/apply-co-e2e-02-fdr.mjs
+          rm diligence-artifact-backend/scripts/apply-co-e2e-01-03-gate.mjs
+          rm .github/workflows/co-e2e-01-03-apply.yml
+
+      - name: Commit real production changes
+        working-directory: .
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Implement CO-E2E-01 through CO-E2E-03"
+          git push origin HEAD:co-e2e-01-03-critical-authority
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Run targeted authority gate
+        run: npm run check:e2e-authority
+
+      - name: Run Phase 3 domain derivation suite
+        run: npm run check:phase3-domain-derivation
+
+      - name: Run full Phase 1-16 production gate
+        run: npm run check:phase1-16-production
