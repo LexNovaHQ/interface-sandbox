@@ -30,8 +30,8 @@ env:
   CLOUD_TASKS_QUEUE: ${{ vars.CLOUD_TASKS_QUEUE || 'diligence-reviewer-worker' }}
 
 jobs:
-  bootstrap_wif:
-    name: Scoped WIF certification bootstrap
+  certification_access:
+    name: Exact PR tree certification access
     if: github.event_name == 'schedule'
     runs-on: ubuntu-latest
     permissions:
@@ -40,13 +40,21 @@ jobs:
       issues: write
     env:
       GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-      GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+      GCP_REGION: ${{ secrets.GCP_REGION }}
+      GCP_ARTIFACT_CLOUD_RUN_SERVICE: ${{ secrets.GCP_ARTIFACT_CLOUD_RUN_SERVICE }}
       GCP_DEPLOY_SERVICE_ACCOUNT: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+      GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+      CLOUD_TASKS_QUEUE: ${{ vars.CLOUD_TASKS_QUEUE || 'diligence-reviewer-worker' }}
       CERT_BRANCH: co-e2e-01-03-critical-authority
-      CERT_WORKFLOW: CO-FINAL Live Matrix
       GH_TOKEN: ${{ github.token }}
     steps:
-      - name: Authenticate with trusted deploy workflow identity
+      - name: Checkout exact PR tree
+        uses: actions/checkout@v4
+        with:
+          ref: co-e2e-01-03-critical-authority
+          fetch-depth: 0
+
+      - name: Authenticate with trusted main workflow identity
         uses: google-github-actions/auth@v3
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
@@ -56,93 +64,59 @@ jobs:
       - name: Setup gcloud
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Apply exact branch and workflow trust
+      - name: Verify exact tree and direct cloud access
         shell: bash
         run: |
           set -euo pipefail
-          PROVIDER_RESOURCE="$GCP_WORKLOAD_IDENTITY_PROVIDER"
-          PROVIDER_RESOURCE="${PROVIDER_RESOURCE#https://iam.googleapis.com/}"
-          PROVIDER_RESOURCE="${PROVIDER_RESOURCE#//iam.googleapis.com/}"
-          PROJECT_NUMBER=$(printf '%s' "$PROVIDER_RESOURCE" | sed -n 's#projects/\([^/]*\)/locations/.*#\1#p')
-          POOL_ID=$(printf '%s' "$PROVIDER_RESOURCE" | sed -n 's#.*workloadIdentityPools/\([^/]*\)/providers/.*#\1#p')
-          PROVIDER_ID=$(printf '%s' "$PROVIDER_RESOURCE" | sed -n 's#.*providers/\([^/]*\)$#\1#p')
-          test -n "$PROJECT_NUMBER"
-          test -n "$POOL_ID"
-          test -n "$PROVIDER_ID"
-
-          gcloud iam workload-identity-pools providers describe "$PROVIDER_ID" \
-            --workload-identity-pool="$POOL_ID" \
-            --location=global \
-            --project="$GCP_PROJECT_ID" \
-            --format=json > /tmp/provider-before.json
-
-          python - <<'PY2'
-          import json, os
-          provider = json.load(open('/tmp/provider-before.json', encoding='utf-8'))
-          current = (provider.get('attributeCondition') or '').strip()
-          branch = os.environ['CERT_BRANCH']
-          workflow = os.environ['CERT_WORKFLOW']
-          clause = (
-              "assertion.repository=='LexNovaHQ/interface-sandbox' && "
-              f"assertion.ref=='refs/heads/{branch}' && "
-              f"assertion.workflow=='{workflow}'"
-          )
-          updated = current if clause in current else (f"({current}) || ({clause})" if current else clause)
-          json.dump({'before': current, 'after': updated, 'changed': updated != current}, open('/tmp/wif-plan.json','w',encoding='utf-8'), indent=2)
-          PY2
-
-          NEW_CONDITION=$(python -c "import json; print(json.load(open('/tmp/wif-plan.json'))['after'])")
-          CHANGED=$(python -c "import json; print(str(json.load(open('/tmp/wif-plan.json'))['changed']).lower())")
-          if [ "$CHANGED" = "true" ]; then
-            gcloud iam workload-identity-pools providers update-oidc "$PROVIDER_ID" \
-              --workload-identity-pool="$POOL_ID" \
-              --location=global \
-              --project="$GCP_PROJECT_ID" \
-              --attribute-condition="$NEW_CONDITION"
-          fi
-
-          SUBJECT="repo:LexNovaHQ/interface-sandbox:ref:refs/heads/$CERT_BRANCH"
-          MEMBER="principal://iam.googleapis.com/projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/$POOL_ID/subject/$SUBJECT"
-          gcloud iam service-accounts add-iam-policy-binding "$GCP_DEPLOY_SERVICE_ACCOUNT" \
-            --project="$GCP_PROJECT_ID" \
-            --member="$MEMBER" \
-            --role="roles/iam.workloadIdentityUser" \
-            --quiet
-
-          python - <<'PY2'
-          import json, os
-          plan=json.load(open('/tmp/wif-plan.json',encoding='utf-8'))
+          test "$(git branch --show-current)" = "$CERT_BRANCH"
+          HEAD_SHA=$(git rev-parse HEAD)
+          gcloud run services describe "$GCP_ARTIFACT_CLOUD_RUN_SERVICE" \
+            --project "$GCP_PROJECT_ID" \
+            --region "$GCP_REGION" \
+            --format=json > /tmp/cloud-run.json
+          gcloud tasks queues describe "$CLOUD_TASKS_QUEUE" \
+            --project "$GCP_PROJECT_ID" \
+            --location "$GCP_REGION" \
+            --format=json > /tmp/cloud-tasks.json
+          python - "$HEAD_SHA" <<'PY2'
+          import json, sys
+          service=json.load(open('/tmp/cloud-run.json',encoding='utf-8'))
+          queue=json.load(open('/tmp/cloud-tasks.json',encoding='utf-8'))
           receipt={
-            'artifact_type':'co_final_wif_bootstrap_receipt',
-            'target_branch':os.environ['CERT_BRANCH'],
-            'target_workflow':os.environ['CERT_WORKFLOW'],
-            'trusted_main_workflow':'Artifact Backend Deploy',
-            'provider_condition_changed':plan['changed'],
-            'exact_subject_binding_added':True,
-            'scope':'exact repository + exact branch + exact workflow provider clause; exact branch subject binding'
+            'artifact_type':'co_final_trusted_main_access_receipt',
+            'tested_head_sha':sys.argv[1],
+            'tested_branch':'co-e2e-01-03-critical-authority',
+            'workflow_identity':'Artifact Backend Deploy on main',
+            'gcp_authentication':'PASS',
+            'cloud_run_service_ready':bool(service.get('status',{}).get('url') or service.get('uri')),
+            'cloud_tasks_queue_present':bool(queue.get('name')),
+            'cloud_tasks_queue_state':queue.get('state','UNKNOWN'),
+            'production_deployment_performed':False,
+            'next_gate':'ISOLATED_CERTIFICATION_DEPLOYMENT_AND_EIGHT_SCENARIOS'
           }
-          json.dump(receipt,open('/tmp/co-final-wif-bootstrap.json','w',encoding='utf-8'),indent=2,sort_keys=True)
+          json.dump(receipt,open('/tmp/co-final-cert-access.json','w',encoding='utf-8'),indent=2,sort_keys=True)
           PY2
 
-      - name: Publish bootstrap result to PR 95
+      - name: Publish access result to PR 95
         if: always()
         shell: bash
         run: |
-          if [ -f /tmp/co-final-wif-bootstrap.json ]; then
+          if [ -f /tmp/co-final-cert-access.json ]; then
             python - <<'PY2' > /tmp/comment.md
           import json
-          r=json.load(open('/tmp/co-final-wif-bootstrap.json',encoding='utf-8'))
-          print('## CO-FINAL scoped WIF bootstrap: PASS')
+          r=json.load(open('/tmp/co-final-cert-access.json',encoding='utf-8'))
+          print('## CO-FINAL trusted-main certification access: PASS')
           print()
-          print(f"- Trusted workflow: `{r['trusted_main_workflow']}`")
-          print(f"- Target branch: `{r['target_branch']}`")
-          print(f"- Target workflow: `{r['target_workflow']}`")
-          print(f"- Provider condition changed: `{r['provider_condition_changed']}`")
-          print(f"- Exact subject binding added: `{r['exact_subject_binding_added']}`")
-          print(f"- Scope: {r['scope']}")
+          print(f"- Tested branch: `{r['tested_branch']}`")
+          print(f"- Tested head: `{r['tested_head_sha']}`")
+          print(f"- Workflow identity: `{r['workflow_identity']}`")
+          print(f"- Cloud Run ready: `{r['cloud_run_service_ready']}`")
+          print(f"- Cloud Tasks queue present: `{r['cloud_tasks_queue_present']}`")
+          print(f"- Production deployment performed: `{r['production_deployment_performed']}`")
+          print(f"- Next gate: `{r['next_gate']}`")
           PY2
           else
-            printf '%s\n' '## CO-FINAL scoped WIF bootstrap: FAILED' '' 'The trusted deploy workflow could not apply the scoped grant.' > /tmp/comment.md
+            printf '%s\n' '## CO-FINAL trusted-main certification access: FAILED' '' 'The trusted main workflow could not inspect the cloud runtime while checking out the exact PR tree.' > /tmp/comment.md
           fi
           gh api repos/LexNovaHQ/interface-sandbox/issues/95/comments -f body="$(cat /tmp/comment.md)"
 
