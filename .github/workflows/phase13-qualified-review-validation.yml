@@ -5,6 +5,7 @@ on:
     branches:
       - domain-gate-v0-preflight
     paths: &post_review_paths
+      - "diligence-artifact-backend/src/qualified-review-system/**"
       - "diligence-artifact-backend/src/phases/13-qualified-review/**"
       - "diligence-artifact-backend/src/phases/14-qualified-review-submission/**"
       - "diligence-artifact-backend/src/phases/15-diligence-qa-complete/**"
@@ -13,6 +14,7 @@ on:
       - "diligence-artifact-backend/src/runtime/contracts/phase14-submission-runtime.contract.js"
       - "diligence-artifact-backend/src/runtime/contracts/phase15-diligence-qa-runtime.contract.js"
       - "diligence-artifact-backend/src/runtime/contracts/phase16-assembly-runtime.contract.js"
+      - "diligence-artifact-backend/src/runtime/contracts/post-review-production-cutover.contract.js"
       - "diligence-artifact-backend/src/runtime/contracts/internal-job.contract.js"
       - "diligence-artifact-backend/src/runtime/contracts/pipeline.contract.js"
       - "diligence-artifact-backend/src/runtime/contracts/central-phase.contract.js"
@@ -31,6 +33,7 @@ on:
       - "diligence-artifact-backend/references/document-templates/ai/v2_1/**"
       - "diligence-artifact-backend/scripts/check-phase13-*.mjs"
       - "diligence-artifact-backend/scripts/check-phase16-*.mjs"
+      - "diligence-artifact-backend/scripts/production-gate.manifest.mjs"
       - "diligence-artifact-backend/package.json"
       - "diligence-artifact-backend/package-lock.json"
       - ".github/workflows/phase13-qualified-review-validation.yml"
@@ -49,7 +52,7 @@ concurrency:
 
 jobs:
   validate-post-review:
-    name: Validate QR, submission, QA and assembly
+    name: Validate QR, submission, QA, retirement and assembly
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -95,6 +98,10 @@ jobs:
         working-directory: diligence-artifact-backend
         run: node scripts/check-phase13-diligence-qa-injection.mjs
 
+      - name: Phase 13 legacy retirement
+        working-directory: diligence-artifact-backend
+        run: npm run check:phase13-legacy-retirement
+
       - name: Phase 16 runtime wiring
         working-directory: diligence-artifact-backend
         run: node scripts/check-phase16-runtime-wiring.mjs
@@ -102,3 +109,7 @@ jobs:
       - name: Phase 16 assembly engine and templates
         working-directory: diligence-artifact-backend
         run: node scripts/check-phase16-assembly-engine.mjs
+
+      - name: Phase 13-16 production cutover
+        working-directory: diligence-artifact-backend
+        run: npm run check:phase13-production-cutover
