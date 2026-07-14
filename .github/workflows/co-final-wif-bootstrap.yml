@@ -1,5 +1,6 @@
 name: CO-FINAL WIF Bootstrap
 
+# Idempotent one-use bootstrap for the exact certification branch and workflow.
 on:
   push:
     branches:
