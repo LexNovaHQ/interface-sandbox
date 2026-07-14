@@ -40,8 +40,6 @@ jobs:
       SHEETS_SPREADSHEET_ID: ${{ secrets.SHEETS_SPREADSHEET_ID }}
       GH_TOKEN: ${{ github.token }}
       CERT_BRANCH: co-e2e-01-03-critical-authority
-      CERT_SERVICE: interface-diligence-cert-pr95
-      CERT_QUEUE: diligence-cert-pr95
     steps:
       - name: Checkout exact PR tree
         uses: actions/checkout@v4
@@ -67,6 +65,8 @@ jobs:
           test "$(git branch --show-current)" = "$CERT_BRANCH"
           HEAD_SHA=$(git rev-parse HEAD)
           MATRIX_ID="cofinal_pr95_${GITHUB_RUN_ID}"
+          CERT_SERVICE="interface-diligence-cert-${GITHUB_RUN_ID}"
+          CERT_QUEUE="diligence-cert-${GITHUB_RUN_ID}"
           CERT_TOKEN=$(python - <<'PY2'
           import secrets
           print(secrets.token_urlsafe(32))
@@ -78,23 +78,18 @@ jobs:
           echo "CERT_TOKEN=$CERT_TOKEN" >> "$GITHUB_ENV"
           echo "MATRIX_ID=$MATRIX_ID" >> "$GITHUB_ENV"
           echo "EXPECTED_HEAD_SHA=$HEAD_SHA" >> "$GITHUB_ENV"
+          echo "CERT_SERVICE=$CERT_SERVICE" >> "$GITHUB_ENV"
+          echo "CERT_QUEUE=$CERT_QUEUE" >> "$GITHUB_ENV"
           printf '%s\n' '{"status":"STARTED"}' > /tmp/co-final-live-matrix.json
 
       - name: Ensure isolated Cloud Tasks queue
         shell: bash
         run: |
           set -euo pipefail
-          if gcloud tasks queues describe "$CERT_QUEUE" --location "$GCP_REGION" --project "$GCP_PROJECT_ID" >/dev/null 2>&1; then
-            gcloud tasks queues update "$CERT_QUEUE" \
-              --location "$GCP_REGION" --project "$GCP_PROJECT_ID" \
-              --max-dispatches-per-second=1 --max-concurrent-dispatches=1 \
-              --max-attempts=3 --min-backoff=5s --max-backoff=15s --max-retry-duration=300s
-          else
-            gcloud tasks queues create "$CERT_QUEUE" \
-              --location "$GCP_REGION" --project "$GCP_PROJECT_ID" \
-              --max-dispatches-per-second=1 --max-concurrent-dispatches=1 \
-              --max-attempts=3 --min-backoff=5s --max-backoff=15s --max-retry-duration=300s
-          fi
+          gcloud tasks queues create "$CERT_QUEUE" \
+            --location "$GCP_REGION" --project "$GCP_PROJECT_ID" \
+            --max-dispatches-per-second=1 --max-concurrent-dispatches=1 \
+            --max-attempts=3 --min-backoff=5s --max-backoff=15s --max-retry-duration=300s
 
       - name: Deploy exact PR tree to isolated certification service
         working-directory: diligence-artifact-backend
