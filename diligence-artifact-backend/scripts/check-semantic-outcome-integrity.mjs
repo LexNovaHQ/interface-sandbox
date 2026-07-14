@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { EXECUTION_OUTCOMES, shouldBlockRun } from "../src/runtime/contracts/execution-outcome.contract.js";
 
 const backendRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const selfPath = "scripts/check-semantic-outcome-integrity.mjs";
 const ignoredDirectories = new Set(["node_modules", ".git"]);
 const binaryExtensions = new Set([".docx", ".zip", ".png", ".jpg", ".jpeg", ".gif", ".pdf", ".woff", ".woff2", ".ttf", ".ico"]);
 const retiredStatus = ["REPAIR", "REQUIRED"].join("_");
@@ -51,7 +52,7 @@ if (violations.length) {
     canonical_execution_outcomes: canonicalOutcomes,
     only_critical_failure_blocks: true,
     retired_status_absent: true,
-    forbidden_status_aliases_absent: true,
+    prefixed_reinvestigation_status_aliases_absent: true,
     duplicate_status_branches_absent: true,
     direct_run_block_literals_absent_from_runtime_source: true
   }, null, 2));
@@ -103,7 +104,9 @@ function walk(directory) {
       continue;
     }
 
-    inspectFile(relative(backendRoot, absolute), text);
+    const path = relative(backendRoot, absolute).replaceAll("\\", "/");
+    if (path === selfPath) continue;
+    inspectFile(path, text);
   }
 }
 
@@ -123,6 +126,19 @@ function inspectFile(path, text) {
     for (const alias of forbiddenAliases) {
       if (line.includes(alias)) {
         violations.push({ path, line: lineNumber, code: "FORBIDDEN_STATUS_ALIAS_PRESENT", alias });
+      }
+    }
+
+    const prefixedAliases = line.match(/\b[A-Z][A-Z0-9_]*_REINVESTIGATION_REQUIRED\b/g) || [];
+    for (const alias of new Set(prefixedAliases)) {
+      if (alias !== "REINVESTIGATION_REQUIRED") {
+        violations.push({
+          path,
+          line: lineNumber,
+          code: "PREFIXED_REINVESTIGATION_STATUS_ALIAS_PRESENT",
+          alias,
+          requirement: "use REINVESTIGATION_REQUIRED and carry owner, scope, reason, and attempt as metadata"
+        });
       }
     }
 
@@ -177,7 +193,7 @@ function inspectFile(path, text) {
       });
     }
 
-    if (path !== "scripts/check-semantic-outcome-integrity.mjs" && /may not advance.*until.*CONTROLLED_FAILURE/i.test(line)) {
+    if (/may not advance.*until.*CONTROLLED_FAILURE/i.test(line)) {
       violations.push({
         path,
         line: lineNumber,
