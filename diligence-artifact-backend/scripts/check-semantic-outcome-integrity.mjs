@@ -18,6 +18,19 @@ const canonicalOutcomes = Object.freeze([
   "TECHNICAL_RETRY_REQUIRED",
   "CRITICAL_FAILURE"
 ]);
+const semanticStatusTokens = new Set([
+  ...canonicalOutcomes,
+  "LOCKED",
+  "LOCKED_WITH_LIMITATIONS",
+  "CONTROLLED_FAILURE",
+  "PASS",
+  "PASS_WITH_LIMITATION",
+  "PASS_WITH_LIMITATIONS",
+  "PASS_WITH_WARNING",
+  "PASS_WITH_WARNINGS",
+  "REINVESTIGATION_COMPLETED_WITH_LIMITATION",
+  "REVIEW_REQUIRED"
+]);
 const violations = [];
 
 assertCanonicalExecutionContract();
@@ -114,18 +127,18 @@ function inspectFile(path, text) {
     }
 
     const listMatch = line.match(/^\s*-\s+`?([A-Z][A-Z0-9_]+)`?(?:\s+.*)?$/);
-    if (listMatch) {
-      const status = listMatch[1];
-      if (status === previousListStatus) {
+    const listStatus = listMatch && semanticStatusTokens.has(listMatch[1]) ? listMatch[1] : null;
+    if (listStatus) {
+      if (listStatus === previousListStatus) {
         violations.push({
           path,
           line: lineNumber,
           code: "DUPLICATE_ADJACENT_STATUS_BRANCH",
-          status,
+          status: listStatus,
           previous_line: previousListLine
         });
       }
-      previousListStatus = status;
+      previousListStatus = listStatus;
       previousListLine = lineNumber;
     } else if (line.trim() && !line.trim().startsWith("#")) {
       previousListStatus = null;
@@ -133,7 +146,7 @@ function inspectFile(path, text) {
     }
 
     const duplicateConjunction = line.match(/`([A-Z][A-Z0-9_]+)`\s+and\s+`\1`/);
-    if (duplicateConjunction) {
+    if (duplicateConjunction && semanticStatusTokens.has(duplicateConjunction[1])) {
       violations.push({
         path,
         line: lineNumber,
@@ -145,7 +158,7 @@ function inspectFile(path, text) {
     const pipeTokens = line
       .split("|")
       .map((value) => value.replace(/[\s`"']/g, ""))
-      .filter((value) => /^[A-Z][A-Z0-9_]+$/.test(value));
+      .filter((value) => semanticStatusTokens.has(value));
     if (pipeTokens.length > new Set(pipeTokens).size) {
       violations.push({
         path,
@@ -164,7 +177,7 @@ function inspectFile(path, text) {
       });
     }
 
-    if (/may not advance.*until.*CONTROLLED_FAILURE/i.test(line)) {
+    if (path !== "scripts/check-semantic-outcome-integrity.mjs" && /may not advance.*until.*CONTROLLED_FAILURE/i.test(line)) {
       violations.push({
         path,
         line: lineNumber,
