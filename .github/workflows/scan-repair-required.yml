@@ -1,0 +1,47 @@
+name: Scan REPAIR_REQUIRED residue
+
+on:
+  pull_request:
+    branches: [domain-gate-v0-preflight]
+    types: [synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    if: github.head_ref == 'co-e2e-01-03-critical-authority'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: co-e2e-01-03-critical-authority
+      - name: Scan active backend tree
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          root = Path('diligence-artifact-backend')
+          rows = []
+          binary_ext = {'.docx','.zip','.png','.jpg','.jpeg','.gif','.pdf','.woff','.woff2','.ttf'}
+          for path in sorted(root.rglob('*')):
+              if not path.is_file() or path.suffix.lower() in binary_ext:
+                  continue
+              if any(part in {'node_modules', '.git'} for part in path.parts):
+                  continue
+              try:
+                  text = path.read_text(encoding='utf-8')
+              except UnicodeDecodeError:
+                  continue
+              for number, line in enumerate(text.splitlines(), 1):
+                  if 'REPAIR_REQUIRED' in line:
+                      rows.append({'path': str(path), 'line': number, 'text': line.strip()})
+          Path('repair-required-residue.json').write_text(json.dumps({'count': len(rows), 'rows': rows}, indent=2), encoding='utf-8')
+          print(json.dumps({'count': len(rows), 'files': len({r['path'] for r in rows})}, indent=2))
+          for row in rows:
+              print(f"{row['path']}:{row['line']}: {row['text']}")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: repair-required-residue
+          path: repair-required-residue.json
