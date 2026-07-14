@@ -1,4 +1,4 @@
-name: Phase 13 Qualified Review Validation
+name: Phase 13-16 Post-Review Validation
 
 on:
   push:
@@ -8,20 +8,28 @@ on:
       - "diligence-artifact-backend/src/phases/13-qualified-review/**"
       - "diligence-artifact-backend/src/phases/14-qualified-review-submission/**"
       - "diligence-artifact-backend/src/phases/15-diligence-qa-complete/**"
+      - "diligence-artifact-backend/src/phases/16-assembly-engine/**"
       - "diligence-artifact-backend/src/runtime/contracts/phase13-runtime.contract.js"
       - "diligence-artifact-backend/src/runtime/contracts/phase14-submission-runtime.contract.js"
       - "diligence-artifact-backend/src/runtime/contracts/phase15-diligence-qa-runtime.contract.js"
+      - "diligence-artifact-backend/src/runtime/contracts/phase16-assembly-runtime.contract.js"
       - "diligence-artifact-backend/src/runtime/contracts/internal-job.contract.js"
+      - "diligence-artifact-backend/src/runtime/contracts/pipeline.contract.js"
+      - "diligence-artifact-backend/src/runtime/contracts/central-phase.contract.js"
+      - "diligence-artifact-backend/src/runtime/contracts/artifact-permissions.contract.js"
       - "diligence-artifact-backend/src/runtime/services/async-phase13.service.js"
       - "diligence-artifact-backend/src/runtime/services/qualified-review-*.service.js"
       - "diligence-artifact-backend/src/runtime/services/diligence-qa-complete.service.js"
+      - "diligence-artifact-backend/src/runtime/services/assembly-engine.service.js"
       - "diligence-artifact-backend/src/runtime/services/immutable-post-review-artifacts.service.js"
+      - "diligence-artifact-backend/src/runtime/services/storage/drive.service.js"
       - "diligence-artifact-backend/src/runtime/routes/public.routes.js"
       - "diligence-artifact-backend/public/interface-diligence/diligence-system/qualified-review*"
       - "diligence-artifact-backend/public/interface-diligence/diligence-system/qualified-review-system/**"
       - "diligence-artifact-backend/references/registry/qr/**"
       - "diligence-artifact-backend/references/document-templates/ai/v2_1/**"
       - "diligence-artifact-backend/scripts/check-phase13-*.mjs"
+      - "diligence-artifact-backend/scripts/check-phase16-*.mjs"
       - "diligence-artifact-backend/package.json"
       - "diligence-artifact-backend/package-lock.json"
       - ".github/workflows/phase13-qualified-review-validation.yml"
@@ -31,14 +39,14 @@ permissions:
   contents: read
 
 concurrency:
-  group: phase13-qualified-review-validation-${{ github.ref }}
+  group: phase13-16-post-review-validation-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  validate-phase13:
-    name: Validate QR runtime, submission and QA
+  validate-post-review:
+    name: Validate QR, submission, QA and assembly
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -70,6 +78,10 @@ jobs:
         working-directory: diligence-artifact-backend
         run: npm run check:phase13-qr-runtime-ui
 
-      - name: Phase 13 immutable submission and Diligence QA
+      - name: Immutable submission and Diligence QA
         working-directory: diligence-artifact-backend
         run: npm run check:phase13-submission-qa
+
+      - name: Phase 16 assembly engine
+        working-directory: diligence-artifact-backend
+        run: npm run check:phase16-assembly
