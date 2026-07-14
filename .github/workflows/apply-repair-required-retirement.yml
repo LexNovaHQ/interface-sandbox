@@ -1,0 +1,68 @@
+name: Apply repair-required retirement
+
+on:
+  pull_request:
+    branches: [domain-gate-v0-preflight]
+    types: [synchronize]
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-certify:
+    if: github.head_ref == 'co-e2e-01-03-critical-authority'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: co-e2e-01-03-critical-authority
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Restore settled registry reasoning contracts
+        run: |
+          git fetch origin domain-gate-v0-preflight
+          git checkout origin/domain-gate-v0-preflight -- \
+            diligence-artifact-backend/references/registry/AI_Registry_Key.yml \
+            diligence-artifact-backend/references/registry/FinTech_Registry_Key.yml \
+            diligence-artifact-backend/references/registry/Diligence_Field_Derivation_Registry.yml
+      - name: Apply status retirement and critical-only corrections
+        run: python diligence-artifact-backend/scripts/apply-repair-required-retirement.py
+      - name: Remove temporary machinery
+        run: |
+          rm -f .github/workflows/scan-repair-required.yml
+          rm -f .github/workflows/apply-repair-required-retirement.yml
+          rm -f diligence-artifact-backend/scripts/apply-repair-required-retirement.py
+      - name: Commit production correction
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Restore model-led 3B and retire repair-required status"
+            git push origin HEAD:co-e2e-01-03-critical-authority
+          fi
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: diligence-artifact-backend/package-lock.json
+      - name: Install locked dependencies
+        working-directory: diligence-artifact-backend
+        run: npm ci
+      - name: Verify retired status is absent
+        working-directory: diligence-artifact-backend
+        run: npm run check:repair-required-retirement
+      - name: Verify corrected Phase 3B authority
+        working-directory: diligence-artifact-backend
+        run: npm run check:e2e-authority && npm run check:phase3-domain-derivation
+      - name: Verify Phase 10 and Phase 11
+        working-directory: diligence-artifact-backend
+        run: npm run check:phase10-full && npm run check:phase11-critical
+      - name: Run universal Phase 1-16 production gate
+        working-directory: diligence-artifact-backend
+        run: npm run check:phase1-16-production
+      - name: Run post-review production suite
+        working-directory: diligence-artifact-backend
+        run: npm run check:phase13-production
