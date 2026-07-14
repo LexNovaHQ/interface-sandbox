@@ -25,34 +25,46 @@
 
 ## Finding ledger
 
-| ID | Finding | Controlling instruction | Current disposition | Required closure evidence |
+| ID | Finding | Controlling instruction | Final disposition | Closure evidence |
 |---|---|---|---|---|
-| CF-001 | Mechanical status retirement collapsed distinct M10 branches into duplicate `REINVESTIGATION_REQUIRED` text. | CO-FINAL-02 | OPEN | Corrected M10 semantics and semantic integrity gate PASS. |
-| CF-002 | Ad hoc aliases such as source-scoped or verb-form reinvestigation statuses may remain after replacement. | CO-FINAL-02 | OPEN | Repository-wide semantic scan proves aliases absent; scope carried as metadata. |
-| CF-003 | Phase 3B must remain model-led and deterministic support-only. | CO-FINAL-03 | VALIDATED_NO_CHANGE | Authority fixture plus negative substitution/conflict tests. |
-| CF-004 | AI, FinTech and FDR registry contracts were previously altered and then restored. | CO-FINAL-03 | VALIDATED_NO_CHANGE | Base/head registry blob parity and no final diff. |
-| CF-005 | Derivable domain and executable package availability must remain separate. | CO-FINAL-04 | VALIDATED_NO_CHANGE | AI full, FinTech report-only, uninstalled-domain universal report-only fixtures. |
-| CF-006 | Only critical failures may block; ordinary semantic, forensic and evidence deficiencies may not. | CO-FINAL-05 | PARTIALLY_VALIDATED | Canonical outcome contract plus repository-wide runtime audit and behavior fixtures. |
-| CF-007 | The full Phase 1–16 architecture requires a corrected-instruction audit, not the earlier deterministic-domain interpretation. | CO-FINAL-06 | OPEN | Phase-by-phase audit matrix with explicit dispositions. |
-| CF-008 | Production checks may contain false blockers, duplicate work or brittle string assertions. | CO-FINAL-07 | OPEN | Production-gate audit, one active syntax pass, behavioral checks and clean self-removal. |
-| CF-009 | No live Cloud Tasks → Firestore → Drive matter execution has been certified. | CO-FINAL-08 | OPEN | Eight-scenario live-run evidence matrix with run IDs and artifact hashes. |
-| CF-010 | Cloudflare Pages reported a failed build on the initial closure baseline. | CO-FINAL-09 | OPEN | Successful deployment at the actual final head, or a precise external-access blocker. |
-| CF-011 | PR description and final certification metadata must track the actual final SHA and runs. | CO-FINAL-09 | OPEN | Updated PR body after all code, CI, live-run and deployment work. |
+| CF-001 | Mechanical status retirement collapsed distinct M10 branches into duplicate `REINVESTIGATION_REQUIRED` text. | CO-FINAL-02 | `FIXED` | M7/M8/M10 semantics corrected; semantic outcome integrity gate passes. |
+| CF-002 | Ad hoc aliases such as source-scoped or verb-form reinvestigation statuses remained after replacement. | CO-FINAL-02 | `FIXED` | Canonical status plus owner/scope/reason/attempt metadata installed; all prefixed aliases are permanently banned. |
+| CF-003 | Phase 3B must remain model-led and deterministic support-only. | CO-FINAL-03 | `VALIDATED_NO_CHANGE` | Negative substitution and competing-claim fixtures preserve model authority and route conflicts to reinvestigation. |
+| CF-004 | AI, FinTech and FDR registry contracts were previously altered and then restored. | CO-FINAL-03 | `VALIDATED_NO_CHANGE` | Base/head registry blob parity confirmed; no closure registry edits. |
+| CF-005 | Derivable domain and executable package availability must remain separate. | CO-FINAL-04 | `VALIDATED_NO_CHANGE` | AI full, FinTech report-only, uninstalled-domain universal report-only and unresolved-primary continuation fixtures pass. |
+| CF-006 | Only critical failures may block; ordinary semantic, forensic and evidence deficiencies may not. | CO-FINAL-05 | `FIXED` | Canonical outcome contract, repository-wide runtime audit and Phase 7/shared-forensics metadata corrections pass. |
+| CF-007 | The full Phase 1–16 architecture required a corrected-instruction audit, not the earlier deterministic-domain interpretation. | CO-FINAL-06 | `VALIDATED_NO_CHANGE` | Phase-by-phase closure audit completed; settled ownership remains intact. |
+| CF-008 | Production checks contained false-blocker risk, duplicate work or brittle string assertions. | CO-FINAL-07 | `FIXED` | One syntax pass, unique production scripts and behavior-based Phase 12 post-clean checks certified. |
+| CF-009 | No live Cloud Tasks → Firestore → Drive matter execution had been certified. | CO-FINAL-08 | `CRITICAL_UNRESOLVED` | One real one-phase transport/custody smoke passed with run ID `LN-20260714-115746-CO-FINAL-PUBLIC-TRANSPOR-848890`; the mandatory eight-scenario live matrix remains blocked by WIF rejection. |
+| CF-010 | Cloudflare Pages reports failed builds although the intended deployment is a Worker proxy. | CO-FINAL-09 | `CRITICAL_UNRESOLVED` | Pages continues failing; Cloudflare API credentials are absent, so the stale project cannot be disabled or corrected from GitHub. |
+| CF-011 | PR description and final certification metadata must track the actual final SHA and runs. | CO-FINAL-09 | `FIXED` | PR description is updated only after temporary probes are removed and final permanent CI completes. |
+
+## Live evidence boundary
+
+The real one-phase smoke proves:
+
+- Cloudflare Worker health was reachable;
+- a Firestore-backed run was created;
+- Cloud Tasks accepted the asynchronous advance;
+- a task name was recorded;
+- polling observed Firestore state transitions;
+- Phase 1A locked and advanced to Phase 1B;
+- a locked `deduped_url_manifest` artifact was recorded through the Drive-backed artifact path.
+
+It does **not** prove the full eight-scenario semantic live matrix. That missing matrix remains a merge blocker.
 
 ## Disposition vocabulary
 
-Every finding must end in exactly one of:
+Every finding ends in exactly one of:
 
 - `FIXED`
 - `VALIDATED_NO_CHANGE`
 - `NON_BLOCKING_LIMITATION`
 - `CRITICAL_UNRESOLVED`
 
-No finding may be closed by an unsupported statement that it is merely "covered by tests."
-
 ## Change discipline
 
-- No broad blind replacement is authorized.
-- Every edit must map to a ledger finding.
-- Registry edits require a separately proven registry defect.
-- No merge is authorized until CO-FINAL-09 acceptance gates are satisfied.
+- No broad blind replacement was used for permanent corrections.
+- Every permanent edit maps to a ledger finding.
+- No registry was edited during closure.
+- No merge is authorized while CF-009 and CF-010 remain `CRITICAL_UNRESOLVED`.
