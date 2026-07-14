@@ -38,9 +38,11 @@ export async function attestQualifiedReviewSection({ run, handoff, section_id, r
       if (!field || next.field_edits[probeId]) continue;
       next.field_edits[probeId] = {
         atomic_values: structuredClone(field.proposed_value || {}),
+        baseline_value: structuredClone(field.proposed_value || {}),
         limitation: "",
         not_applicable: false,
-        review_status: "SECTION_ATTESTED_PROBE"
+        review_status: "SECTION_ATTESTED_PROBE",
+        confirmed_activation_probe: true
       };
       confirmedProbeIds.push(probeId);
     }
@@ -104,9 +106,10 @@ export function mergeDraft({ run = {}, handoff = {}, current = {}, request_body 
   for (const [fieldId, raw] of Object.entries(incoming)) {
     const field = allowed.get(fieldId);
     if (!field) throw new Error(`QUALIFIED_REVIEW_DRAFT_UNKNOWN_FIELD:${fieldId}`);
+    const existingEdit = next.field_edits[fieldId] || null;
     const normalized = normalizeFieldEdit(raw, field);
-    const nextEdit = isNoopEdit(normalized, field) ? null : normalized;
-    const before = JSON.stringify(next.field_edits[fieldId] || null);
+    const nextEdit = nextEditRecord({ normalized, field, existingEdit, clearEdit: raw?.clear_edit === true });
+    const before = JSON.stringify(existingEdit);
     const after = JSON.stringify(nextEdit);
     if (before !== after) changedSections.add(field.section_id);
     if (nextEdit) next.field_edits[fieldId] = nextEdit;
@@ -160,11 +163,18 @@ function normalizeFieldEdit(raw = {}, field = {}) {
   };
 }
 
-function isNoopEdit(edit, field) {
+function nextEditRecord({ normalized, field, existingEdit, clearEdit }) {
+  if (clearEdit) return null;
+  const baseline = structuredClone(existingEdit?.baseline_value || field.proposed_value || {});
+  if (existingEdit?.confirmed_activation_probe === true) {
+    return { ...normalized, baseline_value: baseline, confirmed_activation_probe: true, review_status: "SECTION_ATTESTED_PROBE" };
+  }
+  if (matchesBaseline(normalized, baseline)) return null;
+  return { ...normalized, baseline_value: baseline };
+}
+function matchesBaseline(edit, baseline) {
   if (edit.not_applicable || edit.limitation) return false;
-  const proposed = field.proposed_value || {};
-  const keys = (field.atomic_fields || []).map((atomic) => atomic.atomic_key);
-  return keys.every((key) => Object.prototype.hasOwnProperty.call(edit.atomic_values, key) && sameValue(edit.atomic_values[key], proposed[key]));
+  return sameValue(edit.atomic_values || {}, baseline || {});
 }
 function sameValue(left, right) { return JSON.stringify(left) === JSON.stringify(right); }
 function fieldIndex(handoff) {
