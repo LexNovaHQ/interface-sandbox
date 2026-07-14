@@ -32,6 +32,7 @@ function joinActivity({ activity, sourceNavigationInventory, evidenceAtomInvento
   const familyRows = sourceNavigationInventory.dap_family_source_coverage_matrix.filter((row) => families.includes(row.registry_family));
   const routeIds = unique(familyRows.flatMap((row) => [...row.primary_route_ids, ...row.secondary_route_ids]));
   const atomIds = evidenceAtomInventory.evidence_atoms.filter((atom) => routeIds.includes(atom.source_route_id)).map((atom) => atom.atom_id);
+  const unresolved = atomIds.length === 0;
   return Object.freeze({
     activity_join_id: activity.activity_join_id,
     activity_reference: activity.activity_reference,
@@ -44,8 +45,16 @@ function joinActivity({ activity, sourceNavigationInventory, evidenceAtomInvento
     candidate_dap_families: Object.freeze(families),
     supporting_route_ids: Object.freeze(routeIds),
     supporting_atom_ids: Object.freeze(atomIds),
-    join_status: atomIds.length ? "ACTIVITY_DAP_JOIN_READY" : "ACTIVITY_DAP_JOIN_REQUIRES_NAVIGATION_REPAIR",
-    anti_unknown_status: atomIds.length ? "DERIVED_CROSS_ROUTE" : "NAVIGATION_DEFECT_REINVESTIGATION_REQUIRED"
+    join_status: unresolved ? "ACTIVITY_DAP_JOIN_UNRESOLVED" : "ACTIVITY_DAP_JOIN_READY",
+    anti_unknown_status: unresolved ? "REINVESTIGATION_REQUIRED" : "DERIVED_CROSS_ROUTE",
+    reinvestigation_metadata: unresolved ? Object.freeze({
+      status: "REINVESTIGATION_REQUIRED",
+      reinvestigation_owner_phase: "DATA_PROVENANCE_PROFILE",
+      reinvestigation_scope: activity.activity_join_id || activity.activity_reference || "ACTIVITY_DAP_JOIN",
+      reinvestigation_reason_code: "ACTIVITY_JOIN_NO_SUPPORTING_EVIDENCE_ATOMS",
+      attempt_limit: 2,
+      blocking: false
+    }) : null
   });
 }
 
