@@ -57,6 +57,30 @@ const incomplete = validateDraft({ handoff, draft: edited, require_complete: tru
 assert.equal(incomplete.status, "INCOMPLETE");
 assert(incomplete.blocking_errors.includes("SECTION_ATTESTATION_REQUIRED:G01"));
 
+const suppressedProbe = validateDraft({
+  handoff,
+  draft: {
+    ...empty,
+    field_edits: {
+      B01: {
+        atomic_values: { internal_ai_use: false },
+        baseline_value: { internal_ai_use: true },
+        not_applicable: false,
+        limitation: "",
+        review_status: "SECTION_ATTESTED_PROBE",
+        confirmed_activation_probe: true
+      }
+    }
+  }
+});
+assert.equal(suppressedProbe.status, "PASS_WITH_WARNINGS");
+assert.deepEqual(suppressedProbe.blocking_errors, []);
+assert(suppressedProbe.warnings.includes("SUPPRESSED_ACTIVATION_PROBE_RETAINED:B01"));
+
+const rogueEdit = validateDraft({ handoff, draft: { ...empty, field_edits: { X999: { atomic_values: { value: "rogue" } } } } });
+assert.equal(rogueEdit.status, "INCOMPLETE");
+assert(rogueEdit.blocking_errors.includes("UNKNOWN_FIELD_EDIT:X999"));
+
 assert.equal(PHASE13_QUALIFIED_REVIEW_RUNTIME_CONTRACT.next, "AWAITING_QUALIFIED_REVIEW");
 assert.equal(PHASE13_QUALIFIED_REVIEW_RUNTIME_CONTRACT.confirmation_unit, "SECTION");
 assert.equal(PHASE13_QUALIFIED_REVIEW_RUNTIME_CONTRACT.per_question_confirmation_forbidden, true);
@@ -81,6 +105,7 @@ assert.match(draftSource, /SECTION_ATTESTED_PROBE/);
 assert.match(draftSource, /activation_probe_field_ids_confirmed/);
 assert.match(draftSource, /nextEditRecord/);
 assert.match(draftSource, /baseline_value/);
+assert.match(draftSource, /SUPPRESSED_ACTIVATION_PROBE_RETAINED/);
 const ui = source("public/interface-diligence/diligence-system/qualified-review-system/qualified-review.js");
 assert.match(ui, /confirmation_unit: "SECTION"/);
 assert.match(ui, /Attest this section/);
@@ -99,7 +124,7 @@ const artifactsContract = source("src/runtime/contracts/artifacts.contract.js");
 assert.match(artifactsContract, /QUALIFIED_REVIEW: QUALIFIED_REVIEW_RUNTIME_WRITES/);
 
 console.log("Phase 13 QR runtime and UI: PASS");
-console.log(JSON.stringify({ confirmation_unit: "SECTION", active_sections: 1, active_fields: 2, runtime_writes: QUALIFIED_REVIEW_RUNTIME_WRITES.length, unchanged_values_preserve_provenance: true, repeated_saves_preserve_reviewer_edits: true, baseline_revert_clears_override: true, edit_resets_section_attestation: true, probe_attestation_rebuilds_active_registry: true, legacy_responses_endpoint_retired: true }, null, 2));
+console.log(JSON.stringify({ confirmation_unit: "SECTION", active_sections: 1, active_fields: 2, runtime_writes: QUALIFIED_REVIEW_RUNTIME_WRITES.length, unchanged_values_preserve_provenance: true, repeated_saves_preserve_reviewer_edits: true, baseline_revert_clears_override: true, edit_resets_section_attestation: true, probe_attestation_rebuilds_active_registry: true, suppressed_probe_audit_record_retained: true, rogue_unknown_edit_blocked: true, legacy_responses_endpoint_retired: true }, null, 2));
 
 function field(id, sectionId, label, atomicKey, value, sourceType) {
   return { qr_field_id: id, canonical_key: id.toLowerCase(), label, registry_id: "UNIVERSAL_QR_BRIDGE_REGISTRY", registry_scope: "UNIVERSAL", lane: "SHARED", section_id: sectionId, shape: "SCALAR", fillability: "FULL", required_for_assembly: true, activation_probe: false, atomic_values: { [atomicKey]: { value, source: sourceType, value_state: sourceType === "MARKET_BASED" ? "PROPOSED_MARKET_BASED" : "RESOLVED", demo_not_evidence: sourceType === "MARKET_BASED", phase12_field_ids: sourceType === "PHASE_12" ? ["TP.ID.002"] : [], route_ids: sourceType === "PHASE_12" ? ["P12.ROUTE.TP.ID.002"] : [], report_artifacts: sourceType === "PHASE_12" ? ["report_section__03_target_entity_sector_profile"] : [] } }, source_mix: [sourceType], source_counts: { REVIEWER: 0, PHASE_12: sourceType === "PHASE_12" ? 1 : 0, MARKET_BASED: sourceType === "MARKET_BASED" ? 1 : 0, UNRESOLVED: 0 }, unresolved_atomic_fields: [], review_state: "UNCHANGED", limitation: "", not_applicable: false, document_bindings: [{ document_id: "DOC_AI_A_TOS", actions: ["POPULATE"], document_target: "Preamble" }], document_binding_count: 1, ui: { prompt: label } };
