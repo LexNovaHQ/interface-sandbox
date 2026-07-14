@@ -32,6 +32,17 @@ jobs:
           ref: co-e2e-01-03-critical-authority
           fetch-depth: 0
 
+      - name: Normalize and compile one-use applicator
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path("diligence-artifact-backend/scripts/apply-co-final-semantic-fixes.py")
+          text = path.read_text(encoding="utf-8").replace(r'\"', '"')
+          compile(text, str(path), "exec")
+          path.write_text(text, encoding="utf-8")
+          PY
+
       - name: Apply exact-count semantic fixes
         shell: bash
         run: |
