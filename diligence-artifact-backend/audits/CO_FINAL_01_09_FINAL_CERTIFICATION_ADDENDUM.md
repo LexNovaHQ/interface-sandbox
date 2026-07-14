@@ -11,10 +11,10 @@ This addendum supersedes the live-certification and GCP-access blocker statement
 - Pull request: `#95`
 - Base branch: `domain-gate-v0-preflight`
 - Tested live-matrix head: `d10ed6350d57ddd8cbfd9f403402e4bce0cf325a`
-- Cleaned final receipt head: `65ac4bc254b0aba9374633e23bada2ed9296e832`
+- Cleaned final receipt head before the acceptance amendment: `65ac4bc254b0aba9374633e23bada2ed9296e832`
 - Tested head is an ancestor of the cleaned final head.
 - Post-test production-code changes: **none**.
-- Post-test changes were limited to deletion of temporary certification files and addition of the permanent audit receipt.
+- Post-test changes were limited to deletion of temporary certification files and addition of permanent audit and acceptance records.
 
 ## Mandatory eight-scenario live matrix
 
@@ -52,10 +52,12 @@ Actions evidence artifact:
 
 ## Final cleaned-head validation
 
-At final head `65ac4bc254b0aba9374633e23bada2ed9296e832`:
+At final certified head `921f0a7093bd7c197b402720991229fd0168c7d6`:
 
-- Phase 1–16 Production Certification run `29348701912`: **PASS**.
-- Phase 13–16 Post-Review Validation run `29348701804`: **PASS**.
+- Phase 1–16 Production Certification run `29348799525`: **PASS**.
+- Phase 13–16 Post-Review Validation run `29348799530`: **PASS**.
+
+The permanent suites must also pass on the acceptance-amendment head before merge.
 
 ## Access and cleanup boundary
 
@@ -71,12 +73,18 @@ Removed after certification:
 
 The production `.github/workflows/artifact-backend-deploy.yml` on `main` was restored byte-for-byte from the untouched `domain-gate-v0-preflight` base blob `e57060be0eb8cd37912fe51c8c3a748041724764`.
 
-## Residual external blocker
+## Production acceptance amendment
 
-The stale Cloudflare Pages integration continues to report a failed build even though the intended public deployment is the Cloudflare Worker proxy. This is an external integration/configuration issue, not a failure of the corrected pipeline or GCP matrix.
+The founder explicitly removed the stale Cloudflare Pages integration from the production acceptance standard on July 14, 2026.
+
+Cloudflare Pages is not an intended production surface for this system. The intended public deployment is the Cloudflare Worker proxy and configured Worker routes. A stale Pages project may remain as external configuration drift, but its build status has no merge, certification or release consequence.
+
+This decision is recorded in `diligence-artifact-backend/audits/CO_FINAL_PRODUCTION_ACCEPTANCE_AMENDMENT.md`.
+
+No fake static build or architecture-misrepresenting workaround is authorized merely to satisfy the stale Pages project.
 
 ## Merge verdict
 
-**GCP certification and the mandatory eight-scenario matrix no longer block merge.**
+**All production acceptance criteria are satisfied, subject only to the permanent validation suites passing on the acceptance-amendment head.**
 
-**Merge remains blocked only by the stale Cloudflare Pages integration unless the founder explicitly removes that item from the production acceptance standard.**
+**PR #95 is authorized for merge into `domain-gate-v0-preflight` after those final checks pass.**
