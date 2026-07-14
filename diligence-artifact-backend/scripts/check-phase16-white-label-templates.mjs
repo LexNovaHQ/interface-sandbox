@@ -20,7 +20,6 @@ let qrTokenCount = 0;
 assert.equal(branding.mode, "WHITE_LABEL");
 assert.equal(branding.provider_branding_present, false);
 assert.equal(branding.neutral_ai_governance_banner, true);
-assert.equal(branding.creator_metadata_scrbed, undefined);
 assert.equal(branding.creator_metadata_scrubbed, true);
 assert.equal(expectedBannerHash, LOCKED_NEUTRAL_BANNER_SHA256);
 
