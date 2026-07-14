@@ -89,7 +89,7 @@ assert.equal(QUALIFIED_REVIEW_RUNTIME_WRITES.length, 9);
 const asyncSource = source("src/runtime/services/async-phase13.service.js");
 assert.match(asyncSource, /const QR_JOB = "QUALIFIED_REVIEW"/);
 assert.match(asyncSource, /const QR_PAUSE = "AWAITING_QUALIFIED_REVIEW"/);
-assert.match(asyncSource, /dispatched_next: false/);
+assert.match(asyncSource, /job === QR_JOB[\s\S]*dispatchedNext: false[\s\S]*paused: true/);
 const operatorRoutes = source("src/runtime/routes/operator.routes.js");
 assert.match(operatorRoutes, /async-phase13\.service\.js/);
 const publicRoutes = source("src/runtime/routes/public.routes.js");
