@@ -83,10 +83,22 @@ jobs:
         working-directory: diligence-artifact-backend
         run: npm run check:phase13-qr-runtime-ui
 
-      - name: Immutable submission and Diligence QA
+      - name: Canonical post-review contract and permissions
         working-directory: diligence-artifact-backend
-        run: npm run check:phase13-submission-qa
+        run: node scripts/check-phase13-post-review-contract-sync.mjs
 
-      - name: Phase 16 assembly engine
+      - name: Immutable submission and Diligence QA fixtures
         working-directory: diligence-artifact-backend
-        run: npm run check:phase16-assembly
+        run: node scripts/check-phase13-submission-diligence-qa.mjs
+
+      - name: Submission injection parity
+        working-directory: diligence-artifact-backend
+        run: node scripts/check-phase13-diligence-qa-injection.mjs
+
+      - name: Phase 16 runtime wiring
+        working-directory: diligence-artifact-backend
+        run: node scripts/check-phase16-runtime-wiring.mjs
+
+      - name: Phase 16 assembly engine and templates
+        working-directory: diligence-artifact-backend
+        run: node scripts/check-phase16-assembly-engine.mjs
