@@ -58,8 +58,12 @@ assert.equal(ARTIFACT_PERMISSION_STATUS.phase16_assembly_writes_synced, true);
 
 const publicRoutes = read("src/runtime/routes/public.routes.js");
 assert.match(publicRoutes, /authorize_assembly/);
-assert.match(publicRoutes, /AUTHORIZE_ASSEMBLY/);
+assert.match(publicRoutes, /authorized_by/);
 assert.match(publicRoutes, /qualified-review\/:run_id\/responses[\s\S]*status\(410\)/);
+
+const schemas = read("src/runtime/contracts/schemas.contract.js");
+assert.match(schemas, /action:\s*z\.enum\(\["AUTHORIZE_ASSEMBLY"\]\)/);
+assert.match(schemas, /explicit_assembly_authorization_supported:\s*true/);
 
 const asyncRuntime = read("src/runtime/services/async-phase13.service.js");
 assert.match(asyncRuntime, /AWAITING_ASSEMBLY/);
@@ -77,7 +81,7 @@ for (const requiredScript of [
   "check:phase16-assembly",
   "check:phase13-production-cutover"
 ]) {
-  assert(productionManifest.includes(`\"${requiredScript}\"`), `PRODUCTION_GATE_PHASE13_16_CHECK_MISSING:${requiredScript}`);
+  assert(productionManifest.includes(`"${requiredScript}"`), `PRODUCTION_GATE_PHASE13_16_CHECK_MISSING:${requiredScript}`);
 }
 
 console.log("Phase 13-16 production cutover: PASS");
@@ -89,6 +93,7 @@ console.log(JSON.stringify({
   immutable_submission_active: true,
   diligence_qa_active: true,
   explicit_assembly_authorization_active: true,
+  authorization_action_owned_by_schema: true,
   terminal_phase: "COMPLETE",
   source_certification_command: POST_REVIEW_PRODUCTION_CUTOVER_CONTRACT.source_certification_command,
   live_cloud_execution_separate: true
