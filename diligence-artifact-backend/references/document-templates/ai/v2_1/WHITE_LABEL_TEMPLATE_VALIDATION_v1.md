@@ -30,7 +30,7 @@ The conversion removed or neutralized:
 
 Every template now uses the same neutral AI Governance banner. Its SHA-256 digest is:
 
-`713988a522031d119ea2a8ef0079b163aa16bb0625cb0892ca830af04e04a1ad`
+`9d8885933f88de5e20b7457ce8d78e8a1bab2e4a1f1de14c4f8bf27f03dcb6d0`
 
 ## Preserved safeguards
 

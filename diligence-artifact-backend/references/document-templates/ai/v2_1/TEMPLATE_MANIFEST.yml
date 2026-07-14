@@ -13,7 +13,7 @@ template_manifest:
     mode: WHITE_LABEL
     provider_branding_present: false
     neutral_ai_governance_banner: true
-    neutral_banner_sha256: adea2ea359d521f65e3b3c1ab677953e239ccbfbc234af98f143144000f259d8
+    neutral_banner_sha256: 9d8885933f88de5e20b7457ce8d78e8a1bab2e4a1f1de14c4f8bf27f03dcb6d0
     creator_metadata_scrubbed: true
   activation:
     universal_values_always_available: true
