@@ -132,7 +132,14 @@ export function validateDraft({ handoff = {}, draft = {}, require_complete = fal
   const warnings = [];
   const sections = Array.isArray(handoff.sections) ? handoff.sections : [];
   const fieldIds = new Set(sections.flatMap((section) => section.fields || []).map((field) => field.qr_field_id));
-  for (const id of Object.keys(draft.field_edits || {})) if (!fieldIds.has(id)) blocking_errors.push(`UNKNOWN_FIELD_EDIT:${id}`);
+  for (const [id, edit] of Object.entries(draft.field_edits || {})) {
+    if (fieldIds.has(id)) continue;
+    if (edit?.confirmed_activation_probe === true) {
+      warnings.push(`SUPPRESSED_ACTIVATION_PROBE_RETAINED:${id}`);
+      continue;
+    }
+    blocking_errors.push(`UNKNOWN_FIELD_EDIT:${id}`);
+  }
   for (const section of sections) {
     const attestation = draft.section_attestations?.[section.section_id];
     if (attestation && attestation.field_state_hash !== section.attestation?.field_state_hash) blocking_errors.push(`STALE_SECTION_ATTESTATION:${section.section_id}`);
@@ -140,7 +147,7 @@ export function validateDraft({ handoff = {}, draft = {}, require_complete = fal
   }
   if (require_complete && (handoff.registry_resolution?.unresolved_activation_probe_field_ids || []).length) blocking_errors.push("ACTIVATION_PROBES_UNRESOLVED");
   return {
-    status: blocking_errors.length ? "INCOMPLETE" : "PASS",
+    status: blocking_errors.length ? "INCOMPLETE" : warnings.length ? "PASS_WITH_WARNINGS" : "PASS",
     blocking_errors,
     warnings,
     active_section_count: sections.length,
