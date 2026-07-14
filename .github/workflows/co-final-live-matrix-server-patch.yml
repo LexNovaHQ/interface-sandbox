@@ -19,26 +19,29 @@ jobs:
           ref: co-e2e-01-03-critical-authority
           fetch-depth: 0
 
-      - name: Apply exact-count task orchestration patch
+      - name: Apply marker-bounded task orchestration patch
         shell: bash
         run: |
           python - <<'PY'
           from pathlib import Path
           p=Path('diligence-artifact-backend/co-final-live-matrix-server.mjs')
           s=p.read_text(encoding='utf-8')
-          replacements=[
-            ('import express from "express";\n','import express from "express";\nimport cloudTasks from "@google-cloud/tasks";\n',1),
-            ('const PORT = Number(process.env.PORT || 8080);','const { CloudTasksClient } = cloudTasks;\nconst taskClient = new CloudTasksClient();\nconst PORT = Number(process.env.PORT || 8080);',1),
-            ('const EXPECTED_HEAD_SHA = String(process.env.EXPECTED_HEAD_SHA || "");','const EXPECTED_HEAD_SHA = String(process.env.EXPECTED_HEAD_SHA || "");\nconst PROJECT_ID = String(process.env.GCP_PROJECT_ID || "");\nconst REGION = String(process.env.GCP_REGION || "");\nconst CERT_QUEUE = String(process.env.CLOUD_TASKS_QUEUE || "");',1),
-            ('if (!EXPECTED_HEAD_SHA) throw new Error("EXPECTED_HEAD_SHA_MISSING");','if (!EXPECTED_HEAD_SHA) throw new Error("EXPECTED_HEAD_SHA_MISSING");\nif (!PROJECT_ID || !REGION || !CERT_QUEUE) throw new Error("CERT_CLOUD_TASKS_CONFIG_MISSING");',1),
-            ('''    const docs = await Promise.all(SCENARIOS.map(async (scenarioId) => {
-              const snap = await scenarioRef(matrixId, scenarioId).get();
-              return snap.exists ? snap.data() : { scenario_id: scenarioId, status: "PENDING" };
-            }));
-            res.json({ ok: true, matrix_id: matrixId, expected_head_sha: EXPECTED_HEAD_SHA, scenarios: docs });''','''    const docs = await readScenarioRows(matrixId);
-            const validation = validateMatrixRows(docs);
-            res.json({ ok: true, matrix_id: matrixId, expected_head_sha: EXPECTED_HEAD_SHA, scenarios: docs, ...validation });''',1),
-            ('app.post("/scenario", async (req, res) => {','''app.post("/start/:matrixId", async (req, res) => {
+          def one(old,new):
+              global s
+              count=s.count(old)
+              if count!=1: raise SystemExit(f'marker count mismatch {count}: {old[:100]!r}')
+              s=s.replace(old,new,1)
+          one('import express from "express";\n','import express from "express";\nimport cloudTasks from "@google-cloud/tasks";\n')
+          one('const PORT = Number(process.env.PORT || 8080);','const { CloudTasksClient } = cloudTasks;\nconst taskClient = new CloudTasksClient();\nconst PORT = Number(process.env.PORT || 8080);')
+          one('const EXPECTED_HEAD_SHA = String(process.env.EXPECTED_HEAD_SHA || "");','const EXPECTED_HEAD_SHA = String(process.env.EXPECTED_HEAD_SHA || "");\nconst PROJECT_ID = String(process.env.GCP_PROJECT_ID || "");\nconst REGION = String(process.env.GCP_REGION || "");\nconst CERT_QUEUE = String(process.env.CLOUD_TASKS_QUEUE || "");')
+          one('if (!EXPECTED_HEAD_SHA) throw new Error("EXPECTED_HEAD_SHA_MISSING");','if (!EXPECTED_HEAD_SHA) throw new Error("EXPECTED_HEAD_SHA_MISSING");\nif (!PROJECT_ID || !REGION || !CERT_QUEUE) throw new Error("CERT_CLOUD_TASKS_CONFIG_MISSING");')
+          start=s.index('    const docs = await Promise.all(SCENARIOS.map(async (scenarioId) => {')
+          end_marker='    res.json({ ok: true, matrix_id: matrixId, expected_head_sha: EXPECTED_HEAD_SHA, scenarios: docs });'
+          end=s.index(end_marker,start)+len(end_marker)
+          s=s[:start]+'''    const docs = await readScenarioRows(matrixId);
+              const validation = validateMatrixRows(docs);
+              res.json({ ok: true, matrix_id: matrixId, expected_head_sha: EXPECTED_HEAD_SHA, scenarios: docs, ...validation });'''+s[end:]
+          start_route='''app.post("/start/:matrixId", async (req, res) => {
             try {
               requireToken(req);
               const matrixId = safeId(req.params.matrixId);
@@ -59,9 +62,9 @@ jobs:
             }
           });
 
-          app.post("/scenario", async (req, res) => {''',1),
-            ('\nasync function executeScenario','''
-          async function readScenarioRows(matrixId) {
+          '''
+          one('app.post("/scenario", async (req, res) => {',start_route+'app.post("/scenario", async (req, res) => {')
+          helpers='''async function readScenarioRows(matrixId) {
             return Promise.all(SCENARIOS.map(async (scenarioId) => {
               const snap = await scenarioRef(matrixId, scenarioId).get();
               return snap.exists ? snap.data() : { scenario_id: scenarioId, status: "PENDING" };
@@ -80,43 +83,22 @@ jobs:
                 assert.equal(row.receipt_drive_file_id_present, true);
                 assert.equal(row.receipt_artifact_version, 1);
               }
-              assert.equal(byId.A.delivery_mode, "FULL_REVIEW_READY");
-              assert.equal(byId.A.phase16_complete, true);
-              assert.equal(byId.A.review_ready_document_drive_file_id_present, true);
-              assert.equal(byId.A.run_blocked, false);
-              assert.equal(byId.B.delivery_mode, "REPORT_ONLY");
-              assert.equal(byId.B.run_blocked, false);
-              assert.equal(byId.C.delivery_mode, "UNIVERSAL_REPORT_ONLY");
-              assert.equal(byId.C.derived_primary_domain, "saas");
-              assert.equal(byId.C.mounted_primary_package, null);
-              assert.equal(byId.D.delivery_mode, "AI_OVERLAY_FULL_REVIEW_READY");
-              assert.equal(byId.D.ai_overlay, true);
-              assert.equal(byId.D.reinvestigation_attempt_count, 2);
-              assert.equal(byId.D.run_blocked, false);
-              assert.equal(byId.E.delivery_mode, "UNIVERSAL_REPORT_ONLY");
-              assert.equal(byId.E.reinvestigation_attempt_count, 2);
-              assert.equal(byId.E.run_blocked, false);
-              assert.equal(byId.F.execution_outcome, "LIMITATION");
-              assert.equal(byId.F.reinvestigation_attempt_count, 2);
-              assert.equal(byId.F.run_blocked, false);
-              assert.equal(byId.G.execution_outcome, "TECHNICAL_RETRY_REQUIRED");
-              assert.ok(byId.G.delivery_attempt_count >= 2);
-              assert.equal(byId.G.duplicate_write_count, 0);
-              assert.equal(byId.G.run_blocked, false);
-              assert.equal(byId.H.execution_outcome, "CRITICAL_FAILURE");
-              assert.equal(byId.H.run_blocked, true);
+              assert.equal(byId.A.delivery_mode, "FULL_REVIEW_READY"); assert.equal(byId.A.phase16_complete, true); assert.equal(byId.A.review_ready_document_drive_file_id_present, true); assert.equal(byId.A.run_blocked, false);
+              assert.equal(byId.B.delivery_mode, "REPORT_ONLY"); assert.equal(byId.B.run_blocked, false);
+              assert.equal(byId.C.delivery_mode, "UNIVERSAL_REPORT_ONLY"); assert.equal(byId.C.derived_primary_domain, "saas"); assert.equal(byId.C.mounted_primary_package, null);
+              assert.equal(byId.D.delivery_mode, "AI_OVERLAY_FULL_REVIEW_READY"); assert.equal(byId.D.ai_overlay, true); assert.equal(byId.D.reinvestigation_attempt_count, 2); assert.equal(byId.D.run_blocked, false);
+              assert.equal(byId.E.delivery_mode, "UNIVERSAL_REPORT_ONLY"); assert.equal(byId.E.reinvestigation_attempt_count, 2); assert.equal(byId.E.run_blocked, false);
+              assert.equal(byId.F.execution_outcome, "LIMITATION"); assert.equal(byId.F.reinvestigation_attempt_count, 2); assert.equal(byId.F.run_blocked, false);
+              assert.equal(byId.G.execution_outcome, "TECHNICAL_RETRY_REQUIRED"); assert.ok(byId.G.delivery_attempt_count >= 2); assert.equal(byId.G.duplicate_write_count, 0); assert.equal(byId.G.run_blocked, false);
+              assert.equal(byId.H.execution_outcome, "CRITICAL_FAILURE"); assert.equal(byId.H.run_blocked, true);
               return { matrix_validation: "PASS", complete: true, production_service_modified: false };
             } catch (error) {
               return { matrix_validation: "FAILED", complete: true, validation_error: error?.message || String(error) };
             }
           }
 
-          async function executeScenario''',1)
-          ]
-          for old,new,count in replacements:
-            actual=s.count(old)
-            if actual!=count: raise SystemExit(f'exact replacement mismatch expected={count} actual={actual} source={old[:100]!r}')
-            s=s.replace(old,new,count)
+          '''
+          one('async function executeScenario',helpers+'async function executeScenario')
           p.write_text(s,encoding='utf-8')
           PY
           node --check diligence-artifact-backend/co-final-live-matrix-server.mjs
