@@ -12,7 +12,8 @@ export const PHASE_3B_DOMAIN_DERIVATION_SELECTION_STAGE = "PHASE_3B_DOMAIN_DERIV
 export function buildActiveRunPackageManifestV0({ run = {}, catalog, now = new Date().toISOString() } = {}) {
   return {
     artifact_name: ACTIVE_RUN_PACKAGE_MANIFEST_ARTIFACT_NAME,
-    version: "0.2.lifecycle-gated",
+    version: "0.1",
+    lifecycle_schema_version: "DOMAIN_PACKAGE_LIFECYCLE_v1",
     selection_mode: DOMAIN_GATE_SELECTION_MODE,
     selection_stage: PRE_PHASE_1_SELECTION_STAGE,
     run_id: run.run_id || null,

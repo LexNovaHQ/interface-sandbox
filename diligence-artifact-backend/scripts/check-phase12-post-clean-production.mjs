@@ -17,6 +17,7 @@ const EXPECTED_PACKAGE_SCRIPTS = Object.freeze([
   "check:production-gate-severity",
   "check:syntax:active",
   "check:domain-gate-v0",
+  "check:e2e-authority",
   "check:phase1-8-runtime",
   "check:phase3a-target-profile",
   "check:phase3-domain-derivation",
@@ -77,6 +78,7 @@ assert.deepEqual(Object.keys(pkg.scripts), EXPECTED_PACKAGE_SCRIPTS, "package sc
 assert.equal(pkg.scripts.check, "npm run check:critical");
 assert.equal(pkg.scripts["check:critical"], "node scripts/run-production-gate.mjs");
 assert.equal(pkg.scripts["check:phase1-16-production"], "node scripts/run-production-gate.mjs");
+assert.equal(pkg.scripts["check:e2e-authority"], "node scripts/check-e2e-outcome-domain-authority.mjs");
 assert.equal(pkg.scripts["check:phase12-production"], "node scripts/check-phase12-production.mjs");
 assert.equal(pkg.scripts["check:phase12-post-clean"], "node scripts/check-phase12-post-clean-production.mjs");
 assert.equal(pkg.scripts["check:phase13-production"], "npm run check:phase13-authority && npm run check:phase13-domain-field-resolution && npm run check:phase13-qr-runtime-ui && npm run check:phase13-submission-qa && npm run check:phase13-legacy-retirement && npm run check:phase16-assembly && npm run check:phase13-production-cutover");
