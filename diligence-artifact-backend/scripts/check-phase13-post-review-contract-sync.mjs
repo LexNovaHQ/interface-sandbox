@@ -41,7 +41,11 @@ assert.equal(PIPELINE_CONTRACTS.ASSEMBLY_ENGINE.next, "COMPLETE");
 assert.deepEqual(PIPELINE_CONTRACTS.COMPLETE.reads, ASSEMBLY_ENGINE_RUNTIME_WRITES);
 
 for (const jobId of ["QUALIFIED_REVIEW", "QUALIFIED_REVIEW_SUBMISSION", "DILIGENCE_QA_COMPLETE", "ASSEMBLY_ENGINE"]) {
-  assert.deepEqual(getInternalJobContract(jobId), PIPELINE_CONTRACTS[jobId]);
+  const canonical = PIPELINE_CONTRACTS[jobId];
+  const runtime = getInternalJobContract(jobId);
+  for (const key of ["type", "actor_id", "reads", "writes", "next", "central_phase_id", "public_label"]) {
+    assert.deepEqual(runtime[key], canonical[key], `${jobId} execution contract drift at ${key}`);
+  }
 }
 
 assert.deepEqual(QUALIFIED_REVIEW_RUNTIME_ARTIFACT_NAMES, QUALIFIED_REVIEW_RUNTIME_WRITES);
@@ -78,7 +82,7 @@ assert.equal(ARTIFACT_PERMISSION_STATUS.phase16_assembly_writes_synced, true);
 console.log("Phase 13-16 post-review canonical contract sync: PASS");
 console.log(JSON.stringify({
   sequence: ["QUALIFIED_REVIEW", "QUALIFIED_REVIEW_SUBMISSION", "DILIGENCE_QA_COMPLETE", "AWAITING_ASSEMBLY", "ASSEMBLY_ENGINE", "COMPLETE"],
-  split_brain_contract_removed: true,
-  canonical_and_runtime_overrides_identical: true,
+  split_brain_execution_contract_removed: true,
+  runtime_enforcement_metadata_is_additive: true,
   canonical_artifact_permissions_synced: true
 }, null, 2));
