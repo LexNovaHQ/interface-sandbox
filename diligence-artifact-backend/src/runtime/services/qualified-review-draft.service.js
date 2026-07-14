@@ -1,6 +1,8 @@
 import { createHash } from "node:crypto";
 import { saveJsonArtifactToDrive, readJsonArtifactFromDrive } from "./storage/drive.service.js";
 import { getArtifactMetadata, getNextArtifactVersion, saveArtifactMetadata, logEvent, updateRunRecord } from "./storage/firestore.service.js";
+import { updateRunDashboardRow } from "./storage/sheets.service.js";
+import { enqueueReviewerWorkerTask } from "./async.service.js";
 import { nowIso } from "../utils/run-id.js";
 
 export const QUALIFIED_REVIEW_DRAFT_ARTIFACT = "qualified_review_draft";
@@ -64,6 +66,7 @@ export async function attestQualifiedReviewSection({ run, handoff, section_id, r
 export async function createQualifiedReviewSubmissionRequest({ run, handoff, draft } = {}) {
   const validation = validateDraft({ handoff, draft, require_complete: true });
   if (validation.blocking_errors.length) throw new Error(`QUALIFIED_REVIEW_SUBMISSION_NOT_READY:${validation.blocking_errors.join("|")}`);
+  await assertSubmissionRequestAbsent(run.run_id);
   const request = {
     artifact_type: QUALIFIED_REVIEW_SUBMISSION_REQUEST_ARTIFACT,
     artifact_version: "phase13_qualified_review_submission_request.v1",
@@ -82,7 +85,7 @@ export async function createQualifiedReviewSubmissionRequest({ run, handoff, dra
     validation
   };
   const saved = await persistArtifact({ run, artifact_name: QUALIFIED_REVIEW_SUBMISSION_REQUEST_ARTIFACT, artifact: request, lock_status: "LOCKED", event_type: "QUALIFIED_REVIEW_SUBMISSION_REQUESTED", phase: "QUALIFIED_REVIEW_SUBMISSION" });
-  await updateRunRecord(run.run_id, {
+  const submissionRun = await updateRunRecord(run.run_id, {
     current_phase: "QUALIFIED_REVIEW_SUBMISSION",
     status: "SUBMISSION_REQUESTED",
     central_phase: "QUALIFIED_REVIEW_SUBMISSION",
@@ -93,7 +96,9 @@ export async function createQualifiedReviewSubmissionRequest({ run, handoff, dra
     qualified_review_submission_request_version: saved.version,
     qualified_review_submission_requested_at: request.requested_at
   });
-  return saved;
+  await updateRunDashboardRow(submissionRun);
+  const dispatch = await dispatchSubmissionCompiler(submissionRun);
+  return { ...saved, dispatch };
 }
 
 export function mergeDraft({ run = {}, handoff = {}, current = {}, request_body = {} } = {}) {
@@ -184,6 +189,43 @@ function nextEditRecord({ normalized, field, existingEdit, clearEdit }) {
   if (matchesBaseline(normalized, baseline)) return null;
   return { ...normalized, baseline_value: baseline };
 }
+
+async function dispatchSubmissionCompiler(run) {
+  try {
+    const dispatch = await enqueueReviewerWorkerTask({ run_id: run.run_id, auto_continue: true });
+    const queued = await updateRunRecord(run.run_id, {
+      runner_state: "QUEUED",
+      runner_auto_continue: true,
+      runner_task_name: dispatch.task_name || "",
+      runner_dispatched_at: nowIso(),
+      runner_last_error: ""
+    });
+    await updateRunDashboardRow(queued);
+    await logEvent({ run_id: run.run_id, event_type: "QUALIFIED_REVIEW_SUBMISSION_COMPILER_DISPATCHED", actor: "qualified_review_system", payload: { task_name: dispatch.task_name || "", current_phase: "QUALIFIED_REVIEW_SUBMISSION" } });
+    return { queued: true, task_name: dispatch.task_name || "" };
+  } catch (error) {
+    const deferred = await updateRunRecord(run.run_id, {
+      runner_state: "IDLE",
+      runner_auto_continue: false,
+      runner_last_error: `SUBMISSION_COMPILER_DISPATCH_PENDING:${error?.message || String(error)}`
+    });
+    await updateRunDashboardRow(deferred);
+    await logEvent({ run_id: run.run_id, event_type: "QUALIFIED_REVIEW_SUBMISSION_COMPILER_DISPATCH_DEFERRED", actor: "qualified_review_system", payload: { error_message: error?.message || String(error) } });
+    return { queued: false, error: error?.message || String(error) };
+  }
+}
+
+async function assertSubmissionRequestAbsent(runId) {
+  try {
+    await getArtifactMetadata(runId, QUALIFIED_REVIEW_SUBMISSION_REQUEST_ARTIFACT);
+    throw new Error("QUALIFIED_REVIEW_SUBMISSION_REQUEST_ALREADY_EXISTS");
+  } catch (error) {
+    const message = String(error?.message || error);
+    if (message === "QUALIFIED_REVIEW_SUBMISSION_REQUEST_ALREADY_EXISTS") throw error;
+    if (!message.startsWith(`ARTIFACT_NOT_FOUND:${runId}:${QUALIFIED_REVIEW_SUBMISSION_REQUEST_ARTIFACT}`)) throw error;
+  }
+}
+
 function matchesBaseline(edit, baseline) {
   if (edit.not_applicable || edit.limitation) return false;
   return sameValue(edit.atomic_values || {}, baseline || {});
