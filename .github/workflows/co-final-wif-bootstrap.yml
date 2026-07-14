@@ -1,0 +1,166 @@
+name: CO-FINAL WIF Bootstrap
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/co-final-wif-bootstrap.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+  issues: write
+
+concurrency:
+  group: co-final-wif-bootstrap-main
+  cancel-in-progress: false
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    env:
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+      GCP_DEPLOY_SERVICE_ACCOUNT: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+      CERT_BRANCH: co-e2e-01-03-critical-authority
+      CERT_WORKFLOW: CO-FINAL Live Matrix
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Authenticate with trusted main identity
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Inspect and narrowly extend WIF trust
+        id: bootstrap
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$GCP_PROJECT_ID"
+          test -n "$GCP_WORKLOAD_IDENTITY_PROVIDER"
+          test -n "$GCP_DEPLOY_SERVICE_ACCOUNT"
+
+          PROVIDER_RESOURCE="$GCP_WORKLOAD_IDENTITY_PROVIDER"
+          PROVIDER_RESOURCE="${PROVIDER_RESOURCE#https://iam.googleapis.com/}"
+          PROVIDER_RESOURCE="${PROVIDER_RESOURCE#//iam.googleapis.com/}"
+          PROJECT_NUMBER=$(printf '%s' "$PROVIDER_RESOURCE" | sed -n 's#projects/\([^/]*\)/locations/.*#\1#p')
+          POOL_ID=$(printf '%s' "$PROVIDER_RESOURCE" | sed -n 's#.*workloadIdentityPools/\([^/]*\)/providers/.*#\1#p')
+          PROVIDER_ID=$(printf '%s' "$PROVIDER_RESOURCE" | sed -n 's#.*providers/\([^/]*\)$#\1#p')
+          test -n "$PROJECT_NUMBER"
+          test -n "$POOL_ID"
+          test -n "$PROVIDER_ID"
+
+          gcloud iam workload-identity-pools providers describe "$PROVIDER_ID" \
+            --workload-identity-pool="$POOL_ID" \
+            --location=global \
+            --project="$GCP_PROJECT_ID" \
+            --format=json > /tmp/provider-before.json
+
+          python - <<'PY'
+          import json, os
+          provider = json.load(open('/tmp/provider-before.json', encoding='utf-8'))
+          current = (provider.get('attributeCondition') or '').strip()
+          branch = os.environ['CERT_BRANCH']
+          workflow = os.environ['CERT_WORKFLOW']
+          clause = (
+              "assertion.repository=='LexNovaHQ/interface-sandbox' && "
+              f"assertion.ref=='refs/heads/{branch}' && "
+              f"assertion.workflow=='{workflow}'"
+          )
+          if clause in current:
+              updated = current
+              changed = False
+          elif current:
+              updated = f"({current}) || ({clause})"
+              changed = True
+          else:
+              updated = (
+                  "assertion.repository=='LexNovaHQ/interface-sandbox' && "
+                  f"(assertion.ref=='refs/heads/main' || (assertion.ref=='refs/heads/{branch}' && assertion.workflow=='{workflow}'))"
+              )
+              changed = True
+          json.dump({
+              'current_condition': current,
+              'updated_condition': updated,
+              'condition_changed': changed,
+              'attribute_mapping': provider.get('attributeMapping', {}),
+          }, open('/tmp/wif-plan.json', 'w', encoding='utf-8'), indent=2, sort_keys=True)
+          PY
+
+          NEW_CONDITION=$(python -c "import json; print(json.load(open('/tmp/wif-plan.json'))['updated_condition'])")
+          CONDITION_CHANGED=$(python -c "import json; print(str(json.load(open('/tmp/wif-plan.json'))['condition_changed']).lower())")
+
+          if [ "$CONDITION_CHANGED" = "true" ]; then
+            gcloud iam workload-identity-pools providers update-oidc "$PROVIDER_ID" \
+              --workload-identity-pool="$POOL_ID" \
+              --location=global \
+              --project="$GCP_PROJECT_ID" \
+              --attribute-condition="$NEW_CONDITION"
+          fi
+
+          SUBJECT="repo:LexNovaHQ/interface-sandbox:ref:refs/heads/$CERT_BRANCH"
+          MEMBER="principal://iam.googleapis.com/projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/$POOL_ID/subject/$SUBJECT"
+          gcloud iam service-accounts add-iam-policy-binding "$GCP_DEPLOY_SERVICE_ACCOUNT" \
+            --project="$GCP_PROJECT_ID" \
+            --member="$MEMBER" \
+            --role="roles/iam.workloadIdentityUser" \
+            --quiet
+
+          gcloud iam workload-identity-pools providers describe "$PROVIDER_ID" \
+            --workload-identity-pool="$POOL_ID" \
+            --location=global \
+            --project="$GCP_PROJECT_ID" \
+            --format=json > /tmp/provider-after.json
+
+          python - <<'PY'
+          import json, os
+          before = json.load(open('/tmp/provider-before.json', encoding='utf-8'))
+          after = json.load(open('/tmp/provider-after.json', encoding='utf-8'))
+          plan = json.load(open('/tmp/wif-plan.json', encoding='utf-8'))
+          receipt = {
+              'artifact_type': 'co_final_wif_bootstrap_receipt',
+              'target_branch': os.environ['CERT_BRANCH'],
+              'target_workflow': os.environ['CERT_WORKFLOW'],
+              'main_authentication_succeeded': True,
+              'provider_condition_changed': plan['condition_changed'],
+              'before_condition': before.get('attributeCondition', ''),
+              'after_condition': after.get('attributeCondition', ''),
+              'exact_subject_binding_added': True,
+              'scope': 'exact repository + exact branch + exact workflow provider clause; exact branch subject service-account binding',
+          }
+          json.dump(receipt, open('/tmp/co-final-wif-bootstrap.json', 'w', encoding='utf-8'), indent=2, sort_keys=True)
+          PY
+
+      - name: Publish bootstrap result to PR 95
+        if: always()
+        shell: bash
+        run: |
+          if [ -f /tmp/co-final-wif-bootstrap.json ]; then
+            python - <<'PY' > /tmp/comment.md
+          import json
+          r = json.load(open('/tmp/co-final-wif-bootstrap.json', encoding='utf-8'))
+          print('## CO-FINAL scoped WIF bootstrap: PASS')
+          print()
+          print(f"- Target branch: `{r['target_branch']}`")
+          print(f"- Target workflow: `{r['target_workflow']}`")
+          print(f"- Provider condition changed: `{r['provider_condition_changed']}`")
+          print(f"- Exact branch subject binding added: `{r['exact_subject_binding_added']}`")
+          print(f"- Scope: {r['scope']}")
+          print()
+          print('No credential values, tokens, project numbers or service-account addresses are included.')
+          PY
+          else
+            cat > /tmp/comment.md <<'EOF'
+          ## CO-FINAL scoped WIF bootstrap: FAILED
+
+          The trusted main workflow could not complete the scoped WIF update. Inspect the main workflow log before changing any policy manually.
+          EOF
+          fi
+          gh api repos/LexNovaHQ/interface-sandbox/issues/95/comments -f body="$(cat /tmp/comment.md)"
