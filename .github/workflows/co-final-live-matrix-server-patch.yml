@@ -10,7 +10,6 @@ on:
 permissions:
   actions: write
   contents: read
-  issues: write
 
 jobs:
   dispatch:
@@ -37,14 +36,6 @@ jobs:
           PY
           node --check diligence-artifact-backend/co-final-live-matrix-server.mjs
           git merge-base --is-ancestor f144d49d80f806aae7aa71727e88d3e0e97720fc HEAD
-
-      - name: Record verified dispatch on PR 95
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          CURRENT_HEAD=$(git rev-parse HEAD)
-          gh api repos/LexNovaHQ/interface-sandbox/issues/95/comments \
-            -f body="Verified corrected PR head ${CURRENT_HEAD}, containing HTTPS callback fix f144d49. Dispatching trusted isolated eight-scenario matrix from main."
 
       - name: Dispatch trusted isolated matrix workflow
         env:
