@@ -33,7 +33,7 @@ terminal_required_inputs:
   next_agent_command: required only for successful non-final manual-mode receipts; forbidden in backend artifact output
 ```
 
-`TERM.S1.C2` If validator status is `REPAIR_REQUIRED` or `CONTROLLED_FAILURE`, terminal must not emit the next-agent command.
+`TERM.S1.C2` If validator status is `REINVESTIGATION_REQUIRED` or `CONTROLLED_FAILURE`, terminal must not emit the next-agent command.
 
 `TERM.S1.C3` If validator status is `PASS_WITH_LIMITATION`, terminal may emit the next-agent command only if validator result sets `next_agent_command_allowed: true`.
 
@@ -93,9 +93,9 @@ Copy and paste this into the same chat:
 
 # SECTION 3 — FAILURE AND REPAIR RECEIPTS
 
-## 3.1 REPAIR_REQUIRED Receipt
+## 3.1 REINVESTIGATION_REQUIRED Receipt
 
-`TERM.S3.C1` If validator status is `REPAIR_REQUIRED`, emit:
+`TERM.S3.C1` If validator status is `REINVESTIGATION_REQUIRED`, emit:
 
 ```text
 PHASE REPAIR REQUIRED: <phase_lock_or_active_phase>
@@ -115,7 +115,7 @@ NEXT STEP:
 Repair this phase before continuing. Do not move to the next agent yet.
 ```
 
-`TERM.S3.C2` Do not include a next-agent @mention command in `REPAIR_REQUIRED` receipts.
+`TERM.S3.C2` Do not include a next-agent @mention command in `REINVESTIGATION_REQUIRED` receipts.
 
 ## 3.2 CONTROLLED_FAILURE Receipt
 

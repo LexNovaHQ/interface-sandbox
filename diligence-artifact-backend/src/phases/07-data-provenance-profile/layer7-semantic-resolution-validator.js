@@ -20,7 +20,7 @@ export function validatePhase7ModelResolutionPackets(resolutionPackets, { modelW
   for (const packet of resolutionPackets?.resolution_packets || []) validatePacket(packet, allowedFieldIds, seen, errors);
   for (const fieldId of allowedFieldIds) if (!seen.has(fieldId)) errors.push(`routed_field_missing_resolution:${fieldId}`);
   return Object.freeze({
-    status: errors.length ? "REPAIR_REQUIRED" : "PASS",
+    status: errors.length ? "REINVESTIGATION_REQUIRED" : "PASS",
     checked_packets: resolutionPackets?.resolution_packets?.length || 0,
     checked_fields: seen.size,
     only_layer6_fields_resolved: !errors.some((error) => error.includes("field_not_routed_by_layer6")),

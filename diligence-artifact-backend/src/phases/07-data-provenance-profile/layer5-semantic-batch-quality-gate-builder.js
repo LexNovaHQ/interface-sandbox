@@ -48,10 +48,10 @@ export function validatePhase7SemanticBatchQualityGate(output = {}) {
   if (manifest?.validation_quality_control_result?.status !== gate?.status) errors.push("manifest_gate_status_mismatch");
   if (manifest?.expected_batch_count !== 17) errors.push("expected_batch_count_not_17");
   if (manifest?.expected_field_count !== 150) errors.push("expected_field_count_not_150");
-  if (gate?.status === "REPAIR_REQUIRED") errors.push("repair_required_must_not_be_gate_status");
-  if (manifest?.validation_quality_control_result?.status === "REPAIR_REQUIRED") errors.push("repair_required_must_not_be_manifest_status");
+  if (gate?.status === "REINVESTIGATION_REQUIRED") errors.push("repair_required_must_not_be_gate_status");
+  if (manifest?.validation_quality_control_result?.status === "REINVESTIGATION_REQUIRED") errors.push("repair_required_must_not_be_manifest_status");
   if (gate?.all_fields_covered_once !== true && gate?.status === "PASS") errors.push("pass_gate_without_exact_field_coverage");
-  return Object.freeze({ status: errors.length ? "REPAIR_REQUIRED" : "PASS", errors: Object.freeze(errors) });
+  return Object.freeze({ status: errors.length ? "REINVESTIGATION_REQUIRED" : "PASS", errors: Object.freeze(errors) });
 }
 
 function inspectBatch({ packet, artifactRoot, validationRoot }) {

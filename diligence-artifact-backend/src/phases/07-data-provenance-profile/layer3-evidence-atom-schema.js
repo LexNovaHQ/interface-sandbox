@@ -80,5 +80,5 @@ function sanitizeAtomValue(value) {
 }
 
 function fail(error) {
-  return Object.freeze({ status: "REPAIR_REQUIRED", errors: Array.isArray(error) ? error : [error] });
+  return Object.freeze({ status: "REINVESTIGATION_REQUIRED", errors: Array.isArray(error) ? error : [error] });
 }

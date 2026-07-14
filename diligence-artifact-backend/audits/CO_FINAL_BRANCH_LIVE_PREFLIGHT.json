@@ -1,0 +1,35 @@
+{
+  "artifact_type": "co_final_branch_live_preflight_receipt",
+  "event_name": "push",
+  "failure_error": "unauthorized_client",
+  "failure_http_status": 400,
+  "failure_stage": "http_exchange",
+  "git_ref": "refs/heads/co-e2e-01-03-critical-authority",
+  "github_oidc_claims": {
+    "event_name": "push",
+    "ref": "refs/heads/co-e2e-01-03-critical-authority",
+    "repository": "LexNovaHQ/interface-sandbox",
+    "sub": "repo:LexNovaHQ/interface-sandbox:ref:refs/heads/co-e2e-01-03-critical-authority",
+    "workflow": "CO-FINAL Branch Preflight Receipt"
+  },
+  "github_oidc_token_issued": true,
+  "optional_presence": {
+    "CLOUDFLARE_ACCOUNT_ID": false,
+    "CLOUDFLARE_API_TOKEN": false
+  },
+  "preflight_succeeded": false,
+  "required_complete": true,
+  "required_presence": {
+    "CLOUD_TASKS_QUEUE": true,
+    "DRIVE_PARENT_FOLDER_ID": true,
+    "GCP_ARTIFACT_CLOUD_RUN_SERVICE": true,
+    "GCP_ARTIFACT_RUNTIME_SERVICE_ACCOUNT": true,
+    "GCP_DEPLOY_SERVICE_ACCOUNT": true,
+    "GCP_PROJECT_ID": true,
+    "GCP_REGION": true,
+    "GCP_WORKLOAD_IDENTITY_PROVIDER": true,
+    "GEMINI_API_KEYS": true,
+    "GPT_ACTION_API_KEY": true,
+    "SHEETS_SPREADSHEET_ID": true
+  }
+}

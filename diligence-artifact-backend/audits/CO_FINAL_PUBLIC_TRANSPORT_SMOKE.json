@@ -1,0 +1,102 @@
+{
+  "artifact_type": "co_final_public_transport_smoke_receipt",
+  "started_at": "2026-07-14T11:57:41.265109+00:00",
+  "finished_at": "2026-07-14T11:58:44.144276+00:00",
+  "public_base_url": "https://sandbox.lexnovahq.com",
+  "target_url": "https://example.com",
+  "run_id": "LN-20260714-115746-CO-FINAL-PUBLIC-TRANSPOR-848890",
+  "synthetic_non_client_matter": true,
+  "auto_continue": false,
+  "phase_scope": "ONE_PHASE_TRANSPORT_AND_CUSTODY_SMOKE",
+  "health": {
+    "http_status": 200,
+    "ok": true
+  },
+  "create": {
+    "http_status": 201,
+    "status": "CREATED",
+    "current_phase": "AGENT_1A_URL_MANIFEST",
+    "runner_mode": "CLOUD_TASKS_RUNNER",
+    "runner_state": "IDLE"
+  },
+  "advance": {
+    "http_status": 202,
+    "queued": true,
+    "already_running": false,
+    "terminal": false,
+    "status": "RUNNING",
+    "current_phase": "AGENT_1A_URL_MANIFEST",
+    "runner_state": "QUEUED"
+  },
+  "poll_snapshots": [
+    {
+      "attempt": 1,
+      "http_status": 200,
+      "status": "RUNNING",
+      "current_phase": "AGENT_1A_URL_MANIFEST",
+      "runner_state": "RUNNING",
+      "runner_task_name_present": true,
+      "runner_last_error": "",
+      "artifact_count": 0
+    },
+    {
+      "attempt": 2,
+      "http_status": 200,
+      "status": "RUNNING",
+      "current_phase": "AGENT_1A_URL_MANIFEST",
+      "runner_state": "RUNNING",
+      "runner_task_name_present": true,
+      "runner_last_error": "",
+      "artifact_count": 1
+    },
+    {
+      "attempt": 3,
+      "http_status": 200,
+      "status": "LOCKED",
+      "current_phase": "AGENT_1B_EXTRACT",
+      "runner_state": "IDLE",
+      "runner_task_name_present": true,
+      "runner_last_error": "",
+      "artifact_count": 1
+    }
+  ],
+  "final_run": {
+    "status": "LOCKED",
+    "current_phase": "AGENT_1B_EXTRACT",
+    "runner_mode": "CLOUD_TASKS_RUNNER",
+    "runner_state": "IDLE",
+    "runner_task_name_present": true,
+    "runner_last_error": "",
+    "artifact_count": 1
+  },
+  "artifacts": [
+    {
+      "artifact_name": "deduped_url_manifest",
+      "phase": "AGENT_1A_URL_MANIFEST",
+      "lock_status": "LOCKED",
+      "latest_version": 1
+    }
+  ],
+  "transport_evidence": {
+    "cloudflare_worker_health_reachable": true,
+    "firestore_run_creation_observed": true,
+    "cloud_tasks_enqueue_observed": true,
+    "cloud_tasks_task_name_observed": true,
+    "firestore_state_polling_observed": true,
+    "phase_progression_observed": true,
+    "drive_backed_artifact_metadata_observed": true,
+    "locked_artifact_observed": true
+  },
+  "technical_annexure": {
+    "http_status": 409,
+    "status": "NOT_READY_EXPECTED_AFTER_ONE_PHASE",
+    "message": "Public Technical Annexure is available only after the diligence report renderer has completed."
+  },
+  "live_transport_succeeded": true,
+  "limitations": [
+    "This receipt certifies one real Cloud Tasks to Firestore to Drive-backed artifact transport/custody step only.",
+    "It does not certify the complete Phase 1-16 matter lifecycle.",
+    "It does not satisfy the required eight-scenario semantic live matrix.",
+    "Direct GCP inspection and deployed revision verification remain unavailable because Google STS rejects PR and feature-branch OIDC identities."
+  ]
+}

@@ -77,7 +77,7 @@ function containsExactStringValue(value, targetValue) {
 
 function validateLegalCartographyIndexForSmoke(output) {
   const validation = validateM9LegalCartographyIndex(output);
-  if (validation.status !== "PASS") return { ok: false, status: "REPAIR_REQUIRED", errors: validation.failed_gates || [], warnings: [] };
+  if (validation.status !== "PASS") return { ok: false, status: "REINVESTIGATION_REQUIRED", errors: validation.failed_gates || [], warnings: [] };
   return { ok: true, status: "LOCKED", errors: [], warnings: [] };
 }
 
@@ -88,7 +88,7 @@ function buildSemanticProfileFromDeterministicMap(wrapper = {}) {
   const requiredIds = new Set(queue.filter((row) => row.semantic_label_required === true || ["P0", "P1"].includes(row.priority)).map((row) => row.queue_id));
   const attachedRequired = rows.filter((row) => requiredIds.has(row.queue_id)).length;
   const coverage = requiredIds.size ? Number((attachedRequired / requiredIds.size).toFixed(4)) : 1;
-  return { legal_cartography_semantic_profile: { run_id: run.run_id, schema_version: "LEGAL_CARTOGRAPHY_SEMANTIC_PROFILE_SMOKE_v1", semantic_navigation_index: rows, semantic_integrity: { required_queue_count: requiredIds.size, labeled_queue_count: attachedRequired, coverage_ratio: coverage, ready_for_compiler: coverage >= 0.8 }, lock_status: coverage >= 0.8 ? "LOCKED" : "REPAIR_REQUIRED" } };
+  return { legal_cartography_semantic_profile: { run_id: run.run_id, schema_version: "LEGAL_CARTOGRAPHY_SEMANTIC_PROFILE_SMOKE_v1", semantic_navigation_index: rows, semantic_integrity: { required_queue_count: requiredIds.size, labeled_queue_count: attachedRequired, coverage_ratio: coverage, ready_for_compiler: coverage >= 0.8 }, lock_status: coverage >= 0.8 ? "LOCKED" : "REINVESTIGATION_REQUIRED" } };
 }
 
 function buildLegalGovernanceFixture() {

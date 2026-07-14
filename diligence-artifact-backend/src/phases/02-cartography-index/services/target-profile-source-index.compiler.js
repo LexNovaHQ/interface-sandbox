@@ -136,7 +136,7 @@ function buildPriorityLocator({ map, semanticNavigationIndex }) {
 function compileMissingLimitedRows(map) {
   return [
     ...asArray(map.missing_limited_target_source_map),
-    ...asArray(map.quality_repair_queue).map((row, index) => ({ missing_id: row.repair_id || `P2A.REPAIR.${String(index + 1).padStart(3, "0")}`, source_artifact: row.source_artifact || "", source_id: row.source_id || "", status: "REPAIR_REQUIRED", limitation: row.reason || row.limitation || "Phase 2A quality repair row." }))
+    ...asArray(map.quality_repair_queue).map((row, index) => ({ missing_id: row.repair_id || `P2A.REPAIR.${String(index + 1).padStart(3, "0")}`, source_artifact: row.source_artifact || "", source_id: row.source_id || "", status: "REINVESTIGATION_REQUIRED", limitation: row.reason || row.limitation || "Phase 2A quality repair row." }))
   ];
 }
 
@@ -160,12 +160,12 @@ function pointerRows(rows) {
 
 function resolveLockStatus({ map, semanticCoverage, missingLimited }) {
   if (!asArray(map.target_source_coverage_index).length) return "CONTROLLED_FAILURE";
-  if (semanticCoverage?.ready_for_compiler === false) return "REPAIR_REQUIRED";
+  if (semanticCoverage?.ready_for_compiler === false) return "REINVESTIGATION_REQUIRED";
   if (missingLimited.length || map.lock_status === "LOCKED_WITH_LIMITATIONS") return "LOCKED_WITH_LIMITATIONS";
   return "LOCKED";
 }
 
-function keepFinalShape(value) { return Object.fromEntries(FINAL_KEYS.map((key) => [key, value[key] ?? (key === "downstream_rules" ? {} : key === "lock_status" ? "REPAIR_REQUIRED" : [])])); }
+function keepFinalShape(value) { return Object.fromEntries(FINAL_KEYS.map((key) => [key, value[key] ?? (key === "downstream_rules" ? {} : key === "lock_status" ? "REINVESTIGATION_REQUIRED" : [])])); }
 function unwrapRoot(value, root) { if (!value || typeof value !== "object") return {}; const artifact = value.artifact && typeof value.artifact === "object" ? value.artifact : value; return artifact[root] || artifact || {}; }
 function stripEmpty(row) { return Object.fromEntries(Object.entries(row || {}).filter(([, value]) => value !== undefined && value !== null)); }
 function asArray(value) { return Array.isArray(value) ? value : []; }

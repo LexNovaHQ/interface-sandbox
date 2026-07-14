@@ -41,8 +41,11 @@
     "check:interface-sector-state": "node scripts/check-interface-ui-universal.mjs",
     "check:runtime-authority-boundaries": "node scripts/check-runtime-authority-boundaries.mjs",
     "check:domain-registry-assembled": "node scripts/check-domain-registry-assembled.mjs",
+    "check:repair-required-retirement": "node scripts/check-repair-required-retirement.mjs",
+    "check:semantic-outcome-integrity": "node scripts/check-semantic-outcome-integrity.mjs",
     "smoke:health": "node scripts/smoke-health.mjs",
-    "smoke:reviewer": "node scripts/smoke-reviewer-run.mjs"
+    "smoke:reviewer": "node scripts/smoke-reviewer-run.mjs",
+    "check:e2e-authority": "node scripts/check-e2e-outcome-domain-authority.mjs"
   },
   "dependencies": {
     "@google-cloud/firestore": "^7.11.0",

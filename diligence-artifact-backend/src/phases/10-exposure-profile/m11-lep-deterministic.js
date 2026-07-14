@@ -74,7 +74,7 @@ export function validateLepRows(lepRows, { expectedCount = EXPECTED_LEP_ROWS } =
 
   return {
     ok: failures.length === 0,
-    status: failures.length ? "REPAIR_REQUIRED" : "PASS",
+    status: failures.length ? "CONTROLLED_FAILURE" : "PASS",
     expected_lep_rows: expectedCount,
     loaded_lep_rows: rows.length,
     failures

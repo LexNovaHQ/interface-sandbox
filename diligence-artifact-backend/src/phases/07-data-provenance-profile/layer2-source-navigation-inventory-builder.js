@@ -1,4 +1,4 @@
-import { controlledStatusForFamilyCoverage, controlledStatusForRoute } from "./layer2-anti-unknown-protocol.js";
+import { PHASE7_REINVESTIGATION_REASON_CODES, controlledStatusForFamilyCoverage, controlledStatusForRoute, reinvestigationMetadataForFamilyCoverage } from "./layer2-anti-unknown-protocol.js";
 import { buildPhase7DapFamilyRouteObligationMatrix } from "./layer2-dap-family-route-obligation-matrix.js";
 import { classifyPhase7SourceDocumentType } from "./layer2-source-document-type-classifier.js";
 import { buildPhase7CrossRouteRescuePlan } from "./layer2-cross-route-rescue-planner.js";
@@ -99,18 +99,44 @@ function buildCoverageMatrix({ obligationMatrix, routeInventory }) {
       secondary_route_ids: secondaryRoutes.map((row) => row.route_id),
       mandatory_before_unresolved: obligation.mandatory_before_unresolved,
       family_navigation_status: controlledStatusForFamilyCoverage({ primaryRoutes, secondaryRoutes, mandatory: obligation.mandatory_before_unresolved }),
+      reinvestigation_metadata: reinvestigationMetadataForFamilyCoverage({ primaryRoutes, secondaryRoutes, mandatory: obligation.mandatory_before_unresolved }),
       anti_unknown_obligation: obligation.anti_unknown_obligation
     });
   });
 }
 
 function buildTargetedScanQueue({ coverageMatrix }) {
-  return coverageMatrix.filter((row) => row.family_navigation_status === "UPSTREAM_SOURCE_REPAIR_REQUIRED" || row.family_navigation_status === "SOURCE_NOT_ROUTED_BY_M6").map((row) => Object.freeze({ registry_family: row.registry_family, reason: row.family_navigation_status, required_document_types: row.primary_required_document_types }));
+  return coverageMatrix
+    .filter((row) => row.family_navigation_status === "REINVESTIGATION_REQUIRED" || row.family_navigation_status === "SOURCE_NOT_ROUTED_BY_M6")
+    .map((row) => Object.freeze({
+      registry_family: row.registry_family,
+      status: row.family_navigation_status,
+      reason: row.reinvestigation_metadata?.reinvestigation_reason_code || row.family_navigation_status,
+      reinvestigation_metadata: row.reinvestigation_metadata,
+      required_document_types: row.primary_required_document_types
+    }));
 }
 
 function buildAbsenceLedger({ routeInventory, coverageMatrix }) {
-  const badLegal = routeInventory.filter((row) => row.legal_cartography_locator_required && !row.legal_cartography_locator_present).map((row) => Object.freeze({ route_id: row.route_id, status: "NAVIGATION_DEFECT_REPAIR_REQUIRED", reason: "legal_lossless_without_legal_cartography_locator" }));
-  const gaps = coverageMatrix.filter((row) => row.family_navigation_status === "UPSTREAM_SOURCE_REPAIR_REQUIRED" || row.family_navigation_status === "SOURCE_NOT_ROUTED_BY_M6").map((row) => Object.freeze({ registry_family: row.registry_family, status: row.family_navigation_status, reason: "no_pinpoint_route" }));
+  const badLegal = routeInventory
+    .filter((row) => row.legal_cartography_locator_required && !row.legal_cartography_locator_present)
+    .map((row) => Object.freeze({
+      route_id: row.route_id,
+      status: "REINVESTIGATION_REQUIRED",
+      reinvestigation_owner_phase: "CARTOGRAPHY_INDEX",
+      reinvestigation_scope: row.route_id,
+      reinvestigation_reason_code: PHASE7_REINVESTIGATION_REASON_CODES.NAVIGATION_DEFECT,
+      attempt_limit: 2,
+      reason: "legal_lossless_without_legal_cartography_locator"
+    }));
+  const gaps = coverageMatrix
+    .filter((row) => row.family_navigation_status === "REINVESTIGATION_REQUIRED" || row.family_navigation_status === "SOURCE_NOT_ROUTED_BY_M6")
+    .map((row) => Object.freeze({
+      registry_family: row.registry_family,
+      status: row.family_navigation_status,
+      ...(row.reinvestigation_metadata || {}),
+      reason: "no_pinpoint_route"
+    }));
   return Object.freeze([...badLegal, ...gaps]);
 }
 

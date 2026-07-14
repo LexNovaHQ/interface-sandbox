@@ -35,7 +35,7 @@ export function validatePhase7Layer2NavigationGate(inventory) {
   if (directSignalRoutes.length && cmCoverage && !cmCoverage.primary_route_ids.some((id) => directSignalRoutes.some((route) => route.route_id === id))) errors.push("direct_legal_signal_not_wired_to_cm");
 
   return Object.freeze({
-    status: errors.length ? "REPAIR_REQUIRED" : "PASS",
+    status: errors.length ? "REINVESTIGATION_REQUIRED" : "PASS",
     checked_routes: routes.length,
     checked_families: coverage.length,
     no_excerpts: !errors.some((error) => error.includes("excerpt") || error.includes("forbidden_payload_key")),

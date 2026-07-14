@@ -62,7 +62,7 @@ function normalizeSemanticWrapper({ semanticRaw, runId, deterministicWrapper }) 
   return {
     [P2A_TARGET_PROFILE_ARTIFACTS.semanticProfile]: {
       run_id: runId,
-      schema_version: "P2A_TARGET_PROFILE_SEMANTIC_PROFILE_EMPTY_REPAIR_REQUIRED_v2_PHASE1_V5",
+      schema_version: "P2A_TARGET_PROFILE_SEMANTIC_PROFILE_EMPTY_REINVESTIGATION_REQUIRED_v2_PHASE1_V5",
       semantic_navigation_index: [],
       semantic_integrity: {
         required_queue_count: required.length,
@@ -70,7 +70,7 @@ function normalizeSemanticWrapper({ semanticRaw, runId, deterministicWrapper }) 
         coverage_ratio: required.length ? 0 : 1,
         ready_for_compiler: required.length === 0
       },
-      lock_status: required.length ? "REPAIR_REQUIRED" : "LOCKED_WITH_LIMITATIONS"
+      lock_status: required.length ? "REINVESTIGATION_REQUIRED" : "LOCKED_WITH_LIMITATIONS"
     }
   };
 }

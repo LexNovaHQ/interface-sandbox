@@ -97,7 +97,7 @@ Return exactly:
       "referenced_unloaded_documents_must_not_be_fetched": true,
       "limitations_must_carry_forward": true
     },
-    "lock_status": "LOCKED or LOCKED_WITH_LIMITATIONS or REPAIR_REQUIRED or CONTROLLED_FAILURE"
+    "lock_status": "LOCKED or LOCKED_WITH_LIMITATIONS or REINVESTIGATION_REQUIRED or CONTROLLED_FAILURE"
   }
 }
 
@@ -154,5 +154,5 @@ If a support services annexure or support terms annexure appears in `document_st
 
 Use `LOCKED` only if the index is complete against the loaded legal corpus.
 Use `LOCKED_WITH_LIMITATIONS` if the index is usable but any public legal/governance item is absent, thin, gated, failed, standalone-missing, or referenced but not fetched.
-Use `REPAIR_REQUIRED` only for repairable schema or source discipline problems.
+Use `REINVESTIGATION_REQUIRED` only for repairable schema or source discipline problems.
 Use `CONTROLLED_FAILURE` only if there is no usable legal corpus or source custody is unsafe.

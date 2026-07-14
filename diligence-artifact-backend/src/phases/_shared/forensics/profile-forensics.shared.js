@@ -19,7 +19,7 @@ const CONTROLLED_VALUES = new Set([
   "FIELD_NOT_PUBLIC",
   "FIELD_CONFLICTED",
   "FIELD_NOT_FOUND",
-  "REPAIR_REQUIRED",
+  "REINVESTIGATION_REQUIRED",
   "CONTROLLED_FAILURE"
 ]);
 
@@ -45,7 +45,7 @@ export function validateFeatureCandidateCoverage(inventoryInput, profileInput, {
   const uncovered = ledger.filter((row) => !row.activity_reference);
 
   return {
-    coverage_result: uncovered.length ? "COVERAGE_LIMITED_TARGETED_REINVESTIGATION_REQUIRED" : "PASS",
+    coverage_result: uncovered.length ? "REINVESTIGATION_REQUIRED" : "PASS",
     candidate_count: candidates.length,
     activity_count: activities.length,
     covered_candidate_count: candidates.length - uncovered.length,
@@ -54,6 +54,14 @@ export function validateFeatureCandidateCoverage(inventoryInput, profileInput, {
     failures: uncovered.map((row) => `UNCOVERED_FEATURE_CANDIDATE:${row.candidate_id}`),
     blocking: false,
     targeted_reinvestigation_required: uncovered.length > 0,
+    reinvestigation_metadata: uncovered.length ? {
+      status: "REINVESTIGATION_REQUIRED",
+      reinvestigation_owner_phase: "ACTIVITY_PROFILE_REVIEW",
+      reinvestigation_scope: uncovered.map((row) => row.candidate_id),
+      reinvestigation_reason_code: "FEATURE_CANDIDATE_COVERAGE_LIMITED",
+      attempt_limit: 2,
+      blocking: false
+    } : null,
     coverage_ledger: ledger
   };
 }
@@ -241,7 +249,11 @@ export function buildM8DeterministicFeatureForensics({ artifacts = {} } = {}) {
       targeted_re_extraction_ledger: unresolved.map((row) => ({
         candidate_id: row.candidate_id,
         reason: row.reason,
-        required_action: "TARGETED_REINVESTIGATION_REQUIRED",
+        required_action: "REINVESTIGATION_REQUIRED",
+          reinvestigation_owner_phase: "ACTIVITY_PROFILE_REVIEW",
+          reinvestigation_scope: row.candidate_id,
+          reinvestigation_reason_code: "FEATURE_CANDIDATE_UNCOVERED",
+          attempt_limit: 2,
         blocking: false
       })),
       activity_limitations_ledger: [
@@ -295,7 +307,15 @@ function buildCandidateCoverageLedger({ inventory, activities }) {
       : {
           candidate_id: candidate.candidate_id,
           activity_reference: null,
-          coverage_disposition: "TARGETED_REINVESTIGATION_REQUIRED",
+          coverage_disposition: "UNCOVERED_FEATURE_CANDIDATE",
+          reinvestigation_metadata: {
+            status: "REINVESTIGATION_REQUIRED",
+            reinvestigation_owner_phase: "ACTIVITY_PROFILE_REVIEW",
+            reinvestigation_scope: candidate.candidate_id,
+            reinvestigation_reason_code: "FEATURE_CANDIDATE_UNCOVERED",
+            attempt_limit: 2,
+            blocking: false
+          },
           coverage_path: "deterministic_exact_slug_or_alias_match",
           reason: "No exact product wrapper, activity feature, route slug or evidence-backed alias match exists in emitted M8 activities; non-blocking targeted reinvestigation required."
         };
@@ -507,7 +527,7 @@ function buildActivityLockGate({ activityTrace, fieldTrace, limitationTrace, cov
 
 function gate({ artifactName, failures, warnings }) {
   return {
-    status: failures.length ? "REPAIR_REQUIRED" : "PASS",
+    status: failures.length ? "PASS_WITH_LIMITATION" : "PASS",
     artifact_name: artifactName,
     blocking_failures: failures,
     non_blocking_warnings: warnings,

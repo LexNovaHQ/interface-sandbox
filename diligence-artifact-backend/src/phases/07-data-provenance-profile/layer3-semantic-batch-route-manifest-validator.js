@@ -44,7 +44,7 @@ export function validatePhase7SemanticBatchRouteManifest(routeManifest, { dapReg
   for (const fieldId of expectedFieldIds) if (!returnedFieldIds.includes(fieldId)) errors.push(`missing_routed_field_id:${fieldId}`);
 
   return Object.freeze({
-    status: errors.length ? "REPAIR_REQUIRED" : "PASS",
+    status: errors.length ? "REINVESTIGATION_REQUIRED" : "PASS",
     checked_batches: packets.length || 0,
     checked_fields: returnedFieldIds.length,
     no_dossier_or_source_text: !errors.some((error) => error.includes("dossier") || error.includes("source_text") || error.includes("excerpt") || error.includes("raw_text")),

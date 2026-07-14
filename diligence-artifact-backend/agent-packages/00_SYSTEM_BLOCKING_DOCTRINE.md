@@ -19,7 +19,7 @@ The required sequence is:
 
 ## Critical Blocking Exceptions
 
-A phase may return `REPAIR_REQUIRED` or `CONTROLLED_FAILURE` only for critical failures:
+A phase may return `REINVESTIGATION_REQUIRED` or `CONTROLLED_FAILURE` only for critical failures:
 
 - wrong top-level artifact root;
 - malformed or unparsable JSON;

@@ -105,7 +105,7 @@ export function validateSemanticLedger({ semanticOutput, batch, routePlan } = {}
   const route = unwrap(routePlan, "exposure_registry_route_plan");
   const batchRows = asArray(route.route_rows).filter((row) => asArray(batch.expected_registry_row_keys).includes(row.registry_row_key));
   if (batchRows.length !== expectedIds.length) failures.push("ROUTE_TO_BATCH_RECONCILIATION_FAILED");
-  return { exposure_registry_batch_validation: { schema_version: "exposure_registry_batch_validation.v4.complete_registry_spine", batch_id: batch.batch_id, stream_id: batch.stream_id, stream_type: batch.stream_type, package_id: batch.package_id, expected_registry_row_keys: [...batch.expected_registry_row_keys], expected_threat_ids: [...expectedIds], returned_threat_ids: [...returnedIds], status: failures.length ? "REPAIR_REQUIRED" : "PASS", failures, limitations: [], exact_coverage: failures.length === 0, package_and_stream_isolation: true, model_registry_field_emission_forbidden: true } };
+  return { exposure_registry_batch_validation: { schema_version: "exposure_registry_batch_validation.v4.complete_registry_spine", batch_id: batch.batch_id, stream_id: batch.stream_id, stream_type: batch.stream_type, package_id: batch.package_id, expected_registry_row_keys: [...batch.expected_registry_row_keys], expected_threat_ids: [...expectedIds], returned_threat_ids: [...returnedIds], status: failures.length ? "REINVESTIGATION_REQUIRED" : "PASS", failures, limitations: [], exact_coverage: failures.length === 0, package_and_stream_isolation: true, model_registry_field_emission_forbidden: true } };
 }
 
 export function assembleAcceptedBatch({ semanticOutput, batch, routePlan } = {}) {
@@ -129,6 +129,66 @@ export function assembleAcceptedBatch({ semanticOutput, batch, routePlan } = {})
     };
   });
   return { m11_batch_registry_ledger: { schema_version: "m11_batch_registry_ledger.v4.complete_registry_spine.accepted", report_row_schema_version: REPORT_ROW_SCHEMA_VERSION, batch_id: batch.batch_id, stream_id: batch.stream_id, stream_type: batch.stream_type, package_id: batch.package_id, expected_registry_row_keys: [...batch.expected_registry_row_keys], accepted_registry_row_keys: rows.map((row) => row.registry_row_key), accepted_threat_ids: rows.map((row) => row.Threat_ID), batch_registry_ledger: rows, validation_status: "PASS" } };
+}
+
+
+export function assembleLimitedBatch({ batch, routePlan, failures = [] } = {}) {
+  const route = unwrap(routePlan, "exposure_registry_route_plan");
+  const routeByKey = new Map(asArray(route.route_rows).map((row) => [row.registry_row_key, row]));
+  const limitation = `UNRESOLVED_AFTER_REINVESTIGATION:${asArray(failures).join("|") || "SEMANTIC_OUTPUT_INVALID"}`;
+  const rows = asArray(batch.expected_registry_row_keys).map((key) => {
+    const routeRow = routeByKey.get(key);
+    if (!routeRow) throw new Error(`M11_BATCH_ROUTE_ROW_MISSING:${batch.batch_id}:${key}`);
+    const spine = buildDeterministicSpine(routeRow, batch);
+    assertCompleteDeterministicSpine(spine);
+    const semanticRow = {
+      Threat_ID: routeRow.Threat_ID,
+      trigger_status: "partial",
+      target_match: "Unresolved after targeted reinvestigation",
+      basis_proof: "The public-evidence semantic evaluation did not produce a reliable conclusion after two targeted attempts.",
+      control_exclusion_evaluation: "No positive control, exclusion, or trigger conclusion was applied.",
+      evidence_source_basis: "Routed public evidence retained; semantic resolution remains limited.",
+      applied_fp_mechanism: spine.FP_Mechanism,
+      row_limitations: limitation,
+      status_inputs: {
+        target_match_present: "partial",
+        hunter_conditions_met: "partial",
+        trigger_if_met: "partial",
+        exclude_if_met: "partial",
+        visible_control_present: "partial",
+        visible_control_defeats_or_reduces_exposure: "partial",
+        evidence_sufficient: "no",
+        public_evidence_limitation: "yes",
+        false_positive_concern: "partial"
+      }
+    };
+    return {
+      ...pickCustody(spine),
+      Threat_ID: routeRow.Threat_ID,
+      deterministic_registry_spine: spine,
+      semantic_evidence_application: semanticRow,
+      final_material_status: FINAL_STATUSES.limitation,
+      material_projection: buildMaterialProjection(spine, semanticRow),
+      unresolved_after_reinvestigation: true
+    };
+  });
+  return {
+    m11_batch_registry_ledger: {
+      schema_version: "m11_batch_registry_ledger.v4.complete_registry_spine.accepted",
+      report_row_schema_version: REPORT_ROW_SCHEMA_VERSION,
+      batch_id: batch.batch_id,
+      stream_id: batch.stream_id,
+      stream_type: batch.stream_type,
+      package_id: batch.package_id,
+      expected_registry_row_keys: [...batch.expected_registry_row_keys],
+      accepted_registry_row_keys: rows.map((row) => row.registry_row_key),
+      accepted_threat_ids: rows.map((row) => row.Threat_ID),
+      batch_registry_ledger: rows,
+      validation_status: "PASS_WITH_LIMITATION",
+      unresolved_after_reinvestigation: true,
+      blocking_failure: false
+    }
+  };
 }
 
 export function buildDynamicWorkpad({ manifest, routePlan, acceptedBatches = [], batchValidations = [] } = {}) {
@@ -175,7 +235,7 @@ export function buildDomainAgnosticForensics({ manifest, routePlan, workpad, con
   if (!sameSet([...expectedMaterialKeys], [...materialKeys])) failures.push("WORKPAD_PROFILE_KEY_MISMATCH");
   if (acceptedBatches.length !== batchValidations.length) failures.push("BATCH_VALIDATION_CUSTODY_MISMATCH");
   for (const row of materialRows) try { assertCompleteMaterialProfileRow(row); } catch (error) { failures.push(String(error.message || error)); }
-  return { exposure_registry_profile_forensics: { schema_version: FORENSICS_VERSION, report_row_schema_version: REPORT_ROW_SCHEMA_VERSION, execution_identity_version: manifest.execution_identity_contract?.version, phase10_execution_fingerprint: manifest.phase10_execution_fingerprint, registry_set_fingerprint: manifest.registry_set_fingerprint, mounted_packages: [...asArray(manifest.mounted_packages)], expected_registry_row_key_count: expectedKeys.size, route_row_count: expectedKeys.size, workpad_row_count: workKeys.size, material_profile_row_count: materialKeys.size, workpad_only_row_count: workKeys.size - materialKeys.size, accepted_batch_count: acceptedBatches.length, batch_validation_count: batchValidations.length, row_trace: asArray(work.registry_rows).map((row) => ({ registry_row_key: row.registry_row_key, Threat_ID: row.Threat_ID, package_id: row.package_id, stream_id: row.stream_id, stream_type: row.stream_type, final_material_status: row.final_material_status, semantic_evaluated: Boolean(row.semantic_evidence_application), workpad_only: Boolean(row.workpad_only) })), forensic_lock_gate_result: { status: failures.length ? "REPAIR_REQUIRED" : "PASS", failures, dynamic_registry_count_verified: !failures.length, compound_identity_reconciled: !failures.length, complete_registry_spine_preserved: !failures.length, primary_overlay_trace_separate: true, fixed_98_row_assumption: false } } };
+  return { exposure_registry_profile_forensics: { schema_version: FORENSICS_VERSION, report_row_schema_version: REPORT_ROW_SCHEMA_VERSION, execution_identity_version: manifest.execution_identity_contract?.version, phase10_execution_fingerprint: manifest.phase10_execution_fingerprint, registry_set_fingerprint: manifest.registry_set_fingerprint, mounted_packages: [...asArray(manifest.mounted_packages)], expected_registry_row_key_count: expectedKeys.size, route_row_count: expectedKeys.size, workpad_row_count: workKeys.size, material_profile_row_count: materialKeys.size, workpad_only_row_count: workKeys.size - materialKeys.size, accepted_batch_count: acceptedBatches.length, batch_validation_count: batchValidations.length, row_trace: asArray(work.registry_rows).map((row) => ({ registry_row_key: row.registry_row_key, Threat_ID: row.Threat_ID, package_id: row.package_id, stream_id: row.stream_id, stream_type: row.stream_type, final_material_status: row.final_material_status, semantic_evaluated: Boolean(row.semantic_evidence_application), workpad_only: Boolean(row.workpad_only) })), forensic_lock_gate_result: { status: failures.length ? "CONTROLLED_FAILURE" : "PASS", failures, dynamic_registry_count_verified: !failures.length, compound_identity_reconciled: !failures.length, complete_registry_spine_preserved: !failures.length, primary_overlay_trace_separate: true, fixed_98_row_assumption: false } } };
 }
 
 export function deriveFinalMaterialStatus(statusInputs = {}) {

@@ -13,16 +13,9 @@ export function validatePhase7ActivityDataFlowCandidateMap(candidateMap) {
   if (!Array.isArray(joined)) errors.push("joined_candidates_not_array");
   if (activities.length !== joined.length) errors.push("activity_join_count_mismatch");
   assertNoForbiddenKeys(candidateMap, "activity_data_flow_candidate_map", errors);
-  for (const row of joined) {
-    if (!row.activity_join_id) errors.push("missing_activity_join_id");
-    if (!row.activity_reference) errors.push(`missing_activity_reference:${row.activity_join_id}`);
-    if (!Array.isArray(row.candidate_dap_families) || row.candidate_dap_families.length < 3) errors.push(`missing_candidate_families:${row.activity_join_id}`);
-    for (const family of ["DAP.PARTY", "DAP.OBJ", "DAP.FLOW"]) if (!row.candidate_dap_families.includes(family)) errors.push(`missing_base_family:${row.activity_join_id}:${family}`);
-    if (!["ACTIVITY_DAP_JOIN_READY", "ACTIVITY_DAP_JOIN_REQUIRES_NAVIGATION_REPAIR"].includes(row.join_status)) errors.push(`bad_join_status:${row.activity_join_id}:${row.join_status}`);
-    if (!["DERIVED_CROSS_ROUTE", "NAVIGATION_DEFECT_REPAIR_REQUIRED"].includes(row.anti_unknown_status)) errors.push(`bad_anti_unknown_status:${row.activity_join_id}:${row.anti_unknown_status}`);
-  }
+  for (const row of joined) validateJoinRow(row, errors);
   return Object.freeze({
-    status: errors.length ? "REPAIR_REQUIRED" : "PASS",
+    status: errors.length ? "REINVESTIGATION_REQUIRED" : "PASS",
     checked_activities: activities.length,
     checked_joined_candidates: joined.length,
     deterministic_only: candidateMap?.join_policy?.deterministic_only === true,
@@ -30,6 +23,33 @@ export function validatePhase7ActivityDataFlowCandidateMap(candidateMap) {
     no_excerpts: candidateMap?.join_policy?.no_excerpts === true && !errors.some((error) => error.includes("forbidden_key")),
     errors
   });
+}
+
+function validateJoinRow(row, errors) {
+  if (!row.activity_join_id) errors.push("missing_activity_join_id");
+  if (!row.activity_reference) errors.push(`missing_activity_reference:${row.activity_join_id}`);
+  if (!Array.isArray(row.candidate_dap_families) || row.candidate_dap_families.length < 3) errors.push(`missing_candidate_families:${row.activity_join_id}`);
+  for (const family of ["DAP.PARTY", "DAP.OBJ", "DAP.FLOW"]) if (!row.candidate_dap_families.includes(family)) errors.push(`missing_base_family:${row.activity_join_id}:${family}`);
+  if (!["ACTIVITY_DAP_JOIN_READY", "ACTIVITY_DAP_JOIN_UNRESOLVED"].includes(row.join_status)) errors.push(`bad_join_status:${row.activity_join_id}:${row.join_status}`);
+  if (!["DERIVED_CROSS_ROUTE", "REINVESTIGATION_REQUIRED"].includes(row.anti_unknown_status)) errors.push(`bad_anti_unknown_status:${row.activity_join_id}:${row.anti_unknown_status}`);
+  validateReinvestigationMetadata(row, errors);
+}
+
+function validateReinvestigationMetadata(row, errors) {
+  const unresolved = row.anti_unknown_status === "REINVESTIGATION_REQUIRED";
+  const metadata = row.reinvestigation_metadata;
+  if (!unresolved) {
+    if (metadata !== null) errors.push(`unexpected_reinvestigation_metadata:${row.activity_join_id}`);
+    return;
+  }
+  if (!metadata || typeof metadata !== "object") { errors.push(`missing_reinvestigation_metadata:${row.activity_join_id}`); return; }
+  if (row.join_status !== "ACTIVITY_DAP_JOIN_UNRESOLVED") errors.push(`unresolved_join_status_mismatch:${row.activity_join_id}`);
+  if (metadata.status !== "REINVESTIGATION_REQUIRED") errors.push(`bad_reinvestigation_status:${row.activity_join_id}`);
+  if (!metadata.reinvestigation_owner_phase) errors.push(`missing_reinvestigation_owner:${row.activity_join_id}`);
+  if (!metadata.reinvestigation_scope) errors.push(`missing_reinvestigation_scope:${row.activity_join_id}`);
+  if (!metadata.reinvestigation_reason_code) errors.push(`missing_reinvestigation_reason:${row.activity_join_id}`);
+  if (metadata.attempt_limit !== 2) errors.push(`bad_reinvestigation_attempt_limit:${row.activity_join_id}`);
+  if (metadata.blocking !== false) errors.push(`reinvestigation_must_be_non_blocking:${row.activity_join_id}`);
 }
 
 function assertNoForbiddenKeys(value, path, errors) {

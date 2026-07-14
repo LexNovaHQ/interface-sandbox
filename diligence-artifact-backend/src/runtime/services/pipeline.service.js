@@ -2,6 +2,7 @@ import { getRunRecord, updateRunRecord, logEvent } from "./storage/firestore.ser
 import { updateRunDashboardRow } from "./storage/sheets.service.js";
 import { getInternalJobContract, normalizeInternalJobId } from "../contracts/internal-job.contract.js";
 import { centralPhaseStatusForInternalJob } from "../contracts/central-phase.contract.js";
+import { isAdvanceAllowedStatus, outcomeRecord } from "../contracts/execution-outcome.contract.js";
 import { artifactMatchesPermission } from "../contracts/artifact-permissions.contract.js";
 import { saveRuntimeArtifact as saveArtifact, readRuntimeArtifactPayload as readArtifactPayload, lockRuntimePhase as lockPhase } from "./artifacts.service.js";
 import { buildPhasePrompt } from "./prompts.service.js";
@@ -33,7 +34,6 @@ import { runM12Phase2GChallenge } from "../../phases/11-operator-challenge/opera
 import { runPhase12Compiler } from "../../phases/12-normalized-compiler/phase12-compiler.runner.js";
 import { buildRendererPayload } from "./reporting/report-renderer.service.js";
 
-const ADVANCE_OK = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS", "COMPLETE"]);
 const LOSSLESS_ROOT_BASE_ARTIFACT_PATTERN = /^lossless_root__([a-z0-9_]+)$/;
 const JOB = Object.freeze({ sourceUrlManifest: "AGENT_1A_URL_MANIFEST", sourceExtract: "AGENT_1B_EXTRACT", sourceDiscoveryHandoff: "M6_BUCKET_INDEX", cartographySourceInventory: "P2_SOURCE_INVENTORY_CARTOGRAPHY", cartographyLocatorSpine: "P2_LOCATOR_SPINE", cartographyProfileRouteMatrix: "P2_PROFILE_ROUTE_MATRIX", cartographySemanticOverlay: "P2_SEMANTIC_NAVIGATION_OVERLAY", legalCartographyIndex: "M9", targetProfileSourceIndex: "P2A_TARGET_PROFILE_SOURCE_INDEX", domainDerivationSourceIndex: "P2B_DOMAIN_DERIVATION_SOURCE_INDEX", activityProfileSourceIndex: "P2C_ACTIVITY_PROFILE_SOURCE_INDEX", dataPrivacyNavigationIndex: "P2D_DATA_PRIVACY_NAVIGATION_INDEX", domainControlObligationNavigationIndex: "P2E_DOMAIN_CONTROL_OBLIGATION_NAVIGATION_INDEX", phaseRouter: "P2G_PHASE_ROUTER", cartographyCompilerValidation: "P2_INDEX_COMPILER_VALIDATION", targetProfileReview: "M7_TARGET_PROFILE", domainDerivation: "P3_DOMAIN_DERIVATION_LAYER", targetProfileForensics: "M7_TARGET_PROFILE_FORENSICS", activityCandidateInventory: "M8_FEATURE_CANDIDATE_INVENTORY", activityProfileReview: "M8_TARGET_FEATURE_PROFILE", activityProfileForensics: "M8_TARGET_FEATURE_PROFILE_FORENSICS", dataProvenanceLayer4: "DATA_PROVENANCE_PROFILE_LAYER4", dataProvenanceLayer5: "DATA_PROVENANCE_PROFILE_LAYER5", domainControlObligationCandidateInventory: "DOMAIN_CONTROL_OBLIGATION_CANDIDATE_INVENTORY", domainControlObligationProfile: "DOMAIN_CONTROL_OBLIGATION_PROFILE", dataProvenanceForensics: "DATA_PROVENANCE_PROFILE_FORENSICS", exposureProfile: "M11", operatorChallenge: "M12", compiler: "NORMALIZED_COMPILER", reportRenderer: "NORMALIZED_REPORT_RENDERER", reportRendererCompatibility: "RENDERER", complete: "COMPLETE" });
 const CARTOGRAPHY_JOBS = new Set([JOB.cartographySourceInventory, JOB.cartographyLocatorSpine, JOB.cartographyProfileRouteMatrix, JOB.cartographySemanticOverlay, JOB.cartographyCompilerValidation]);
@@ -51,7 +51,7 @@ export async function advanceCentralPipelineRun({ run_id } = {}) {
   const contract = getInternalJobContract(internalJobId === JOB.reportRenderer ? JOB.reportRendererCompatibility : internalJobId);
   const actor = actorForContract(contract);
   const runtimeRun = { ...run, current_phase: persistencePhase, central_phase: central.central_phase_id, central_phase_label: central.central_phase_label };
-  await updateRunRecord(run_id, { current_phase: persistencePhase, central_phase: central.central_phase_id, central_phase_label: central.central_phase_label, active_internal_job: internalJobId, status: "RUNNING" });
+  await updateRunRecord(run_id, { current_phase: persistencePhase, central_phase: central.central_phase_id, central_phase_label: central.central_phase_label, active_internal_job: internalJobId, status: "RUNNING", run_blocked: false, execution_outcome: null });
   try {
     if (internalJobId === JOB.sourceUrlManifest) await runSourceUrlManifestJob({ run: runtimeRun, persistencePhase, contract, central });
     else if (internalJobId === JOB.sourceExtract) await runSourceExtractionJob({ run: runtimeRun, persistencePhase, contract, central });
@@ -81,8 +81,9 @@ export async function advanceCentralPipelineRun({ run_id } = {}) {
     else if (contract.type === "model") await runModelProfileJob({ run: runtimeRun, persistencePhase, internalJobId, contract, central });
     else throw new Error(`UNKNOWN_CENTRAL_PIPELINE_JOB:${central.central_phase_id}:${internalJobId}:${contract.type}`);
   } catch (error) {
-    await logEvent({ run_id, event_type: "CENTRAL_PIPELINE_JOB_FAILED", actor, payload: { persistencePhase, internalJobId, central_phase_id: central.central_phase_id, message: error.message } });
-    await updateRunRecord(run_id, { status: "CONTROLLED_FAILURE" });
+    const outcome = outcomeRecord(error);
+    await logEvent({ run_id, event_type: "CENTRAL_PIPELINE_JOB_OUTCOME", actor, payload: { persistencePhase, internalJobId, central_phase_id: central.central_phase_id, ...outcome } });
+    await updateRunRecord(run_id, { status: outcome.runtime_status, run_blocked: outcome.run_blocked, execution_outcome: outcome.execution_outcome, last_runtime_error: outcome.message });
     throw error;
   }
   const updated = decorateRunWithCentralPhase(await getRunRecord(run_id));
@@ -93,7 +94,7 @@ export async function advanceCentralPipelineRun({ run_id } = {}) {
 function normalizeRuntimeJobId(value) { if (!value || value === "URL_MANIFEST" || value === "M6" || value === "AGENT_1_SCOUT_EXTRACT") return JOB.sourceUrlManifest; if (value === "COMPILER") return JOB.compiler; if (value === JOB.reportRendererCompatibility) return JOB.reportRenderer; return normalizeInternalJobId(value); }
 function persistencePhaseForInternalJob(internalJobId) { return internalJobId === JOB.reportRenderer ? JOB.reportRendererCompatibility : internalJobId; }
 async function lockCentralPhase({ run, persistencePhase, contract, status, nextPhase, central, final_report_url = "" }) { await lockPhase({ run_id: run.run_id, phase: persistencePhase, agent_id: actorForContract(contract), status, next_phase: nextPhase, final_report_url }); await logEvent({ run_id: run.run_id, event_type: "CENTRAL_PIPELINE_JOB_COMPLETED", actor: actorForContract(contract), payload: { persistencePhase, central_phase_id: central.central_phase_id, status, next_phase: nextPhase } }); }
-function nextForStatus(status, contract, fallback) { return ADVANCE_OK.has(status) ? contract.next : fallback; }
+function nextForStatus(status, contract, fallback) { return isAdvanceAllowedStatus(status) ? contract.next : fallback; }
 
 async function runSourceUrlManifestJob({ run, persistencePhase, contract, central }) { const result = await runSourceUrlManifestPhaseJob({ run }); await saveDeterministicArtifacts({ run, persistencePhase, actor: contract.actor_id, writes: contract.writes, output: result.output, central, optional_writes: contract.optional_writes, dynamic_writes: contract.dynamic_writes }); await lockCentralPhase({ run, persistencePhase, contract, status: "LOCKED", nextPhase: contract.next, central }); }
 async function runSourceExtractionJob({ run, persistencePhase, contract, central }) { const deduped = await readArtifactPayload({ run_id: run.run_id, artifact_name: "deduped_url_manifest", agent_id: contract.actor_id }); const result = await runSourceExtractionPhaseJob({ run, artifacts: { deduped_url_manifest: deduped } }); await saveDeterministicArtifacts({ run, persistencePhase, actor: contract.actor_id, writes: contract.writes, output: result.output, central, optional_writes: contract.optional_writes, dynamic_writes: contract.dynamic_writes }); await lockCentralPhase({ run, persistencePhase, contract, status: "LOCKED", nextPhase: contract.next, central }); }

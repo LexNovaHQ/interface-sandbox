@@ -89,7 +89,7 @@ export function validateOperatorChallengeSemanticLedger({ semanticOutput, invent
     if (Object.prototype.hasOwnProperty.call(ledger, forbidden)) failures.push(`MODEL_ROOT_FIELD_FORBIDDEN:${forbidden}`);
   }
   return {
-    status: failures.length ? "REPAIR_REQUIRED" : "PASS",
+    status: failures.length ? "REINVESTIGATION_REQUIRED" : "PASS",
     failures,
     exact_candidate_coverage: failures.length === 0,
     semantic_ledger: failures.length ? null : normalizeLedger(ledger, { authoritative: false, fallback: false })

@@ -83,7 +83,7 @@ export function validatePhase7StrategicDerivationMatrix(rows = []) {
   for (const [label, expected] of Object.entries(PHASE7_DAP_STRATEGIC_DERIVATION_COUNTS)) {
     if ((counts[label] || 0) !== expected) errors.push(`strategic_count_mismatch:${label}:${counts[label] || 0}:${expected}`);
   }
-  return Object.freeze({ status: errors.length ? "REPAIR_REQUIRED" : "PASS", counts: Object.freeze(counts), errors: Object.freeze(errors) });
+  return Object.freeze({ status: errors.length ? "REINVESTIGATION_REQUIRED" : "PASS", counts: Object.freeze(counts), errors: Object.freeze(errors) });
 }
 
 function batch(order, families, field_count) {

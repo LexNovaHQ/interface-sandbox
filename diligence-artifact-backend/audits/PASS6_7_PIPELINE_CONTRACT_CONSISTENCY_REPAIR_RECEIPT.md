@@ -74,7 +74,7 @@ LOCKED_WITH_LIMITATIONS -> returns status LOCKED_WITH_LIMITATIONS
 clean index -> returns PASS
 ```
 
-This fixes the prior bug where `validateLegalCartographyFinalIndex()` could treat a returned `REPAIR_REQUIRED` validation object as `ok: true`.
+This fixes the prior bug where `validateLegalCartographyFinalIndex()` could treat a returned `REINVESTIGATION_REQUIRED` validation object as `ok: true`.
 
 ## Fix 4 — Runtime Metadata Corrected
 

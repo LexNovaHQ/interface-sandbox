@@ -6,7 +6,7 @@ export const PHASE7_PREFILL_STATUSES = Object.freeze([
   "MODEL_PACKET_REQUIRED",
   "NOT_VISIBLE_AFTER_TARGETED_SCAN",
   "SOURCE_NOT_ROUTED_BY_M6",
-  "NAVIGATION_DEFECT_REPAIR_REQUIRED",
+  "REINVESTIGATION_REQUIRED",
   "REQUIRES_PRIVATE_CONFIRMATION"
 ]);
 
@@ -19,7 +19,19 @@ export function selectPhase7PrefillStatus({ rule, routeIds = [], atomIds = [], a
   if (rule?.deterministic_prefill_eligible && routeIds.length) return "PREFILL_DERIVED_CROSS_ROUTE";
   if (activityJoinIds.length && atomIds.length) return "PREFILL_DERIVED_CROSS_ROUTE";
   if (routeIds.length || atomIds.length || activityJoinIds.length) return "MODEL_PACKET_REQUIRED";
-  return "NAVIGATION_DEFECT_REPAIR_REQUIRED";
+  return "REINVESTIGATION_REQUIRED";
+}
+
+export function phase7PrefillReinvestigationMetadata({ status, rule } = {}) {
+  if (status !== "REINVESTIGATION_REQUIRED") return null;
+  return Object.freeze({
+    status: "REINVESTIGATION_REQUIRED",
+    reinvestigation_owner_phase: "CARTOGRAPHY_INDEX",
+    reinvestigation_scope: rule?.field_id || rule?.registry_family || "DAP_FIELD_PREFILL",
+    reinvestigation_reason_code: "NO_NAVIGABLE_ROUTE_OR_EVIDENCE_ATOM",
+    attempt_limit: 2,
+    blocking: false
+  });
 }
 
 export function phase7ModelRequiredForPrefillStatus(status) {

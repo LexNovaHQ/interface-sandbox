@@ -72,7 +72,7 @@ assert.equal(broken.data_provenance_profile_semantic_batch_gate.status, "LOCKED_
 assert.equal(broken.data_provenance_profile_semantic_batch_gate.non_blocking_repair_required, true);
 assert.equal(broken.data_provenance_profile_semantic_batch_gate.blocking_failure, false);
 assert.ok(broken.data_provenance_profile_semantic_batch_gate.errors.some((error) => error.includes("missing_batch_artifact:dap_semantic_batch_contact_cm_artifact")));
-assert.notEqual(broken.data_provenance_profile_semantic_batch_gate.status, "REPAIR_REQUIRED");
-assert.notEqual(broken.dap_semantic_batch_validation_manifest.validation_quality_control_result.status, "REPAIR_REQUIRED");
+assert.notEqual(broken.data_provenance_profile_semantic_batch_gate.status, "REINVESTIGATION_REQUIRED");
+assert.notEqual(broken.dap_semantic_batch_validation_manifest.validation_quality_control_result.status, "REINVESTIGATION_REQUIRED");
 
 console.log("Phase 7 Layer 5 semantic batch quality gate: PASS");

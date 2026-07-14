@@ -83,9 +83,9 @@ Return exactly one JSON root:
   "exposure_registry_batch_validation": {
     "batch_id": "GROUP__NNN",
     "batch_group": "GROUP",
-    "status": "PASS | PASS_WITH_LIMITATION | REPAIR_REQUIRED | CONTROLLED_FAILURE",
+    "status": "PASS | PASS_WITH_LIMITATION | REINVESTIGATION_REQUIRED | CONTROLLED_FAILURE",
     "validation_owner": "agent_5_exposure_registry:M12_BATCH_VALIDATION",
-    "semantic_m12_validation_status": "PASS | PASS_WITH_LIMITATION | REPAIR_REQUIRED | CONTROLLED_FAILURE",
+    "semantic_m12_validation_status": "PASS | PASS_WITH_LIMITATION | REINVESTIGATION_REQUIRED | CONTROLLED_FAILURE",
     "expected_threat_ids": [],
     "validated_threat_ids": [],
     "shape_checks": {},

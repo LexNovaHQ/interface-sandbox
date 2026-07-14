@@ -84,5 +84,5 @@ function arraysEqualAsSets(a, b) {
 }
 
 function result(errors, checkedRows) {
-  return Object.freeze({ status: errors.length ? "REPAIR_REQUIRED" : "PASS", checked_rows: checkedRows, errors: Object.freeze(errors) });
+  return Object.freeze({ status: errors.length ? "REINVESTIGATION_REQUIRED" : "PASS", checked_rows: checkedRows, errors: Object.freeze(errors) });
 }

@@ -26,7 +26,7 @@ async function smokeForensicRunnerLocked() {
 
   assert.equal(result.ok, true);
   assert.deepEqual(result.saved_artifacts, ["target_feature_profile_forensics"]);
-  assert.equal(["LOCKED", "LOCKED_WITH_LIMITATIONS", "REPAIR_REQUIRED"].includes(result.phase_lock_status), true);
+  assert.equal(["LOCKED", "LOCKED_WITH_LIMITATIONS", "REINVESTIGATION_REQUIRED"].includes(result.phase_lock_status), true);
   assert.equal(result.model_usage, "NONE_DETERMINISTIC");
   assert.equal(result.activity_profile_forensics_phase_runner_used, true);
   assert.equal(result.source_helper, "buildM8DeterministicFeatureForensics");

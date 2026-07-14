@@ -206,7 +206,7 @@
     const upper = raw.toUpperCase();
     if (upper === "LOCKED_WITH_LIMITATIONS") return "Completed with public-source limitations";
     if (upper === "LOCKED" || upper === "COMPLETE") return "Completed";
-    if (upper === "REPAIR_REQUIRED") return "Requires repair before reliance";
+    if (upper === "REINVESTIGATION_REQUIRED") return "Requires repair before reliance";
     if (upper === "CONTROLLED_FAILURE") return "Controlled failure — do not rely";
     return raw || "Not stated";
   }

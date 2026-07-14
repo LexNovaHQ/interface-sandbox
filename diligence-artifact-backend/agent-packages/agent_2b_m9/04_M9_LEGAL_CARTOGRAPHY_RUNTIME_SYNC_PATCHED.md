@@ -137,7 +137,7 @@ When the expected write artifact is `legal_cartography_semantic_profile`, return
       "coverage_ratio": 0,
       "ready_for_compiler": false
     },
-    "lock_status": "REPAIR_REQUIRED"
+    "lock_status": "REINVESTIGATION_REQUIRED"
   }
 }
 ```
@@ -152,7 +152,7 @@ The raw `macro_unit_map` is not the semantic coverage source. The `semantic_labe
 
 `semantic_integrity.coverage_ratio` must be at least `0.80` for compiler readiness.
 
-If coverage is below `0.80`, `semantic_integrity.ready_for_compiler` must be false and `lock_status` must be `REPAIR_REQUIRED`.
+If coverage is below `0.80`, `semantic_integrity.ready_for_compiler` must be false and `lock_status` must be `REINVESTIGATION_REQUIRED`.
 
 ## Allowed Semantic Values
 

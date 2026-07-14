@@ -53,12 +53,12 @@ const update = buildPhase3BDomainDerivationManifestUpdate({
   run: { run_id: "TEST" },
   before: { runtime_flags: { dynamic_routing_enabled: true, field_registry_compile_enabled: true } },
   domain_derivation_profile: {
-    primary_domain_derivation: { selected_package: "fintech", status: "LOCKED", selected_rule_id: "PRIMARY_DOMAIN_FINTECH", evaluated_rules: [] },
-    ai_mount_derivation: { ai_package_mount: "AI_NOT_VISIBLE", status: "NOT_VISIBLE", evaluated_rules: [] },
+    primary_domain_derivation: { selected_package: "fintech", status: "LOCKED", selected_rule_id: "PRIMARY_DOMAIN_FINTECH", package_lifecycle_state: "ACTIVE_REPORT_ONLY", downstream_delivery_mode: "REPORT_ONLY", package_mount_eligible: true, evaluated_rules: [] },
+    ai_mount_derivation: { ai_package_mount: "AI_NOT_VISIBLE", status: "NOT_VISIBLE", package_mount_eligible: false, evaluated_rules: [] },
     regulatory_overlay_derivation: { status: "CANDIDATE_ONLY", candidates: [{ overlay_id: "financial-services", evidence_anchors: [{ source_artifact_name: "lossless_root__regulatory_licensing_status" }] }] },
     fusion_candidate_derivation: { candidates: [] }
   },
-  validation: { status: "LOCKED", failures: [], warnings: [] }
+  validation: { status: "LOCKED", critical_failures: [], reinvestigation_items: [], limitations: [], warnings: [], primary_domain_semantically_usable: true, ai_overlay_semantically_usable: false }
 });
 assert.equal(update.active_run_package_manifest.selection_stage, PHASE_3B_DOMAIN_DERIVATION_SELECTION_STAGE);
 assert.deepEqual(update.active_run_package_manifest.regulatory_overlays, ["financial-services"]);
@@ -66,9 +66,19 @@ assert.equal(update.active_run_package_manifest.regulatory_overlay_status, "CAND
 assert.equal(update.manifest_update.changed_fields.includes("regulatory_overlays"), true);
 assert.equal(update.active_run_package_manifest.runtime_flags.dynamic_routing_enabled, false);
 assert.equal(update.active_run_package_manifest.runtime_flags.field_registry_compile_enabled, false);
-assert.equal(update.manifest_update.dynamic_routing_still_disabled, true);
+assert.equal(update.manifest_update.legacy_pre_phase1_dynamic_routing_disabled, true);
+assert.equal(update.manifest_update.phase3b_model_derivation_authority_active, true);
+assert.equal(update.manifest_update.phase3b_deterministic_support_only, true);
+assert.equal(update.manifest_update.phase3b_downstream_package_mounting_enabled, true);
+assert.equal(update.active_run_package_manifest.activation_flags.pre_phase1_domain_lock_enabled, false);
+assert.equal(update.active_run_package_manifest.activation_flags.phase3b_model_derivation_enabled, true);
+assert.equal(update.active_run_package_manifest.activation_flags.phase3b_deterministic_support_validation_enabled, true);
+assert.equal(update.active_run_package_manifest.activation_flags.downstream_package_mounting_enabled, true);
+assert.equal(update.active_run_package_manifest.primary_domain_lifecycle, "ACTIVE_REPORT_ONLY");
+assert.equal(update.active_run_package_manifest.primary_domain_delivery_mode, "REPORT_ONLY");
+assert.equal(update.active_run_package_manifest.post_review_delivery_mode, "REPORT_ONLY");
 
-console.log(JSON.stringify({ check: "phase3 domain derivation downstream", status: "PASS", enforced_gates: ["P2G_DOMAIN_CONTEXT_ROUTING_THROUGH_PHASE11", "PHASE12_DIRECT_MATERIAL_PROFILE_INPUTS", "PHASE12_P2G_DEPENDENCY_FORBIDDEN", "NO_SHADOW_CENTRAL_READ_ARRAYS", "PHASE8_LOCKED_PHASE7_ONLY", "REGULATORY_OVERLAY_MANIFEST_SYNC", "FORENSICS_NOT_DOWNSTREAM_PREREQUISITES", "RUNTIME_FLAGS_STAY_FALSE"] }, null, 2));
+console.log(JSON.stringify({ check: "phase3 domain derivation downstream", status: "PASS", enforced_gates: ["P2G_DOMAIN_CONTEXT_ROUTING_THROUGH_PHASE11", "PHASE12_DIRECT_MATERIAL_PROFILE_INPUTS", "PHASE12_P2G_DEPENDENCY_FORBIDDEN", "NO_SHADOW_CENTRAL_READ_ARRAYS", "PHASE8_LOCKED_PHASE7_ONLY", "REGULATORY_OVERLAY_MANIFEST_SYNC", "FORENSICS_NOT_DOWNSTREAM_PREREQUISITES", "PRE_PHASE1_PASSIVE_PHASE3B_MODEL_LED_FLAGS"] }, null, 2));
 
 function presentPhase2Artifacts() {
   return { target_profile_source_index: {}, domain_derivation_source_index: {}, activity_profile_source_index: {}, data_privacy_navigation_index: {}, domain_control_obligation_navigation_index: {}, legal_cartography_index: {}, legal_signal_derivation_profile: {} };

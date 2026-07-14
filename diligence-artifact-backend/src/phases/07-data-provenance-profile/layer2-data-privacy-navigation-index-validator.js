@@ -29,7 +29,7 @@ export function validatePhase7DataPrivacyNavigationIndex(index) {
   if (!Array.isArray(pointers) || pointers.length !== 17) errors.push(`batch_pointer_count_not_17:${pointers.length || 0}`);
   for (const pointer of pointers) validateBatchPointer(pointer, errors);
   return Object.freeze({
-    status: errors.length ? "REPAIR_REQUIRED" : "PASS",
+    status: errors.length ? "REINVESTIGATION_REQUIRED" : "PASS",
     checked_batch_pointers: pointers.length || 0,
     checked_d_family_routes: spine.d_family_routes?.length || 0,
     checked_l_family_routes: spine.l_family_routes?.length || 0,

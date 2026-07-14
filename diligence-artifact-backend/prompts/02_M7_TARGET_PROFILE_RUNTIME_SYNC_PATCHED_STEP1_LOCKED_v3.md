@@ -63,10 +63,15 @@ phase_local_gate:
 
   allowed_gate_outcomes:
     - PASS
-    - REPAIR_REQUIRED
-    - REINVESTIGATE_REQUIRED
+    - REINVESTIGATION_REQUIRED
     - PASS_WITH_LIMITATION
     - CONTROLLED_FAILURE
+
+  reinvestigation_metadata_required:
+    reinvestigation_owner_phase: M7_OR_UPSTREAM_M6
+    reinvestigation_scope: required
+    reinvestigation_reason_code: LOCAL_PHASE_DEFECT | EVIDENCE_GAP | UPSTREAM_SOURCE_UNIVERSE_DEFECT
+    attempt_number: 1_OR_2
 
 allowed_inputs:
   - source_discovery_handoff
@@ -105,24 +110,26 @@ validator_action:
   fail_behavior: repair M7 only; do not advance to M8
 
 repair_policy:
-  - If the local gate returns REPAIR_REQUIRED, repair M7 only and rerun the local gate.
-  - If the local gate returns REINVESTIGATE_REQUIRED, emit a scoped reinvestigation request and do not advance.
-  - If the defect is missing M6 route universe coverage, return to M6/Agent 1 source repair instead of inventing facts.
+  - For a local M7 shape, derivation, or field defect, return `REINVESTIGATION_REQUIRED` with owner `M7`, reason `LOCAL_PHASE_DEFECT`, and the smallest affected scope; then rerun only that scope.
+  - For an evidence gap, return `REINVESTIGATION_REQUIRED` with owner `M7`, reason `EVIDENCE_GAP`, and a scoped targeted re-extraction request.
+  - If M6 route-universe coverage is missing, keep status `REINVESTIGATION_REQUIRED` and set owner `M6`, reason `UPSTREAM_SOURCE_UNIVERSE_DEFECT`, and the exact missing route/artifact scope instead of inventing facts.
+  - Permit at most two targeted reinvestigation attempts. After the second unsuccessful attempt, preserve the unresolved matter as a limitation or warning and continue if the output remains truthful and structurally usable.
+  - Use `CONTROLLED_FAILURE` only for a separately established critical authority, custody, integrity, permission, or required-artifact failure.
   - Do not recompute unrelated upstream objects.
 
 stop_condition:
   Stop local M7 phase only; return control to the Agent 2 resolver in 00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED.md.
-  The Agent 2 resolver may proceed to M8 only if M7 returns PASS, PASS_WITH_LIMITATION, or CONTROLLED_FAILURE that is expressly safe for downstream use.
-  If M7 returns REPAIR_REQUIRED or REINVESTIGATE_REQUIRED, do not proceed to M8.
+  The Agent 2 resolver may proceed to M8 only if M7 returns `PASS` or `PASS_WITH_LIMITATION` and both M7 artifacts are saved.
+  `REINVESTIGATION_REQUIRED` stops M7 locally for a maximum of two targeted attempts but does not block the entire run. `CONTROLLED_FAILURE` blocks advancement.
 </phase_call_card>
 
 `M7.S0.C1` This phase call card is the first executable block for this Module when extracted into a standalone phase prompt.
 
 `M7.S0.C2` In monolith execution, this call card functions as a Module-local lock gate and terminal-projection contract. It does not authorize standalone `<phase_output>` blocks in the final monolith response; final monolith emission remains governed by Module XIV and `00_TERMINAL_RAILS_RULES.md`.
 
-`M7.S0.C3` The Module may not advance, hand off, or be treated as locked until its phase-local gate has returned `PASS`, `PASS_WITH_LIMITATION`, or `CONTROLLED_FAILURE` under the rules above.
+`M7.S0.C3` The Module may advance or be treated as locked only when its phase-local gate returns `PASS` or `PASS_WITH_LIMITATION`. `CONTROLLED_FAILURE` is a blocking terminal state and never an advance-eligible gate.
 
-`M7.S0.C4` `REPAIR_REQUIRED` and `REINVESTIGATE_REQUIRED` are stop states. The Module must repair, route targeted field re-extraction, or route scoped M6 repair before the next Module begins.
+`M7.S0.C4` `REINVESTIGATION_REQUIRED` is a local stop-and-return state. It must include owner, scope, reason code, and attempt number; after no more than two unsuccessful attempts, ordinary unresolved matters become limitations or warnings rather than global blockers.
 
 ## M7.S1 — Function and Hard Rules
 
@@ -280,8 +287,8 @@ stop_condition:
 | `source_discovery_handoff` missing | emit `CONTROLLED_FAILURE` |
 | M6 `status` / lock state = `CONTROLLED_FAILURE` | emit limited profile only if safe; otherwise `CONTROLLED_FAILURE` |
 | `source_discovery_handoff.bucket_family_index.target_profile_urls.families` missing in URL mode | return to M6 source repair unless document-only mode applies |
-| all loaded target-family artifacts missing or empty | `REPAIR_REQUIRED` |
-| source family object lacks any primary/index-only/failed-absent state | `REPAIR_REQUIRED` |
+| all loaded target-family artifacts missing or empty | `REINVESTIGATION_REQUIRED` |
+| source family object lacks any primary/index-only/failed-absent state | `REINVESTIGATION_REQUIRED` |
 | `legal_cartography_index` missing | `LOCKED_WITH_LIMITATIONS` only if legal/jurisdiction fields can be derived from loaded target-family artifacts; otherwise repair |
 | field evidence thin or ambiguous after first extraction | send the specific field back to targeted re-extraction within loaded source families |
 | field remains weak after targeted re-extraction | assign controlled field status and record limitation/provenance |
@@ -455,7 +462,7 @@ target_profile_fd_registry_selector:
 
 ### Failure Handling
 
-`M7.S4.C19` Missing `source_discovery_handoff`, missing `bucket_family_index.target_profile_urls.families`, or missing/empty loaded target-family artifacts means `REPAIR_REQUIRED` or `CONTROLLED_FAILURE` depending on whether the defect is repairable by M6 / Agent 1.
+`M7.S4.C19` Missing `source_discovery_handoff`, missing `bucket_family_index.target_profile_urls.families`, or missing/empty loaded target-family artifacts means `REINVESTIGATION_REQUIRED` or `CONTROLLED_FAILURE` depending on whether the defect is repairable by M6 / Agent 1.
 
 
 ---
@@ -511,7 +518,12 @@ extraction_result:
     - GATED_OR_NON_PUBLIC
     - BROKEN_OR_404
     - OUTSIDE_M7_SCOPE_WITH_REASON
-    - RETURN_TO_M6_REPAIR_REQUIRED
+    - REINVESTIGATION_REQUIRED
+reinvestigation_metadata_when_required:
+  reinvestigation_owner_phase: M6
+  reinvestigation_scope: exact_route_or_artifact
+  reinvestigation_reason_code: UPSTREAM_SOURCE_UNIVERSE_DEFECT
+  attempt_number: 1_OR_2
 extracted_material_refs:
 exclusion_or_limitation_reason:
 ```
@@ -573,7 +585,7 @@ limitation_note:
 - product/activity routes are used to derive feature mechanics or archetypes;
 - field application begins before the extraction gate passes.
 
-`M7.S4A.C19` If extraction is incomplete because a route is absent from M6, do not proceed to TP field application. Return `REPAIR_REQUIRED` with M6/Agent 1 source repair route.
+`M7.S4A.C19` If extraction is incomplete because a route is absent from M6, do not proceed to TP field application. Return `REINVESTIGATION_REQUIRED` with M6/Agent 1 source repair route.
 
 `M7.S4A.C20` If extraction is complete but the public material remains thin, vague, gated, or not public, proceed to field application only with inherited limitation context and mandatory targeted field-specific re-extraction where a material field remains deficient.
 
@@ -994,7 +1006,7 @@ PHASE EXTRACTION COMPLETE: TARGET_PROFILE_SOURCE_CAPSULE 100% ROUTE FAMILY COVER
 
 `M7.S12.C29` If usable but limited, set phase-local lock state to `LOCKED_WITH_LIMITATIONS`.
 
-`M7.S12.C30` If unsafe or unusable, set phase-local lock state to `CONTROLLED_FAILURE` or `REPAIR_REQUIRED` as appropriate.
+`M7.S12.C30` If unsafe or unusable, set phase-local lock state to `CONTROLLED_FAILURE` or `REINVESTIGATION_REQUIRED` as appropriate.
 
 ---
 

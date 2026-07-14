@@ -9,7 +9,7 @@ Produce exactly:
 {
   "challenge_gate": {
     "run_id": "...",
-    "gate_status": "PASS|PASS_WITH_LIMITATION|REPAIR_REQUIRED|CONTROLLED_FAILURE",
+    "gate_status": "PASS|PASS_WITH_LIMITATION|REINVESTIGATION_REQUIRED|CONTROLLED_FAILURE",
     "critical_issues": [],
     "limitations": [],
     "repair_recommendations": [],
@@ -21,7 +21,7 @@ Rules:
 - Do not compile the final report.
 - Do not rewrite upstream artifacts.
 - Flag missing or contradictory artifacts.
-- If evidence gaps affect reliability, use PASS_WITH_LIMITATION or REPAIR_REQUIRED.
+- If evidence gaps affect reliability, use PASS_WITH_LIMITATION or REINVESTIGATION_REQUIRED.
 - If the run cannot support a safe report, use CONTROLLED_FAILURE.
 
 Return strict JSON only.

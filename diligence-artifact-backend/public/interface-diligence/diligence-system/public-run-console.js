@@ -267,7 +267,7 @@
   }
 
   function isStopped(run) {
-    return run.runner_state === "FAILED" || run.status === "REPAIR_REQUIRED" || run.status === "CONTROLLED_FAILURE";
+    return run.runner_state === "FAILED" || run.status === "REINVESTIGATION_REQUIRED" || run.status === "CONTROLLED_FAILURE";
   }
 
   function message(text, error = false) {

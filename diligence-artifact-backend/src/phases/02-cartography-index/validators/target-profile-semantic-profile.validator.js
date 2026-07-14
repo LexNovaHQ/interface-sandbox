@@ -11,7 +11,7 @@ const MIN_QUEUE_COVERAGE = 0.8;
 const ALLOWED_PROFILE_KEYS = new Set(["run_id", "schema_version", "semantic_navigation_index", "semantic_integrity", "lock_status"]);
 const ALLOWED_NAV_ROW_KEYS = new Set(["queue_id", "unit_id", "target_subcats", "target_signal_families", "confidence"]);
 const ALLOWED_INTEGRITY_KEYS = new Set(["required_queue_count", "labeled_queue_count", "coverage_ratio", "ready_for_compiler"]);
-const ALLOWED_LOCK_STATUS = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS", "REPAIR_REQUIRED", "CONTROLLED_FAILURE"]);
+const ALLOWED_LOCK_STATUS = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS", "REINVESTIGATION_REQUIRED", "CONTROLLED_FAILURE"]);
 const DOWNSTREAM_ROOT_KEYS = Object.freeze([
   "target_profile",
   "domain_derivation_profile",
@@ -187,4 +187,4 @@ function unwrap(value) {
 }
 
 function asArray(value) { return Array.isArray(value) ? value : []; }
-function result(errors, warnings) { return { ok: errors.length === 0, errors, warnings, status: errors.length ? "REPAIR_REQUIRED" : warnings.length ? "LOCKED_WITH_LIMITATIONS" : "LOCKED" }; }
+function result(errors, warnings) { return { ok: errors.length === 0, errors, warnings, status: errors.length ? "REINVESTIGATION_REQUIRED" : warnings.length ? "LOCKED_WITH_LIMITATIONS" : "LOCKED" }; }

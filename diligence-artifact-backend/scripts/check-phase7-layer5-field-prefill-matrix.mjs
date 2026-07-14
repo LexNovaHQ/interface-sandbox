@@ -11,6 +11,7 @@ import { buildPhase7ActivityDataFlowCandidateMap } from "../src/phases/07-data-p
 import { validatePhase7ActivityDataFlowCandidateMap } from "../src/phases/07-data-provenance-profile/layer4-activity-data-joiner-validator.js";
 import { buildPhase7DeterministicFieldPrefillMatrix } from "../src/phases/07-data-provenance-profile/layer5-deterministic-field-prefill-matrix.js";
 import { validatePhase7DeterministicFieldPrefillMatrix } from "../src/phases/07-data-provenance-profile/layer5-prefill-matrix-validator.js";
+import { phase7PrefillReinvestigationMetadata, selectPhase7PrefillStatus } from "../src/phases/07-data-provenance-profile/layer5-prefill-status-policy.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
@@ -58,12 +59,24 @@ assert.equal(validation.no_excerpts, true);
 
 const contact = prefillMatrix.prefill_rows.find((row) => row.field_id === "DAP.CONTACT.001");
 assert.ok(contact);
-assert.notEqual(contact.prefill_candidate_status, "NAVIGATION_DEFECT_REPAIR_REQUIRED");
+assert.notEqual(contact.prefill_candidate_status, "REINVESTIGATION_REQUIRED");
+assert.equal(contact.reinvestigation_metadata, null);
 assert.ok(contact.supporting_atom_ids.length > 0);
 
 const exec = prefillMatrix.prefill_rows.find((row) => row.field_id === "DAP.EXEC.001");
 assert.ok(exec);
 assert.equal(exec.prefill_candidate_status, "MODEL_PACKET_REQUIRED");
 assert.equal(exec.model_packet_required, true);
+
+const unresolvedRule = { field_id: "DAP.TEST.001", registry_family: "DAP.TEST", deterministic_prefill_eligible: false };
+const unresolvedStatus = selectPhase7PrefillStatus({ rule: unresolvedRule, routeIds: [], atomIds: [], activityJoinIds: [] });
+const unresolvedMetadata = phase7PrefillReinvestigationMetadata({ status: unresolvedStatus, rule: unresolvedRule });
+assert.equal(unresolvedStatus, "REINVESTIGATION_REQUIRED");
+assert.equal(unresolvedMetadata.status, "REINVESTIGATION_REQUIRED");
+assert.equal(unresolvedMetadata.reinvestigation_owner_phase, "CARTOGRAPHY_INDEX");
+assert.equal(unresolvedMetadata.reinvestigation_scope, "DAP.TEST.001");
+assert.equal(unresolvedMetadata.reinvestigation_reason_code, "NO_NAVIGABLE_ROUTE_OR_EVIDENCE_ATOM");
+assert.equal(unresolvedMetadata.attempt_limit, 2);
+assert.equal(unresolvedMetadata.blocking, false);
 
 console.log("Phase 7 Layer 5 deterministic field prefill matrix: PASS");

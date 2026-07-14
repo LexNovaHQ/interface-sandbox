@@ -97,7 +97,7 @@ When the expected write artifact is `target_profile_semantic_profile`, return st
       "coverage_ratio": 0,
       "ready_for_compiler": false
     },
-    "lock_status": "REPAIR_REQUIRED"
+    "lock_status": "REINVESTIGATION_REQUIRED"
   }
 }
 ```
@@ -120,7 +120,7 @@ Minimum required coverage is:
 0.80
 ```
 
-If coverage is below `0.80`, `semantic_integrity.ready_for_compiler` must be false and `lock_status` must be `REPAIR_REQUIRED`.
+If coverage is below `0.80`, `semantic_integrity.ready_for_compiler` must be false and `lock_status` must be `REINVESTIGATION_REQUIRED`.
 
 ## Allowed Semantic Row Fields
 
