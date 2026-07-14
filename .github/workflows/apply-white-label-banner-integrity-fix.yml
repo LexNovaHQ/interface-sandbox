@@ -1,9 +1,9 @@
 name: Apply White-Label Banner Integrity Fix
 
 on:
-  push:
+  pull_request:
     branches:
-      - white-label-banner-integrity-fix
+      - domain-gate-v0-preflight
     paths:
       - "diligence-artifact-backend/scripts/neutral-white-label-banner.b64"
       - ".github/workflows/apply-white-label-banner-integrity-fix.yml"
@@ -19,13 +19,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref_name }}
+          ref: white-label-banner-integrity-fix
           fetch-depth: 0
 
       - name: Validate and inject exact neutral PNG
         run: |
           python - <<'PY'
-          import base64, hashlib, re, struct, tempfile, zlib
+          import base64, hashlib, re, struct, zlib
           from pathlib import Path
           from zipfile import ZIP_DEFLATED, ZipFile
 
@@ -93,4 +93,4 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add diligence-artifact-backend/references/document-templates/ai/v2_1
           git commit -m "Repair embedded white-label banner integrity"
-          git push origin HEAD:${GITHUB_REF_NAME}
+          git push origin HEAD:white-label-banner-integrity-fix
