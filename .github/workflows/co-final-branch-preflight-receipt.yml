@@ -1,0 +1,63 @@
+name: CO-FINAL Branch Preflight Receipt
+
+on:
+  push:
+    branches:
+      - co-e2e-01-03-critical-authority
+    paths:
+      - ".github/workflows/co-final-branch-preflight-receipt.yml"
+      - "diligence-artifact-backend/scripts/co-final-live-preflight.py"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write
+
+concurrency:
+  group: co-final-branch-preflight-receipt-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  write-redacted-receipt:
+    runs-on: ubuntu-latest
+    env:
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      GCP_REGION: ${{ secrets.GCP_REGION }}
+      GCP_ARTIFACT_CLOUD_RUN_SERVICE: ${{ secrets.GCP_ARTIFACT_CLOUD_RUN_SERVICE }}
+      GCP_ARTIFACT_RUNTIME_SERVICE_ACCOUNT: ${{ secrets.GCP_ARTIFACT_RUNTIME_SERVICE_ACCOUNT }}
+      GCP_DEPLOY_SERVICE_ACCOUNT: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+      GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+      GPT_ACTION_API_KEY: ${{ secrets.GPT_ACTION_API_KEY }}
+      GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
+      DRIVE_PARENT_FOLDER_ID: ${{ secrets.DRIVE_PARENT_FOLDER_ID }}
+      SHEETS_SPREADSHEET_ID: ${{ secrets.SHEETS_SPREADSHEET_ID }}
+      CLOUD_TASKS_QUEUE: ${{ vars.CLOUD_TASKS_QUEUE || 'diligence-reviewer-worker' }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Checkout authorized branch
+        uses: actions/checkout@v4
+        with:
+          ref: co-e2e-01-03-critical-authority
+          fetch-depth: 0
+
+      - name: Execute branch-identity preflight
+        id: probe
+        continue-on-error: true
+        run: python diligence-artifact-backend/scripts/co-final-live-preflight.py
+
+      - name: Commit redacted receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "LexNovaHQ Automation"
+          git config user.email "automation@lexnovahq.invalid"
+          git add diligence-artifact-backend/audits/CO_FINAL_BRANCH_LIVE_PREFLIGHT.json
+          git diff --cached --check
+          git commit -m "Record CO-FINAL branch live preflight receipt"
+          git pull --rebase origin co-e2e-01-03-critical-authority
+          git push origin HEAD:co-e2e-01-03-critical-authority
+
+      - name: Enforce preflight result
+        if: steps.probe.outcome != 'success'
+        run: exit 1
