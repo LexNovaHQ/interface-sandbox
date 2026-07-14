@@ -25,6 +25,13 @@ export const PRODUCTION_GATE_CHECKS = Object.freeze([
   gate("phase11-operator-challenge", "Phase 11 operator challenge", "check:phase11-critical", "MATERIAL_OUTPUT_INTEGRITY", ADVISORY_STATUSES),
   gate("phase12-production", "Phase 12 production compiler and renderer", "check:phase12-production", "PHASE_BOUNDARY_INTEGRITY", CRITICAL_ONLY),
   gate("phase12-post-clean", "Phase 12 post-clean production hygiene", "check:phase12-post-clean", "STRUCTURAL_RUNTIME_SAFETY", CRITICAL_ONLY),
+  gate("phase13-authority", "Phase 13 registry and template authority", "check:phase13-authority", "STRUCTURAL_RUNTIME_SAFETY", CRITICAL_ONLY),
+  gate("phase13-domain-resolution", "Phase 13 domain-responsive field resolution", "check:phase13-domain-field-resolution", "MATERIAL_OUTPUT_INTEGRITY", CRITICAL_ONLY),
+  gate("phase13-runtime-ui", "Phase 13 section-attested runtime and UI", "check:phase13-qr-runtime-ui", "PHASE_BOUNDARY_INTEGRITY", CRITICAL_ONLY),
+  gate("phase13-submission-qa", "Phase 13 immutable submission and Diligence-QA", "check:phase13-submission-qa", "PHASE_BOUNDARY_INTEGRITY", CRITICAL_ONLY),
+  gate("phase13-legacy-retirement", "Phase 13 legacy matrix retirement", "check:phase13-legacy-retirement", "STRUCTURAL_RUNTIME_SAFETY", CRITICAL_ONLY),
+  gate("phase16-assembly", "Phase 16 Review-Ready document assembly", "check:phase16-assembly", "PHASE_BOUNDARY_INTEGRITY", CRITICAL_ONLY),
+  gate("phase13-production-cutover", "Phase 13-16 production cutover", "check:phase13-production-cutover", "STRUCTURAL_RUNTIME_SAFETY", CRITICAL_ONLY),
   gate("interface-ui", "Universal Interface UI contract", "check:interface-ui", "PHASE_BOUNDARY_INTEGRITY", CRITICAL_ONLY),
   gate("runtime-authority", "Runtime authority boundaries", "check:runtime-authority-boundaries", "PHASE_BOUNDARY_INTEGRITY", CRITICAL_ONLY),
   gate("domain-registry", "Assembled domain registry", "check:domain-registry-assembled", "STRUCTURAL_RUNTIME_SAFETY", CRITICAL_ONLY)
