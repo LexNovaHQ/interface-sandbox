@@ -1,9 +1,14 @@
 import { PIPELINE_CONTRACTS, getPipelineContract } from "./pipeline.contract.js";
 import { centralPhaseForInternalJob, centralPhaseStatusForInternalJob } from "./central-phase.contract.js";
+import { PHASE13_QUALIFIED_REVIEW_RUNTIME_CONTRACT } from "./phase13-runtime.contract.js";
 
 export const INTERNAL_JOB_ALIASES = Object.freeze({
   RENDERER: "NORMALIZED_REPORT_RENDERER",
   COMPILER: "NORMALIZED_COMPILER"
+});
+
+const RUNTIME_CONTRACT_OVERRIDES = Object.freeze({
+  QUALIFIED_REVIEW: PHASE13_QUALIFIED_REVIEW_RUNTIME_CONTRACT
 });
 
 export function normalizeInternalJobId(internalJobId) {
@@ -11,17 +16,22 @@ export function normalizeInternalJobId(internalJobId) {
 }
 
 export function getInternalJobContract(internalJobId) {
-  return getPipelineContract(normalizeInternalJobId(internalJobId));
+  const normalized = normalizeInternalJobId(internalJobId);
+  return RUNTIME_CONTRACT_OVERRIDES[normalized] || getPipelineContract(normalized);
 }
 
 export function listInternalJobContracts() {
-  return Object.entries(PIPELINE_CONTRACTS).map(([internal_job_id, contract]) => ({
-    internal_job_id,
-    normalized_internal_job_id: normalizeInternalJobId(internal_job_id),
-    central_phase: centralPhaseStatusForInternalJob(normalizeInternalJobId(internal_job_id)),
-    contract,
-    runtime_owned_contract: true
-  }));
+  return Object.entries(PIPELINE_CONTRACTS).map(([internal_job_id, pipelineContract]) => {
+    const normalized = normalizeInternalJobId(internal_job_id);
+    return {
+      internal_job_id,
+      normalized_internal_job_id: normalized,
+      central_phase: centralPhaseStatusForInternalJob(normalized),
+      contract: RUNTIME_CONTRACT_OVERRIDES[normalized] || pipelineContract,
+      runtime_owned_contract: true,
+      runtime_override_active: Boolean(RUNTIME_CONTRACT_OVERRIDES[normalized])
+    };
+  });
 }
 
 export function centralPhaseForCurrentInternalJob(internalJobId) {
@@ -33,5 +43,6 @@ export const INTERNAL_JOB_CONTRACT_STATUS = Object.freeze({
   old_phase_contracts_dependency_removed: true,
   phase11_production_contract_override_active: false,
   phase11_canonical_pipeline_contract_synced: true,
-  source_of_truth: "runtime/contracts/pipeline.contract.js"
+  phase13_qualified_review_runtime_override_active: true,
+  source_of_truth: "runtime/contracts/internal-job.contract.js"
 });
