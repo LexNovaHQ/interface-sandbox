@@ -9,6 +9,7 @@ import {
   resolveAuthorityPath
 } from "../src/phases/13-qualified-review/registry/qr-registry-loader.js";
 
+const LOCKED_NEUTRAL_BANNER_SHA256 = "9d8885933f88de5e20b7457ce8d78e8a1bab2e4a1f1de14c4f8bf27f03dcb6d0";
 const authority = loadQrRegistryAuthority();
 const branding = authority.template_manifest.branding || {};
 const brandPattern = /lex\s*nova(?:\s*hq)?|lexnovahq|lexnova/i;
@@ -19,8 +20,9 @@ let qrTokenCount = 0;
 assert.equal(branding.mode, "WHITE_LABEL");
 assert.equal(branding.provider_branding_present, false);
 assert.equal(branding.neutral_ai_governance_banner, true);
+assert.equal(branding.creator_metadata_scrbed, undefined);
 assert.equal(branding.creator_metadata_scrubbed, true);
-assert.match(expectedBannerHash, /^[a-f0-9]{64}$/);
+assert.equal(expectedBannerHash, LOCKED_NEUTRAL_BANNER_SHA256);
 
 for (const template of authority.template_manifest.documents || []) {
   const templatePath = resolveAuthorityPath(
@@ -37,7 +39,10 @@ for (const template of authority.template_manifest.documents || []) {
 
   assert.doesNotMatch(xml, brandPattern, `Brand residue in ${template.document_id}`);
   assert.ok(banner, `Neutral banner missing in ${template.document_id}`);
-  assert.equal(createHash("sha256").update(banner.data).digest("hex"), expectedBannerHash, `Banner mismatch in ${template.document_id}`);
+  assert.equal(createHash("sha256").update(banner.data).digest("hex"), LOCKED_NEUTRAL_BANNER_SHA256, `Banner mismatch in ${template.document_id}`);
+  assert.equal(banner.data.subarray(0, 8).toString("hex"), "89504e470d0a1a0a", `PNG signature invalid in ${template.document_id}`);
+  assert.equal(banner.data.readUInt32BE(16), 1999, `Banner width invalid in ${template.document_id}`);
+  assert.equal(banner.data.readUInt32BE(20), 1, `Banner height invalid in ${template.document_id}`);
   assert.doesNotMatch(core, /<dc:creator\b[^>]*>\s*[^<\s][^<]*<\/dc:creator>/i, `Creator metadata not scrubbed in ${template.document_id}`);
   assert.doesNotMatch(core, /<cp:lastModifiedBy\b[^>]*>\s*[^<\s][^<]*<\/cp:lastModifiedBy>/i, `Modifier metadata not scrubbed in ${template.document_id}`);
 
@@ -53,7 +58,8 @@ console.log(JSON.stringify({
   template_count: templateCount,
   qr_token_count: qrTokenCount,
   provider_branding_present: false,
-  neutral_banner_sha256: expectedBannerHash,
+  neutral_banner_sha256: LOCKED_NEUTRAL_BANNER_SHA256,
+  neutral_banner_dimensions: { width: 1999, height: 1 },
   creator_metadata_scrubbed: true,
   review_ready_boundary_preserved: true
 }, null, 2));
