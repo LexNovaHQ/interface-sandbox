@@ -31,7 +31,11 @@ has(pages.landing,'<div class="eyebrow">Diligence Intake</div>');
 has(pages.landing,"<h1>Start a legal diligence run.</h1>");
 has(pages.report,"report-p12-payload-adapter.js");
 has(pages.annexure,"Public Technical Annexure");
-has(pages.qr,"Qualified Review Workspace");
+has(pages.qr,"<title>Qualified Review</title>");
+has(pages.qr,'<div class="eyebrow">Review Workspace</div>');
+has(pages.qr,"Section-level attestation");
+has(pages.qr,"Review values and attest each section");
+lacks(pages.qr,"Qualified Review Workspace");
 has(pages.assembly,"Preview · Not yet active");
 has(pages.assembly,"Generate Draft — Not Active");
 has(pages.signals,"Preview · Navigation only");
@@ -59,7 +63,7 @@ for(const file of [
   assert.equal(result.status,0,`${file} syntax failed: ${result.stderr||result.stdout}`);
 }
 assert.equal(pkg.scripts["check:interface-ui"],"node scripts/check-interface-ui-universal.mjs && node scripts/check-interface-report-ui-contract.mjs && node scripts/check-interface-annex-qr-contract.mjs && node scripts/check-interface-assembly-signals-contract.mjs && node scripts/check-interface-report-visual-regression.mjs");
-console.log(JSON.stringify({check:"interface-ui",status:"PASS",pages:Object.keys(pages),shared_shell:true,p12_adapter_current:true,stale_renderer_rejected:true,lex_nova_rebrand_leakage:false,download_json_public_action:false,sector_admin:true,controlled_states:true},null,2));
+console.log(JSON.stringify({check:"interface-ui",status:"PASS",pages:Object.keys(pages),shared_shell:true,p12_adapter_current:true,qualified_review_section_attestation:true,stale_renderer_rejected:true,lex_nova_rebrand_leakage:false,download_json_public_action:false,sector_admin:true,controlled_states:true},null,2));
 
 function has(source,token,message){assert.ok(source.includes(token),message||`missing ${token}`)}
 function lacks(source,token,message){assert.equal(source.includes(token),false,message||`forbidden ${token}`)}
