@@ -44,11 +44,27 @@ for (const path of requiredAuthorityPaths) {
 }
 
 const activeRoots = [
-  "src/runtime",
   "src/phases/13-qualified-review",
   "src/phases/14-qualified-review-submission",
   "src/phases/15-diligence-qa-complete",
   "src/phases/16-assembly-engine",
+  "src/runtime/contracts/phase13-runtime.contract.js",
+  "src/runtime/contracts/phase14-submission-runtime.contract.js",
+  "src/runtime/contracts/phase15-diligence-qa-runtime.contract.js",
+  "src/runtime/contracts/phase16-assembly-runtime.contract.js",
+  "src/runtime/contracts/post-review-production-cutover.contract.js",
+  "src/runtime/contracts/internal-job.contract.js",
+  "src/runtime/contracts/central-phase.contract.js",
+  "src/runtime/contracts/artifact-permissions.contract.js",
+  "src/runtime/contracts/artifacts.contract.js",
+  "src/runtime/contracts/schemas.contract.js",
+  "src/runtime/services/async-phase13.service.js",
+  "src/runtime/services/qualified-review-draft.service.js",
+  "src/runtime/services/qualified-review-workspace.service.js",
+  "src/runtime/services/immutable-post-review-artifacts.service.js",
+  "src/runtime/services/diligence-qa-complete.service.js",
+  "src/runtime/services/assembly-engine.service.js",
+  "src/runtime/routes/public.routes.js",
   "public/interface-diligence/diligence-system/qualified-review.html",
   "public/interface-diligence/diligence-system/qualified-review-system"
 ];
