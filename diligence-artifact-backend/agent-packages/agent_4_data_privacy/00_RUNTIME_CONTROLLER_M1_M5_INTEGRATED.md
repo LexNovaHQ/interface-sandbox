@@ -77,9 +77,16 @@ phase_outcome_to_lock_status_map:
   PASS_WITH_WARNING: LOCKED_WITH_LIMITATIONS
   PASS_WITH_LIMITATION: LOCKED_WITH_LIMITATIONS
   REINVESTIGATION_COMPLETED_WITH_LIMITATION: LOCKED_WITH_LIMITATIONS
-  SOURCE_REINVESTIGATION_REQUIRED: REINVESTIGATION_REQUIRED
   REINVESTIGATION_REQUIRED: REINVESTIGATION_REQUIRED
   CONTROLLED_FAILURE: CONTROLLED_FAILURE
+
+reinvestigation_projection_requirements:
+  status: REINVESTIGATION_REQUIRED
+  reinvestigation_owner_phase: required
+  reinvestigation_scope: required
+  reinvestigation_reason_code: required
+  attempt_number: required_max_2
+  source_or_upstream_scope_must_be_metadata_not_status_alias: true
 
 stop_condition:
   Stop at the active agent profile stop condition.

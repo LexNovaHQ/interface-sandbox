@@ -12,8 +12,7 @@ export const PHASE7_CONTROLLED_NAVIGATION_STATUSES = Object.freeze([
   "CONFLICTING_PUBLIC_SIGNALS",
   "NOT_APPLICABLE_WITH_BASIS",
   "REQUIRES_PRIVATE_CONFIRMATION",
-  "NAVIGATION_DEFECT_REINVESTIGATION_REQUIRED",
-  "UPSTREAM_SOURCE_REINVESTIGATION_REQUIRED",
+  "REINVESTIGATION_REQUIRED",
   "PINPOINT_NAVIGATION_READY"
 ]);
 
@@ -33,10 +32,25 @@ export function controlledStatusForRoute(row = {}) {
   return "DOCUMENT_TYPE_PRESENT_BUT_FIELD_SIGNAL_ABSENT";
 }
 
+export const PHASE7_REINVESTIGATION_REASON_CODES = Object.freeze({
+  NAVIGATION_DEFECT: "NAVIGATION_DEFECT",
+  UPSTREAM_SOURCE_UNIVERSE_DEFECT: "UPSTREAM_SOURCE_UNIVERSE_DEFECT"
+});
+
 export function controlledStatusForFamilyCoverage({ primaryRoutes = [], secondaryRoutes = [], mandatory = true } = {}) {
   if (primaryRoutes.length) return "PINPOINT_NAVIGATION_READY";
   if (secondaryRoutes.length) return "DERIVED_CROSS_ROUTE";
-  return mandatory ? "UPSTREAM_SOURCE_REINVESTIGATION_REQUIRED" : "SOURCE_NOT_ROUTED_BY_M6";
+  return mandatory ? "REINVESTIGATION_REQUIRED" : "SOURCE_NOT_ROUTED_BY_M6";
+}
+
+export function reinvestigationMetadataForFamilyCoverage({ primaryRoutes = [], secondaryRoutes = [], mandatory = true } = {}) {
+  if (primaryRoutes.length || secondaryRoutes.length || !mandatory) return null;
+  return Object.freeze({
+    reinvestigation_owner_phase: "SOURCE_DISCOVERY",
+    reinvestigation_scope: "DAP_FAMILY_ROUTE_COVERAGE",
+    reinvestigation_reason_code: PHASE7_REINVESTIGATION_REASON_CODES.UPSTREAM_SOURCE_UNIVERSE_DEFECT,
+    attempt_limit: 2
+  });
 }
 
 export function navigationMustPrecedeUnknown(familyRow = {}) {

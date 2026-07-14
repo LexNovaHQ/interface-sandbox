@@ -35,7 +35,7 @@ terminal_required_inputs:
   next_phase_or_backend_advance_instruction: required for successful non-final phases
 ```
 
-`TERM.S1.C2` If validator status is `REINVESTIGATION_REQUIRED`, `SOURCE_REINVESTIGATION_REQUIRED`, or `CONTROLLED_FAILURE`, terminal must not emit a next-phase or next-agent command.
+`TERM.S1.C2` If validator status is `REINVESTIGATION_REQUIRED` or `CONTROLLED_FAILURE`, terminal must not emit a next-phase or next-agent command. Source scope, owning phase, reason code, and attempt number must be carried as receipt metadata, not encoded as a new status.
 
 `TERM.S1.C3` If validator status is `PASS_WITH_LIMITATION`, `PASS_WITH_WARNING`, or `REINVESTIGATION_COMPLETED_WITH_LIMITATION`, terminal may emit the backend advance instruction only if validator result sets `next_agent_command_allowed: true` or equivalent downstream-safe flag.
 
@@ -91,31 +91,37 @@ NEXT STEP:
 
 ---
 
-# SECTION 3 — FAILURE AND REPAIR RECEIPTS
+# SECTION 3 — REINVESTIGATION AND CRITICAL-FAILURE RECEIPTS
 
 ## 3.1 REINVESTIGATION_REQUIRED Receipt
 
-`TERM.S3.C1` If validator status is `REINVESTIGATION_REQUIRED` or `SOURCE_REINVESTIGATION_REQUIRED`, emit in manual mode:
+`TERM.S3.C1` If validator status is `REINVESTIGATION_REQUIRED`, emit in manual mode. The receipt must identify `reinvestigation_owner_phase`, `reinvestigation_scope`, `reinvestigation_reason_code`, and `attempt_number` without inventing a source-specific status:
 
 ```text
-PHASE REPAIR REQUIRED: <phase_lock_or_active_phase>
+PHASE REINVESTIGATION REQUIRED: <phase_lock_or_active_phase>
 Run ID: <run_id>
 
-Repair owner:
-<repair_owner>
+Reinvestigation owner phase:
+<reinvestigation_owner_phase>
 
-Repair scope:
-<repair_scope>
+Reinvestigation scope:
+<reinvestigation_scope>
 
-Blocking reasons:
-- <blocking_reason_1>
-- <blocking_reason_2>
+Reason code:
+<reinvestigation_reason_code>
+
+Attempt:
+<attempt_number_of_2>
+
+Unresolved reasons:
+- <unresolved_reason_1>
+- <unresolved_reason_2>
 
 NEXT STEP:
-Repair this phase before continuing. Do not move to the next phase yet.
+Return control to the backend for targeted reinvestigation. Do not advance this phase yet. This is not a global run block.
 ```
 
-`TERM.S3.C2` Do not include a next-agent command in `REINVESTIGATION_REQUIRED` or `SOURCE_REINVESTIGATION_REQUIRED` receipts.
+`TERM.S3.C2` Do not include a next-agent command in a `REINVESTIGATION_REQUIRED` receipt. After the second unsuccessful targeted attempt, ordinary unresolved matters must be projected as limitations or warnings and the run must continue unless a separately classified critical failure exists.
 
 ## 3.2 CONTROLLED_FAILURE Receipt
 
@@ -137,25 +143,31 @@ No next-phase command is available because this phase did not lock.
 
 `TERM.S3.C4` Do not include a next-agent command in `CONTROLLED_FAILURE` receipts.
 
-## 3.3 RETURN_TO_UPSTREAM_REPAIR Receipt
+## 3.3 RETURN_TO_UPSTREAM_REINVESTIGATION Receipt
 
 `TERM.S3.C5` If the defect belongs to an upstream source/routing agent, emit in manual mode:
 
 ```text
-PHASE REPAIR REQUIRED: <phase_lock_or_active_phase>
+PHASE REINVESTIGATION REQUIRED: <phase_lock_or_active_phase>
 Run ID: <run_id>
 
-Repair owner:
+Reinvestigation owner phase:
 <upstream_agent_name>
 
-Repair scope:
+Reinvestigation scope:
 <upstream_artifact_or_route_defect>
 
+Reason code:
+<upstream_reinvestigation_reason_code>
+
+Attempt:
+<attempt_number_of_2>
+
 NEXT STEP:
-Return to the upstream repair phase identified above. Do not continue this phase until upstream repair is saved.
+Return control to the upstream owning phase for targeted reinvestigation. Do not advance this phase until the return artifact is saved.
 ```
 
-`TERM.S3.C6` Upstream repair instructions are allowed only for repair routing. They are not successful next-phase handoff commands.
+`TERM.S3.C6` Upstream reinvestigation instructions are allowed only for scoped return routing. They are not successful next-phase handoff commands and do not create a global blocking status.
 
 ---
 

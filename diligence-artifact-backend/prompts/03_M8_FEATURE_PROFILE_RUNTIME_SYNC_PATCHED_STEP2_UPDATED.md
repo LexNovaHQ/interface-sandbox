@@ -72,9 +72,14 @@ phase_local_gate:
   allowed_gate_outcomes:
     - PASS
     - REINVESTIGATION_REQUIRED
-    - REINVESTIGATION_REQUIRED
     - PASS_WITH_LIMITATION
     - CONTROLLED_FAILURE
+
+  reinvestigation_metadata_required:
+    reinvestigation_owner_phase: M8_OR_UPSTREAM_M6
+    reinvestigation_scope: required
+    reinvestigation_reason_code: LOCAL_PHASE_DEFECT | EVIDENCE_GAP | UPSTREAM_SOURCE_UNIVERSE_DEFECT
+    attempt_number: 1_OR_2
 
 allowed_inputs:
   - source_discovery_handoff
@@ -120,23 +125,25 @@ validator_action:
   fail_behavior: repair M8 only; do not advance to M9/M10/M11
 
 repair_policy:
-  - If the local gate returns REINVESTIGATION_REQUIRED, repair M8 only and rerun the local gate.
-  - If the local gate returns REINVESTIGATION_REQUIRED, emit a scoped targeted re-extraction request and do not advance.
-  - If the necessary Product / Activity route is absent from M6, route repair back to M6/Agent 1 instead of inventing or searching.
+  - For a local M8 shape, mechanics, archetype, or surface defect, return `REINVESTIGATION_REQUIRED` with owner `M8`, reason `LOCAL_PHASE_DEFECT`, and the smallest affected scope.
+  - For an evidence gap, return `REINVESTIGATION_REQUIRED` with owner `M8`, reason `EVIDENCE_GAP`, and a scoped targeted re-extraction request.
+  - If a necessary Product / Activity route is absent from M6, keep status `REINVESTIGATION_REQUIRED` and set owner `M6`, reason `UPSTREAM_SOURCE_UNIVERSE_DEFECT`, and the exact missing route/artifact scope instead of inventing or searching.
+  - Permit at most two targeted reinvestigation attempts. After the second unsuccessful attempt, preserve the unresolved matter as a limitation or warning and continue if the profile remains truthful and structurally usable.
+  - Use `CONTROLLED_FAILURE` only for a separately established critical authority, custody, integrity, permission, or required-artifact failure.
   - Do not recompute unrelated upstream objects.
 
 stop_condition:
   Stop local M8 phase only; return control to the Agent 2 resolver in 00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED.md.
-  The Agent 2 resolver may lock Agent 2 and provide the next-agent command only after `target_feature_profile` and `target_feature_profile_forensics` are saved and M8 returns PASS, PASS_WITH_LIMITATION, or CONTROLLED_FAILURE that is expressly safe for downstream use. If M8 returns REINVESTIGATION_REQUIRED or REINVESTIGATION_REQUIRED, do not advance.
+  The Agent 2 resolver may lock Agent 2 and provide the next-agent command only after `target_feature_profile` and `target_feature_profile_forensics` are saved and M8 returns `PASS` or `PASS_WITH_LIMITATION`. `REINVESTIGATION_REQUIRED` stops M8 locally for a maximum of two targeted attempts but does not block the entire run. `CONTROLLED_FAILURE` blocks advancement.
 </phase_call_card>
 
 `M8.S0.C1` This phase call card is the first executable block for this Module when extracted into a standalone phase prompt.
 
 `M8.S0.C2` In monolith execution, this call card functions as a Module-local lock gate and terminal-projection contract. It does not authorize standalone `<phase_output>` blocks in the final monolith response; final monolith emission remains governed by Module XIV and `00_TERMINAL_RAILS_RULES.md`.
 
-`M8.S0.C3` The Module may not advance, hand off, or be treated as locked until its phase-local gate has returned `PASS`, `PASS_WITH_LIMITATION`, or `CONTROLLED_FAILURE` under the rules above.
+`M8.S0.C3` The Module may advance or be treated as locked only when its phase-local gate returns `PASS` or `PASS_WITH_LIMITATION`. `CONTROLLED_FAILURE` is a blocking terminal state and never an advance-eligible gate.
 
-`M8.S0.C4` `REINVESTIGATION_REQUIRED` and `REINVESTIGATION_REQUIRED` are stop states. The Module must repair or route scoped reinvestigation before the next Module begins.
+`M8.S0.C4` `REINVESTIGATION_REQUIRED` is a local stop-and-return state. It must include owner, scope, reason code, and attempt number; after no more than two unsuccessful attempts, ordinary unresolved matters become limitations or warnings rather than global blockers.
 
 ## M8.S1 — Function and Hard Rules
 
