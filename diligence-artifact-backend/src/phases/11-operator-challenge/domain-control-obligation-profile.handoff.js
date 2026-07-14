@@ -176,6 +176,7 @@ function receipt({ criticalFailures, warnings, lockStatus, challengedRows = [], 
   const status = criticalFailures.length ? "CONTROLLED_FAILURE" : warnings.length ? "LOCKED_WITH_LIMITATIONS" : "LOCKED";
   return deepFreeze({
     phase8_domain_control_obligation_challenge: {
+      artifact_type: "phase8_domain_control_obligation_challenge",
       status,
       gate: criticalFailures.length ? "CONTROLLED_FAILURE" : warnings.length ? "PASS_WITH_LIMITATIONS" : "PASS",
       handoff_version: DOMAIN_CONTROL_OBLIGATION_DOWNSTREAM_HANDOFF_VERSION,
