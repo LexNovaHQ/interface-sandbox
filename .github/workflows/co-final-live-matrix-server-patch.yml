@@ -8,12 +8,13 @@ on:
       - ".github/workflows/co-final-live-matrix-server-patch.yml"
 
 permissions:
-  actions: write
+  actions: read
   contents: read
 
 jobs:
-  dispatch:
+  monitor:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -37,12 +38,75 @@ jobs:
           node --check diligence-artifact-backend/co-final-live-matrix-server.mjs
           git merge-base --is-ancestor f144d49d80f806aae7aa71727e88d3e0e97720fc HEAD
 
-      - name: Dispatch trusted isolated matrix workflow
+      - name: Resolve and monitor trusted main matrix run
+        id: monitor
         env:
           GH_TOKEN: ${{ github.token }}
+          EXPECTED_MAIN_SHA: 24ff1621c132a301faea663d55145a5800677a39
+        shell: bash
         run: |
           set -euo pipefail
-          gh api \
-            --method POST \
-            repos/LexNovaHQ/interface-sandbox/actions/workflows/artifact-backend-deploy.yml/dispatches \
-            -f ref=main
+          RUN_ID=""
+          for i in $(seq 1 30); do
+            gh api \
+              "repos/LexNovaHQ/interface-sandbox/actions/workflows/artifact-backend-deploy.yml/runs?event=workflow_dispatch&per_page=20" \
+              > /tmp/main-runs.json
+            RUN_ID=$(python - <<'PY'
+          import json, os
+          d=json.load(open('/tmp/main-runs.json',encoding='utf-8'))
+          expected=os.environ['EXPECTED_MAIN_SHA']
+          matches=[r for r in d.get('workflow_runs',[]) if r.get('head_sha')==expected and r.get('event')=='workflow_dispatch']
+          print(matches[0]['id'] if matches else '')
+          PY
+            )
+            [ -n "$RUN_ID" ] && break
+            sleep 5
+          done
+          test -n "$RUN_ID"
+          echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
+          echo "Resolved trusted matrix run: $RUN_ID"
+
+          for i in $(seq 1 120); do
+            gh api "repos/LexNovaHQ/interface-sandbox/actions/runs/$RUN_ID" > /tmp/main-run.json
+            STATUS=$(python - <<'PY'
+          import json
+          d=json.load(open('/tmp/main-run.json',encoding='utf-8'))
+          print(d.get('status',''))
+          PY
+            )
+            CONCLUSION=$(python - <<'PY'
+          import json
+          d=json.load(open('/tmp/main-run.json',encoding='utf-8'))
+          print(d.get('conclusion') or '')
+          PY
+            )
+            echo "trusted matrix run $RUN_ID status=$STATUS conclusion=$CONCLUSION"
+            [ "$STATUS" = "completed" ] && break
+            sleep 10
+          done
+
+          python - <<'PY'
+          import json
+          d=json.load(open('/tmp/main-run.json',encoding='utf-8'))
+          assert d.get('status')=='completed', d
+          assert d.get('conclusion')=='success', d
+          print(json.dumps({
+            'run_id':d['id'],
+            'status':d['status'],
+            'conclusion':d['conclusion'],
+            'event':d['event'],
+            'head_sha':d['head_sha'],
+            'html_url':d['html_url']
+          },indent=2))
+          PY
+
+      - name: Upload trusted run monitor receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: co-final-trusted-main-run-monitor-${{ steps.monitor.outputs.run_id }}
+          path: |
+            /tmp/main-runs.json
+            /tmp/main-run.json
+          if-no-files-found: warn
+          retention-days: 30
