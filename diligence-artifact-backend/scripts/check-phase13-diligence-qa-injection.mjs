@@ -160,6 +160,7 @@ assert.throws(() => runDiligenceQaComplete({
 
 const unresolvedLedgerBody = structuredClone(compiled.qr_final_value_ledger);
 delete unresolvedLedgerBody.immutable_hash;
+unresolvedLedgerBody.final_fields[0].not_applicable = false;
 unresolvedLedgerBody.final_fields[0].atomic_sources.legal_entity_name = "REVIEWER_ATTESTED_UNRESOLVED";
 const unresolvedLedger = rehash(unresolvedLedgerBody);
 const unresolvedSubmission = rehash({
@@ -181,7 +182,7 @@ console.log("Phase 13 Diligence QA injection parity: PASS");
 console.log(JSON.stringify({
   not_applicable_placeholder_disposition: true,
   injection_required_token_enforced: true,
-  unresolved_final_source_blocked: true,
+  unresolved_final_source_blocked_when_applicable: true,
   next_phase: receipt.next_phase
 }, null, 2));
 
