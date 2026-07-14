@@ -27,6 +27,7 @@
     "check:phase13-authority": "node scripts/check-phase13-authority.mjs",
     "check:phase13-domain-field-resolution": "node scripts/check-phase13-domain-field-resolution.mjs",
     "check:phase13-qr-runtime-ui": "node scripts/check-phase13-qr-runtime-ui.mjs",
+    "check:phase13-submission-qa": "node scripts/check-phase13-submission-diligence-qa.mjs",
     "check:interface-ui": "node scripts/check-interface-ui-universal.mjs && node scripts/check-interface-report-ui-contract.mjs && node scripts/check-interface-annex-qr-contract.mjs && node scripts/check-interface-assembly-signals-contract.mjs && node scripts/check-interface-report-visual-regression.mjs",
     "check:interface-report-ui-contract": "node scripts/check-interface-report-ui-contract.mjs",
     "check:interface-report-visual-regression": "node scripts/check-interface-report-visual-regression.mjs",
