@@ -3,6 +3,7 @@ import { centralPhaseForInternalJob, centralPhaseStatusForInternalJob } from "./
 import { PHASE13_QUALIFIED_REVIEW_RUNTIME_CONTRACT } from "./phase13-runtime.contract.js";
 import { PHASE14_QUALIFIED_REVIEW_SUBMISSION_RUNTIME_CONTRACT } from "./phase14-submission-runtime.contract.js";
 import { PHASE15_DILIGENCE_QA_COMPLETE_RUNTIME_CONTRACT } from "./phase15-diligence-qa-runtime.contract.js";
+import { PHASE16_ASSEMBLY_ENGINE_RUNTIME_CONTRACT } from "./phase16-assembly-runtime.contract.js";
 
 export const INTERNAL_JOB_ALIASES = Object.freeze({
   RENDERER: "NORMALIZED_REPORT_RENDERER",
@@ -12,7 +13,8 @@ export const INTERNAL_JOB_ALIASES = Object.freeze({
 const RUNTIME_CONTRACT_OVERRIDES = Object.freeze({
   QUALIFIED_REVIEW: PHASE13_QUALIFIED_REVIEW_RUNTIME_CONTRACT,
   QUALIFIED_REVIEW_SUBMISSION: PHASE14_QUALIFIED_REVIEW_SUBMISSION_RUNTIME_CONTRACT,
-  DILIGENCE_QA_COMPLETE: PHASE15_DILIGENCE_QA_COMPLETE_RUNTIME_CONTRACT
+  DILIGENCE_QA_COMPLETE: PHASE15_DILIGENCE_QA_COMPLETE_RUNTIME_CONTRACT,
+  ASSEMBLY_ENGINE: PHASE16_ASSEMBLY_ENGINE_RUNTIME_CONTRACT
 });
 
 export function normalizeInternalJobId(internalJobId) {
@@ -50,6 +52,7 @@ export const INTERNAL_JOB_CONTRACT_STATUS = Object.freeze({
   phase13_qualified_review_runtime_override_active: true,
   phase14_submission_runtime_override_active: true,
   phase15_diligence_qa_runtime_override_active: true,
-  active_post_review_sequence: ["QUALIFIED_REVIEW_SUBMISSION", "DILIGENCE_QA_COMPLETE", "AWAITING_ASSEMBLY"],
+  phase16_assembly_runtime_override_active: true,
+  active_post_review_sequence: ["QUALIFIED_REVIEW_SUBMISSION", "DILIGENCE_QA_COMPLETE", "AWAITING_ASSEMBLY", "ASSEMBLY_ENGINE", "COMPLETE"],
   source_of_truth: "runtime/contracts/internal-job.contract.js"
 });
