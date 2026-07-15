@@ -1,4 +1,5 @@
 name: Dispatch Artifact Deploy Once
+# Activated through a standard pull-request merge so GitHub emits the main push event.
 
 on:
   push:
