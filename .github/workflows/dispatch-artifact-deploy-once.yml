@@ -9,14 +9,15 @@ on:
 
 permissions:
   actions: write
-  contents: write
+  contents: read
+  issues: write
 
 jobs:
   dispatch-and-verify:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
-      - name: Dispatch, poll and record Artifact Backend Deploy
+      - name: Dispatch, poll and report Artifact Backend Deploy
         uses: actions/github-script@v7
         with:
           script: |
@@ -68,41 +69,29 @@ jobs:
               throw new Error(`Artifact Backend Deploy run ${run.id} did not complete within the polling window.`);
             }
 
-            const receiptPath = '.github/deployment-receipts/PRODUCTION_DEPLOYMENT_LATEST.md';
-            const receipt = [
-              '# Production Deployment Receipt',
+            const result = run.conclusion === 'success' ? '**PASS**' : `**${String(run.conclusion).toUpperCase()}**`;
+            const body = [
+              '## Production deployment receipt',
               '',
-              `- Result: ${run.conclusion === 'success' ? 'PASS' : 'FAIL'}`,
+              `- Result: ${result}`,
               `- Workflow: ${run.name}`,
               `- Run ID: ${run.id}`,
               `- Run URL: ${run.html_url}`,
-              `- Source branch: ${run.head_branch}`,
-              `- Source commit: ${run.head_sha}`,
-              `- Event: ${run.event}`,
-              `- Status: ${run.status}`,
-              `- Conclusion: ${run.conclusion}`,
-              `- Created at: ${run.created_at}`,
-              `- Completed at: ${run.updated_at}`,
-              `- Canonical backend authority: 261d5dff92e1856ae9d23c8086b441e89dc63fbb`,
-              ''
+              `- Source branch: \`${run.head_branch}\``,
+              `- Source commit: \`${run.head_sha}\``,
+              `- Event: \`${run.event}\``,
+              `- Status: \`${run.status}\``,
+              `- Conclusion: \`${run.conclusion}\``,
+              `- Created at: \`${run.created_at}\``,
+              `- Completed at: \`${run.updated_at}\``,
+              `- Canonical backend authority: \`261d5dff92e1856ae9d23c8086b441e89dc63fbb\``
             ].join('\n');
 
-            let existingSha;
-            try {
-              const existing = await github.rest.repos.getContent({ owner, repo, path: receiptPath, ref: 'main' });
-              existingSha = Array.isArray(existing.data) ? undefined : existing.data.sha;
-            } catch (error) {
-              if (error.status !== 404) throw error;
-            }
-
-            await github.rest.repos.createOrUpdateFileContents({
+            await github.rest.issues.createComment({
               owner,
               repo,
-              path: receiptPath,
-              message: `Record production deployment run ${run.id}`,
-              content: Buffer.from(receipt, 'utf8').toString('base64'),
-              branch: 'main',
-              ...(existingSha ? { sha: existingSha } : {})
+              issue_number: 96,
+              body
             });
 
             if (run.conclusion !== 'success') {
