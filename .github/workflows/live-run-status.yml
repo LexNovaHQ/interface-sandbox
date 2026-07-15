@@ -50,7 +50,6 @@ jobs:
           test "$MAX_RUNS" -ge 1
           test "$MAX_RUNS" -le 20
 
-          TOKEN=$(gcloud auth print-access-token --impersonate-service-account="$GCP_ARTIFACT_RUNTIME_SERVICE_ACCOUNT")
           jq -n --arg target "$TARGET" --argjson limit 100 '{
             structuredQuery: {
               from: [{collectionId: "runs"}],
@@ -65,12 +64,45 @@ jobs:
             }
           }' > /tmp/query.json
 
-          curl --fail --silent --show-error \
-            -H "Authorization: Bearer $TOKEN" \
-            -H 'Content-Type: application/json' \
-            --data @/tmp/query.json \
-            "https://firestore.googleapis.com/v1/projects/$GCP_PROJECT_ID/databases/(default)/documents:runQuery" \
-            > /tmp/firestore.json
+          query_firestore() {
+            local token="$1"
+            curl --silent --show-error \
+              -o /tmp/firestore.json \
+              -w '%{http_code}' \
+              -H "Authorization: Bearer $token" \
+              -H 'Content-Type: application/json' \
+              --data @/tmp/query.json \
+              "https://firestore.googleapis.com/v1/projects/$GCP_PROJECT_ID/databases/(default)/documents:runQuery"
+          }
+
+          TOKEN=$(gcloud auth print-access-token)
+          HTTP_CODE=$(query_firestore "$TOKEN")
+          AUTH_MODE="DEPLOY_SERVICE_ACCOUNT"
+
+          if [[ "$HTTP_CODE" != "200" && -n "$GCP_ARTIFACT_RUNTIME_SERVICE_ACCOUNT" ]]; then
+            echo "Direct Firestore read returned HTTP $HTTP_CODE; attempting runtime-service-account impersonation."
+            if IMPERSONATED_TOKEN=$(gcloud auth print-access-token --impersonate-service-account="$GCP_ARTIFACT_RUNTIME_SERVICE_ACCOUNT" 2>/tmp/impersonation-error.txt); then
+              HTTP_CODE=$(query_firestore "$IMPERSONATED_TOKEN")
+              AUTH_MODE="RUNTIME_SERVICE_ACCOUNT_IMPERSONATION"
+            else
+              echo "Runtime service-account impersonation was unavailable:"
+              cat /tmp/impersonation-error.txt
+            fi
+          fi
+
+          echo "Firestore read auth mode: $AUTH_MODE"
+          echo "Firestore read HTTP status: $HTTP_CODE"
+          if [[ "$HTTP_CODE" != "200" ]]; then
+            echo "Firestore response:"
+            jq . /tmp/firestore.json 2>/dev/null || cat /tmp/firestore.json
+            exit 1
+          fi
+
+          if ! jq -e 'type == "array"' /tmp/firestore.json >/dev/null; then
+            echo "Firestore response was not a runQuery result array:"
+            jq . /tmp/firestore.json 2>/dev/null || cat /tmp/firestore.json
+            exit 1
+          fi
 
           jq --argjson max "$MAX_RUNS" '[.[] | select(.document) | .document.fields | {
             run_id: (.run_id.stringValue // ""),
@@ -96,14 +128,20 @@ jobs:
           test "$(jq length /tmp/live-run-status.json)" -gt 0
           {
             echo "## Production run status — $TARGET"
+            echo "- Auth mode: $AUTH_MODE"
             echo '```json'
             cat /tmp/live-run-status.json
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload status evidence
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: live-run-status-${{ github.run_id }}
-          path: /tmp/live-run-status.json
+          path: |
+            /tmp/live-run-status.json
+            /tmp/firestore.json
+            /tmp/impersonation-error.txt
+          if-no-files-found: warn
           retention-days: 7
