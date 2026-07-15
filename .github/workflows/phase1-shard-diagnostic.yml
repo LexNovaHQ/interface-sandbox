@@ -23,12 +23,21 @@ jobs:
       - name: Install
         working-directory: diligence-artifact-backend
         run: npm ci --silent
-      - name: Run critical gate and print bounded failure tail
+      - name: Run critical gate and capture failure
+        id: critical
         working-directory: diligence-artifact-backend
         shell: bash
         run: |
           set +e
-          npm run check:critical > /tmp/critical.log 2>&1
+          npm run check:critical > critical.log 2>&1
           status=$?
-          tail -n 160 /tmp/critical.log
+          tail -n 40 critical.log
           exit $status
+      - name: Upload bounded critical log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase1-shard-critical-log-${{ github.run_id }}
+          path: diligence-artifact-backend/critical.log
+          if-no-files-found: error
+          retention-days: 3
