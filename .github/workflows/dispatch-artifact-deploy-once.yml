@@ -26,6 +26,13 @@ jobs:
             const workflow_id = 'artifact-backend-deploy.yml';
             const startedAt = Date.now();
 
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number: 96,
+              body: `## Production deploy controller started\n\n- Controller commit: \`${context.sha}\`\n- Target workflow: \`Artifact Backend Deploy\`\n- Target branch: \`main\`\n- Started at: \`${new Date(startedAt).toISOString()}\``
+            });
+
             await github.rest.actions.createWorkflowDispatch({
               owner,
               repo,
