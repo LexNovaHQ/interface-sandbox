@@ -1,4 +1,4 @@
-name: Deploy Landing Console and Verify
+name: Dispatch Live Run Status and Verify
 
 on:
   pull_request:
@@ -12,17 +12,17 @@ permissions:
   contents: read
 
 jobs:
-  deploy-and-verify:
+  dispatch-and-verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 20
     steps:
-      - name: Dispatch and verify Artifact Backend Deploy
+      - name: Dispatch and verify live run status
         uses: actions/github-script@v7
         with:
           script: |
             const owner = context.repo.owner;
             const repo = context.repo.repo;
-            const workflow_id = 'artifact-backend-deploy.yml';
+            const workflow_id = 'live-run-status.yml';
             const startedAt = Date.now();
 
             await github.rest.actions.createWorkflowDispatch({
@@ -30,12 +30,12 @@ jobs:
               repo,
               workflow_id,
               ref: 'main',
-              inputs: { mode: 'deploy' }
+              inputs: { target: 'Sarvam AI', max_runs: '5' }
             });
 
             let run = null;
             for (let attempt = 0; attempt < 60; attempt += 1) {
-              await new Promise(resolve => setTimeout(resolve, 10000));
+              await new Promise(resolve => setTimeout(resolve, 5000));
               const response = await github.rest.actions.listWorkflowRuns({
                 owner,
                 repo,
@@ -50,16 +50,17 @@ jobs:
               if (run) break;
             }
 
-            if (!run) throw new Error('Dispatched Artifact Backend Deploy run was not found.');
-            core.info(`Tracking deployment run ${run.id}: ${run.html_url}`);
+            if (!run) throw new Error('Dispatched Live Run Status workflow was not found.');
+            core.info(`Tracking status run ${run.id}: ${run.html_url}`);
 
-            for (let attempt = 0; attempt < 180 && run.status !== 'completed'; attempt += 1) {
-              await new Promise(resolve => setTimeout(resolve, 10000));
+            for (let attempt = 0; attempt < 120 && run.status !== 'completed'; attempt += 1) {
+              await new Promise(resolve => setTimeout(resolve, 5000));
               const response = await github.rest.actions.getWorkflowRun({ owner, repo, run_id: run.id });
               run = response.data;
             }
 
-            if (run.status !== 'completed') throw new Error(`Deployment run ${run.id} did not complete within the polling window.`);
-            core.info(`Deployment run ${run.id} completed with ${run.conclusion}.`);
-            core.info(`Source commit: ${run.head_sha}`);
-            if (run.conclusion !== 'success') core.setFailed(`Artifact Backend Deploy run ${run.id} concluded with ${run.conclusion}.`);
+            if (run.status !== 'completed') throw new Error(`Status run ${run.id} did not complete within the polling window.`);
+            core.info(`Status run ${run.id} completed with ${run.conclusion}.`);
+            if (run.conclusion !== 'success') core.setFailed(`Live Run Status run ${run.id} concluded with ${run.conclusion}.`);
+
+# one-use-sarvam-status-dispatch-1
