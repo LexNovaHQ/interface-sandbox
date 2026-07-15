@@ -3,7 +3,7 @@
     "ai-product-data": { label: "AI Product & Data Legal Exposure", short: "AI Product & Data", active: true, state: "Active demo registry" },
     "saas-privacy-security": { label: "SaaS Privacy & Security", short: "SaaS Privacy & Security", active: false, state: "Not activated in demo" },
     "fintech-platforms": { label: "FinTech Platforms", short: "FinTech Platforms", active: false, state: "Not activated in demo" },
-    "healthtech-digital-care": { label: "Health" + "Tech & Digital Care", short: "Health" + "Tech", active: false, state: "Not activated in demo" },
+    "healthtech-digital-care": { label: "HealthTech & Digital Care", short: "HealthTech", active: false, state: "Not activated in demo" },
     "employment-hr-tech": { label: "Employment / HR Tech", short: "HR Tech", active: false, state: "Not activated in demo" },
     "adtech-martech-consumer-data": { label: "AdTech, MarTech & Consumer Data", short: "AdTech / MarTech", active: false, state: "Not activated in demo" },
     "digital-platforms-marketplaces": { label: "Digital Platforms & Marketplaces", short: "Digital Platforms", active: false, state: "Not activated in demo" },
@@ -91,22 +91,43 @@
   const POLL_MS = 10000;
   const RUN_ID_PATTERN = /^LN-\d{8}-\d{6}-[A-Z0-9-]+-\d{6}$/i;
   const FALLBACK_PHASE_LABELS = {
-    CREATED: "Intake Opened",
-    AGENT_1A_URL_MANIFEST: "Public URL Mapping",
-    AGENT_1B_EXTRACT: "Source Extraction",
-    M6_BUCKET_INDEX: "Source Routing",
-    M9: "Legal Document Stack Review",
-    M7_TARGET_PROFILE: "Target Profile Review",
-    M7_TARGET_PROFILE_FORENSICS: "Target Profile Forensics",
-    M8_TARGET_FEATURE_PROFILE: "Product Activity Profile",
-    M8_TARGET_FEATURE_PROFILE_FORENSICS: "Product Activity Forensics",
-    M10: "Data Provenance Review",
-    M10_FORENSICS: "Data Provenance Forensics",
-    M11: "Exposure Review",
-    M12: "Quality Challenge",
-    NORMALIZED_COMPILER: "Report Compilation",
-    RENDERER: "Report Rendering",
-    COMPLETE: "Report Ready"
+    CREATED: "Source + Legal",
+    AGENT_1A_URL_MANIFEST: "Source + Legal",
+    AGENT_1B_EXTRACT: "Source + Legal",
+    M6_BUCKET_INDEX: "Source + Legal",
+    P2_SOURCE_INVENTORY_CARTOGRAPHY: "Source + Legal",
+    P2_LOCATOR_SPINE: "Source + Legal",
+    P2_PROFILE_ROUTE_MATRIX: "Source + Legal",
+    P2_SEMANTIC_NAVIGATION_OVERLAY: "Source + Legal",
+    M9: "Source + Legal",
+    P2A_TARGET_PROFILE_SOURCE_INDEX: "Source + Legal",
+    P2B_DOMAIN_DERIVATION_SOURCE_INDEX: "Source + Legal",
+    P2C_ACTIVITY_PROFILE_SOURCE_INDEX: "Source + Legal",
+    P2D_DATA_PRIVACY_NAVIGATION_INDEX: "Source + Legal",
+    P2E_DOMAIN_CONTROL_OBLIGATION_NAVIGATION_INDEX: "Source + Legal",
+    P2G_PHASE_ROUTER: "Source + Legal",
+    P2_INDEX_COMPILER_VALIDATION: "Source + Legal",
+    M7_TARGET_PROFILE: "Target + Feature",
+    P3_DOMAIN_DERIVATION_LAYER: "Target + Feature",
+    M7_TARGET_PROFILE_FORENSICS: "Target + Feature",
+    M8_FEATURE_CANDIDATE_INVENTORY: "Target + Feature",
+    M8_TARGET_FEATURE_PROFILE: "Target + Feature",
+    M8_TARGET_FEATURE_PROFILE_FORENSICS: "Target + Feature",
+    DATA_PROVENANCE_PROFILE_LAYER4: "Data Provenance",
+    DATA_PROVENANCE_PROFILE_LAYER5: "Data Provenance",
+    DOMAIN_CONTROL_OBLIGATION_CANDIDATE_INVENTORY: "Data Provenance",
+    DOMAIN_CONTROL_OBLIGATION_PROFILE: "Data Provenance",
+    DATA_PROVENANCE_PROFILE_FORENSICS: "Data Provenance",
+    M11: "Exposure Registry",
+    M12: "Challenge Gate",
+    NORMALIZED_COMPILER: "Validation",
+    NORMALIZED_REPORT_RENDERER: "Validation",
+    RENDERER: "Validation",
+    QUALIFIED_REVIEW: "Validation",
+    QUALIFIED_REVIEW_SUBMISSION: "Validation",
+    DILIGENCE_QA_COMPLETE: "Validation",
+    ASSEMBLY_ENGINE: "Validation",
+    COMPLETE: "Review-Ready Output"
   };
   let runId = "";
   let timer = null;
@@ -178,7 +199,7 @@
         message(`Matter stopped: ${run.status || run.runner_state || "FAILED"}. ${run.runner_last_error || ""}`, true);
       } else {
         setLinks(runId, false);
-        message(`Watching ${runId}. Current diligence phase: ${publicPhaseLabel(run)}.`);
+        message(`Watching ${runId}. Current diligence stage: ${publicPhaseLabel(run)}.`);
       }
     } catch (error) {
       stop();
@@ -267,7 +288,7 @@
   }
 
   function isStopped(run) {
-    return run.runner_state === "FAILED" || run.status === "REINVESTIGATION_REQUIRED" || run.status === "CONTROLLED_FAILURE";
+    return run.runner_state === "FAILED" || run.status === "CRITICAL_FAILURE" || run.status === "CONTROLLED_FAILURE";
   }
 
   function message(text, error = false) {
