@@ -1,5 +1,5 @@
-name: Diagnose Cloud Run Revision Failure
-# Temporary read-only diagnostic for the failed production revision.
+name: Diagnose Runtime Startup Failure
+# Temporary Linux boot reproduction for the failed Cloud Run revision.
 
 on:
   pull_request:
@@ -10,47 +10,72 @@ on:
 
 permissions:
   contents: read
-  id-token: write
 
 jobs:
   diagnose:
     runs-on: ubuntu-latest
     steps:
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v3
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
-          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: diligence-artifact-backend/package-lock.json
 
-      - name: Setup gcloud
-        uses: google-github-actions/setup-gcloud@v2
+      - name: Install locked dependencies
+        working-directory: diligence-artifact-backend
+        run: npm ci
 
-      - name: Print failed revision conditions and startup logs
+      - name: Boot central runtime with Cloud Run environment
+        working-directory: diligence-artifact-backend
         env:
-          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-          GCP_REGION: ${{ secrets.GCP_REGION }}
-          GCP_ARTIFACT_CLOUD_RUN_SERVICE: ${{ secrets.GCP_ARTIFACT_CLOUD_RUN_SERVICE }}
+          PORT: "8080"
+          GCP_PROJECT_ID: "startup-diagnostic"
+          GCP_REGION: "asia-south1"
+          GCP_CLOUD_RUN_SERVICE: "interface-diligence-artifacts"
+          FIRESTORE_DATABASE_ID: "(default)"
+          DRIVE_PARENT_FOLDER_ID: "diagnostic"
+          SHEETS_SPREADSHEET_ID: "diagnostic"
+          RUNS_SHEET_NAME: "runs"
+          GPT_ACTION_API_KEY: "diagnostic"
+          GEMINI_API_KEYS: "diagnostic"
+          GEMINI_MODEL: "gemini-2.5-flash"
+          GEMINI_MODELS: "gemini-2.5-flash"
+          PUBLIC_REVIEWER_ENABLED: "true"
+          EXPRESS_JSON_LIMIT: "50mb"
+          CLOUD_TASKS_QUEUE: "diligence-reviewer-worker"
+          CLOUD_TASKS_LOCATION: "asia-south1"
+          CLOUD_TASKS_DISPATCH_DEADLINE_SECONDS: "1800"
         shell: bash
         run: |
-          set -euo pipefail
-          gcloud config set project "$GCP_PROJECT_ID"
-          gcloud config set run/region "$GCP_REGION"
+          set -uo pipefail
+          npm start > /tmp/runtime-startup.log 2>&1 &
+          PID=$!
 
-          echo "===== RECENT REVISIONS ====="
-          gcloud run revisions list \
-            --service "$GCP_ARTIFACT_CLOUD_RUN_SERVICE" \
-            --project "$GCP_PROJECT_ID" \
-            --region "$GCP_REGION" \
-            --limit=5 \
-            --format="table(metadata.name,status.conditions[0].type,status.conditions[0].status,status.conditions[0].message,metadata.creationTimestamp)"
+          for attempt in $(seq 1 20); do
+            if curl --fail --silent "http://127.0.0.1:8080/health" > /tmp/health.json 2>/dev/null; then
+              cat /tmp/runtime-startup.log
+              cat /tmp/health.json
+              kill "$PID" || true
+              wait "$PID" || true
+              exit 0
+            fi
 
-          echo "===== CLOUD RUN STARTUP ERRORS ====="
-          gcloud logging read \
-            "resource.type=cloud_run_revision AND resource.labels.service_name=$GCP_ARTIFACT_CLOUD_RUN_SERVICE AND timestamp>=\"2026-07-15T10:20:00Z\"" \
-            --project "$GCP_PROJECT_ID" \
-            --limit=100 \
-            --order=desc \
-            --format="value(timestamp,severity,resource.labels.revision_name,textPayload,jsonPayload.message)" \
-            | grep -v '^[[:space:]]*$' \
-            | head -n 100
+            if ! kill -0 "$PID" 2>/dev/null; then
+              echo "Runtime process exited before binding to PORT=8080."
+              cat /tmp/runtime-startup.log
+              wait "$PID"
+              exit $?
+            fi
+
+            sleep 1
+          done
+
+          echo "Runtime process remained alive but did not answer /health."
+          cat /tmp/runtime-startup.log
+          kill "$PID" || true
+          wait "$PID" || true
+          exit 1
