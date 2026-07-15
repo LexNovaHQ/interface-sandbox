@@ -1,0 +1,132 @@
+name: Certify canonical Domain Gate main cutover once
+
+on:
+  push:
+    branches:
+      - release/domain-gate-v0-main-cutover
+    paths:
+      - .github/workflows/certify-main-cutover-once.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: certify-main-cutover-once
+  cancel-in-progress: false
+
+jobs:
+  certify-and-clean:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Checkout reconciled release branch
+        uses: actions/checkout@v4
+        with:
+          ref: release/domain-gate-v0-main-cutover
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Create exact cleaned certification commit locally
+        shell: bash
+        run: |
+          set -euo pipefail
+          CANONICAL_SHA="261d5dff92e1856ae9d23c8086b441e89dc63fbb"
+          RELEASE_BRANCH="release/domain-gate-v0-main-cutover"
+          WORKFLOW_PATH=".github/workflows/certify-main-cutover-once.yml"
+
+          test "$(git branch --show-current)" = "$RELEASE_BRANCH"
+          git fetch origin main "$RELEASE_BRANCH"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git rm "$WORKFLOW_PATH"
+          git diff --cached --quiet "$CANONICAL_SHA" --
+          git commit -m "Remove one-use main cutover certification workflow"
+
+          FINAL_SHA="$(git rev-parse HEAD)"
+          test "$(git rev-parse HEAD^{tree})" = "$(git rev-parse "$CANONICAL_SHA^{tree}")"
+          git merge-base --is-ancestor origin/main HEAD
+          git merge-base --is-ancestor "$CANONICAL_SHA" HEAD
+
+          echo "FINAL_SHA=$FINAL_SHA" >> "$GITHUB_ENV"
+          echo "CANONICAL_SHA=$CANONICAL_SHA" >> "$GITHUB_ENV"
+          echo "RELEASE_BRANCH=$RELEASE_BRANCH" >> "$GITHUB_ENV"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: diligence-artifact-backend/package-lock.json
+
+      - name: Install locked dependencies
+        working-directory: diligence-artifact-backend
+        run: npm ci
+
+      - name: Run Phase 1-16 production certification
+        working-directory: diligence-artifact-backend
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run check:critical 2>&1 | tee main-cutover-phase1-16.log
+          node scripts/write-phase1-16-production-certification.mjs main-cutover-phase1-16-certification.json
+
+      - name: Run Phase 13-16 post-review validation
+        working-directory: diligence-artifact-backend
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            npm run check:syntax:active
+            npm run check:phase13-authority
+            npm run check:phase13-domain-field-resolution
+            npm run check:phase13-qr-runtime-ui
+            node scripts/check-phase13-post-review-contract-sync.mjs
+            node scripts/check-phase13-submission-diligence-qa.mjs
+            node scripts/check-phase13-diligence-qa-injection.mjs
+            npm run check:phase13-legacy-retirement
+            node scripts/check-phase16-runtime-wiring.mjs
+            node scripts/check-phase16-assembly-engine.mjs
+            npm run check:phase13-production-cutover
+          } 2>&1 | tee main-cutover-phase13-16.log
+
+      - name: Write cutover certification receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > diligence-artifact-backend/main-cutover-certification-receipt.json <<EOF
+          {
+            "status": "PASS",
+            "release_branch": "${RELEASE_BRANCH}",
+            "certified_final_sha": "${FINAL_SHA}",
+            "canonical_sha": "${CANONICAL_SHA}",
+            "canonical_tree_equal": true,
+            "main_is_ancestor": true,
+            "phase1_16_production_certification": "PASS",
+            "phase13_16_post_review_validation": "PASS",
+            "workflow_run_id": "${GITHUB_RUN_ID}"
+          }
+          EOF
+
+      - name: Reverify exact final tree and push cleaned head
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$FINAL_SHA"
+          test "$(git rev-parse HEAD^{tree})" = "$(git rev-parse "$CANONICAL_SHA^{tree}")"
+          git merge-base --is-ancestor origin/main HEAD
+          git merge-base --is-ancestor "$CANONICAL_SHA" HEAD
+          git push origin "HEAD:refs/heads/$RELEASE_BRANCH"
+
+      - name: Upload cutover certification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: main-cutover-certification-${{ env.FINAL_SHA }}
+          path: |
+            diligence-artifact-backend/main-cutover-phase1-16.log
+            diligence-artifact-backend/main-cutover-phase1-16-certification.json
+            diligence-artifact-backend/main-cutover-phase13-16.log
+            diligence-artifact-backend/main-cutover-certification-receipt.json
+          if-no-files-found: warn
+          retention-days: 30
