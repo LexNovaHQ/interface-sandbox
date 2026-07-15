@@ -1,0 +1,78 @@
+name: Apply Phase 2 Cartography Self-Read Fix
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/apply-phase2-cartography-self-read-fix.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    steps:
+      - name: Checkout repair branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Apply narrow permission repair and regression assertion
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          permissions = Path('diligence-artifact-backend/src/runtime/contracts/artifact-permissions.contract.js')
+          text = permissions.read_text(encoding='utf-8')
+          old = '  [AGENT_IDS.cartographyIndex]: [...CARTOGRAPHY_SOURCE_INPUT_ARTIFACT_NAMES, ...TARGET_PROFILE_SOURCE_INDEX_ARTIFACT_NAMES, ...DOMAIN_DERIVATION_SOURCE_INDEX_ARTIFACT_NAMES, ...ACTIVITY_PROFILE_SOURCE_INDEX_ARTIFACT_NAMES, ...DATA_PRIVACY_NAVIGATION_INDEX_ARTIFACT_NAMES, ...DOMAIN_CONTROL_OBLIGATION_NAVIGATION_INDEX_ARTIFACT_NAMES, ...PHASE_ROUTING_ARTIFACT_NAMES, ...LEGAL_CARTOGRAPHY_ARTIFACT_NAMES, ...LEGAL_CARTOGRAPHY_OPTIONAL_ARTIFACT_NAMES, ...DOMAIN_GATE_RUNTIME_ARTIFACT_NAMES],'
+          new = '  [AGENT_IDS.cartographyIndex]: [...CARTOGRAPHY_SOURCE_INPUT_ARTIFACT_NAMES, ...CARTOGRAPHY_LAYER1_ARTIFACT_NAMES, ...CARTOGRAPHY_LAYER2_ARTIFACT_NAMES, ...CARTOGRAPHY_LAYER3_ARTIFACT_NAMES, ...CARTOGRAPHY_LAYER4_ARTIFACT_NAMES, ...CARTOGRAPHY_LAYER5_ARTIFACT_NAMES, ...TARGET_PROFILE_SOURCE_INDEX_ARTIFACT_NAMES, ...DOMAIN_DERIVATION_SOURCE_INDEX_ARTIFACT_NAMES, ...ACTIVITY_PROFILE_SOURCE_INDEX_ARTIFACT_NAMES, ...DATA_PRIVACY_NAVIGATION_INDEX_ARTIFACT_NAMES, ...DOMAIN_CONTROL_OBLIGATION_NAVIGATION_INDEX_ARTIFACT_NAMES, ...PHASE_ROUTING_ARTIFACT_NAMES, ...LEGAL_CARTOGRAPHY_ARTIFACT_NAMES, ...LEGAL_CARTOGRAPHY_OPTIONAL_ARTIFACT_NAMES, ...DOMAIN_GATE_RUNTIME_ARTIFACT_NAMES],'
+          if old not in text:
+              if new not in text:
+                  raise SystemExit('Expected cartography read-permission line not found')
+          else:
+              permissions.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          check = Path('diligence-artifact-backend/scripts/check-phase2-cartography-index.mjs')
+          check_text = check.read_text(encoding='utf-8')
+          anchor = 'assert.deepEqual(CARTOGRAPHY_LAYER5_ARTIFACT_NAMES, ["cartography_index", "cartography_validation_manifest"]);\n'
+          addition = '''assert.deepEqual(CARTOGRAPHY_LAYER5_ARTIFACT_NAMES, ["cartography_index", "cartography_validation_manifest"]);\nfor (const artifact of [...CARTOGRAPHY_LAYER1_ARTIFACT_NAMES, ...CARTOGRAPHY_LAYER2_ARTIFACT_NAMES, ...CARTOGRAPHY_LAYER3_ARTIFACT_NAMES, ...CARTOGRAPHY_LAYER4_ARTIFACT_NAMES, ...CARTOGRAPHY_LAYER5_ARTIFACT_NAMES]) {\n  assert.ok(READ_PERMISSIONS.agent_2_cartography_index.includes(artifact), `cartography agent must read its prior/current layered artifact ${artifact}`);\n}\n'''
+          marker = 'cartography agent must read its prior/current layered artifact'
+          if marker not in check_text:
+              if anchor not in check_text:
+                  raise SystemExit('Expected Phase 2 check anchor not found')
+              check.write_text(check_text.replace(anchor, addition, 1), encoding='utf-8')
+          PY
+
+          git rm .github/workflows/apply-phase2-cartography-self-read-fix.yml
+
+      - name: Install locked dependencies
+        working-directory: diligence-artifact-backend
+        run: npm ci
+
+      - name: Run focused Phase 2 contract
+        working-directory: diligence-artifact-backend
+        run: node scripts/check-phase2-cartography-index.mjs
+
+      - name: Run full critical production gate
+        working-directory: diligence-artifact-backend
+        run: npm run check:critical
+
+      - name: Commit repair to PR branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet && git diff --cached --quiet; then
+            echo 'No changes to commit.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add diligence-artifact-backend/src/runtime/contracts/artifact-permissions.contract.js diligence-artifact-backend/scripts/check-phase2-cartography-index.mjs
+          git commit -m 'Fix Phase 2 cartography layered self-read permissions'
+          git push origin HEAD:${{ github.head_ref }}
