@@ -11,6 +11,7 @@ export const PRODUCTION_GATE_CHECKS = Object.freeze([
   gate("severity-policy", "Production gate severity policy", "check:production-gate-severity", "STRUCTURAL_RUNTIME_SAFETY", CRITICAL_ONLY),
   gate("syntax", "Active production syntax", "check:syntax:active", "STRUCTURAL_RUNTIME_SAFETY", CRITICAL_ONLY),
   gate("runtime-startup", "Production entrypoint startup and health", "check:runtime-startup", "STRUCTURAL_RUNTIME_SAFETY", CRITICAL_ONLY),
+  gate("cloud-run-capacity", "Cloud Run worker memory and request isolation", "check:cloud-run-capacity", "STRUCTURAL_RUNTIME_SAFETY", CRITICAL_ONLY),
   gate("domain-gate", "Domain gate v0", "check:domain-gate-v0", "STRUCTURAL_RUNTIME_SAFETY", CRITICAL_ONLY),
   gate("e2e-authority", "Critical-only outcomes and model-led domain lifecycle", "check:e2e-authority", "STRUCTURAL_RUNTIME_SAFETY", CRITICAL_ONLY),
   gate("repair-required-retirement", "Retired repair-required status remains absent", "check:repair-required-retirement", "STRUCTURAL_RUNTIME_SAFETY", CRITICAL_ONLY),
