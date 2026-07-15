@@ -66,7 +66,9 @@ jobs:
           echo "Checking production landing page..."
           request --fail "$BASE_URL/interface-diligence/diligence-system/" > live-run/landing.html
           grep -q 'Interface Diligence Engine' live-run/landing.html
-          grep -q 'Current internal job' live-run/landing.html
+          grep -q 'Sixteen diligence phases' live-run/landing.html
+          grep -q 'there is no manual registry selector on intake' live-run/landing.html
+          grep -q 'phase-authority-v3-20260715' live-run/landing.html
           if grep -q 'Active Vertical Registry' live-run/landing.html; then
             echo "Live UI regression: manual registry selector is present." >&2
             exit 20
