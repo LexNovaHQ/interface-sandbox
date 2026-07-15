@@ -39,6 +39,8 @@ Internal job IDs remain available in operator diagnostics and runtime responses.
 
 `REINVESTIGATION_REQUIRED` is not a terminal public stop. Only a genuine critical or controlled failure may stop the run.
 
+The executable authority for this rule is `scripts/check-interface-ui-universal.mjs`. A returned rail, stale public phase map, missing Phase 12–16 stage, or reinvestigation-as-terminal behavior is a production-gate failure.
+
 ## Phase 12 renderer rule
 
 The frontend report bridge must treat the Phase 12 renderer payload as the source of truth:
