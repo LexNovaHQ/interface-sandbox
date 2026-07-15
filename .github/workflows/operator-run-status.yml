@@ -1,0 +1,156 @@
+name: Operator Run Status Probe
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "Exact LN run ID. Leave blank to select the latest run matching target."
+        required: false
+        type: string
+      target:
+        description: "Exact target label used when run_id is blank."
+        required: false
+        default: "Sarvam AI"
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+      INPUT_RUN_ID: ${{ inputs.run_id }}
+      INPUT_TARGET: ${{ inputs.target }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: diligence-artifact-backend/package-lock.json
+
+      - name: Install locked dependencies
+        working-directory: diligence-artifact-backend
+        run: npm ci --silent
+
+      - name: Read run, artifacts and recent events
+        id: probe
+        working-directory: diligence-artifact-backend
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p operator-status
+          node --input-type=module <<'NODE' | tee operator-status/status.json
+          import { initializeApp, applicationDefault } from "firebase-admin/app";
+          import { getFirestore } from "firebase-admin/firestore";
+
+          const projectId = String(process.env.GCP_PROJECT_ID || "").trim();
+          const requestedRunId = String(process.env.INPUT_RUN_ID || "").trim().toUpperCase();
+          const target = String(process.env.INPUT_TARGET || "").trim();
+          if (!projectId) throw new Error("GCP_PROJECT_ID_REQUIRED");
+          if (!requestedRunId && !target) throw new Error("RUN_ID_OR_TARGET_REQUIRED");
+
+          initializeApp({ credential: applicationDefault(), projectId });
+          const db = getFirestore();
+
+          let run = null;
+          if (requestedRunId) {
+            const snap = await db.collection("runs").doc(requestedRunId).get();
+            if (!snap.exists) throw new Error(`RUN_NOT_FOUND:${requestedRunId}`);
+            run = snap.data();
+          } else {
+            const snap = await db.collection("runs").where("target", "==", target).get();
+            const rows = snap.docs.map((doc) => doc.data())
+              .sort((a, b) => String(b.created_at || "").localeCompare(String(a.created_at || "")));
+            run = rows[0] || null;
+            if (!run) throw new Error(`TARGET_RUN_NOT_FOUND:${target}`);
+          }
+
+          const runId = String(run.run_id || "");
+          const artifactSnap = await db.collection("runs").doc(runId).collection("artifacts").get();
+          const artifacts = artifactSnap.docs.map((doc) => doc.data()).sort((a, b) => String(a.artifact_name || "").localeCompare(String(b.artifact_name || "")));
+          const eventSnap = await db.collection("runs").doc(runId).collection("events").orderBy("created_at", "desc").limit(40).get();
+          const recentEvents = eventSnap.docs.map((doc) => doc.data()).map((event) => ({
+            event_type: event.event_type || "",
+            actor: event.actor || "",
+            created_at: event.created_at || "",
+            payload: event.payload || {}
+          }));
+
+          const sanitize = (value) => String(value || "")
+            .replace(/GEMINI_API_KEYS_\d+/g, "provider-key")
+            .replace(/[A-Za-z0-9_-]{32,}/g, "[redacted-token]")
+            .slice(0, 1200);
+
+          const output = {
+            observed_at: new Date().toISOString(),
+            run: {
+              run_id: runId,
+              target: run.target || "",
+              root_url: run.root_url || "",
+              created_at: run.created_at || "",
+              updated_at: run.updated_at || "",
+              status: run.status || "",
+              current_phase: run.current_phase || "",
+              central_phase: run.central_phase || "",
+              central_phase_label: run.central_phase_label || "",
+              runner_mode: run.runner_mode || "",
+              runner_state: run.runner_state || "",
+              runner_last_error: sanitize(run.runner_last_error),
+              runner_requested_at: run.runner_requested_at || "",
+              runner_worker_started_at: run.runner_worker_started_at || "",
+              runner_worker_heartbeat_at: run.runner_worker_heartbeat_at || "",
+              runner_last_completed_at: run.runner_last_completed_at || "",
+              runner_task_name: run.runner_task_name || ""
+            },
+            artifact_count: artifacts.length,
+            shard_artifact_count: artifacts.filter((row) => /^lossless_root__.+__part_\d{3}$/.test(String(row.artifact_name || ""))).length,
+            artifacts: artifacts.map((row) => ({
+              artifact_name: row.artifact_name || "",
+              phase: row.phase || "",
+              lock_status: row.lock_status || "",
+              latest_version: row.latest_version || row.version || 0,
+              updated_at: row.updated_at || row.created_at || ""
+            })),
+            recent_events: recentEvents
+          };
+          console.log(JSON.stringify(output, null, 2));
+          NODE
+
+          RUN_ID=$(jq -er '.run.run_id' operator-status/status.json)
+          echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Publish operator summary
+        if: always()
+        working-directory: diligence-artifact-backend
+        shell: bash
+        run: |
+          if [[ ! -f operator-status/status.json ]]; then exit 0; fi
+          {
+            echo '## Operator run status'
+            echo
+            jq -r '"- Run ID: `\(.run.run_id)`\n- Status: `\(.run.status)`\n- Current phase: `\(.run.current_phase)`\n- Central phase: `\(.run.central_phase)`\n- Runner: `\(.run.runner_state)`\n- Artifacts: `\(.artifact_count)`\n- Persisted root shards: `\(.shard_artifact_count)`\n- Last error: `\(.run.runner_last_error)`"' operator-status/status.json
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload status evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: operator-run-status-${{ steps.probe.outputs.run_id || github.run_id }}
+          path: diligence-artifact-backend/operator-status/status.json
+          if-no-files-found: warn
+          retention-days: 7
