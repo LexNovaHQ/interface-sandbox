@@ -82,6 +82,9 @@ assert.deepEqual(CARTOGRAPHY_LAYER2_ARTIFACT_NAMES, ["cartography_locator_spine"
 assert.deepEqual(CARTOGRAPHY_LAYER3_ARTIFACT_NAMES, ["cartography_profile_route_matrix"]);
 assert.deepEqual(CARTOGRAPHY_LAYER4_ARTIFACT_NAMES, ["cartography_semantic_navigation_overlay"]);
 assert.deepEqual(CARTOGRAPHY_LAYER5_ARTIFACT_NAMES, ["cartography_index", "cartography_validation_manifest"]);
+for (const artifact of [...CARTOGRAPHY_LAYER1_ARTIFACT_NAMES, ...CARTOGRAPHY_LAYER2_ARTIFACT_NAMES, ...CARTOGRAPHY_LAYER3_ARTIFACT_NAMES, ...CARTOGRAPHY_LAYER4_ARTIFACT_NAMES, ...CARTOGRAPHY_LAYER5_ARTIFACT_NAMES]) {
+  assert.ok(READ_PERMISSIONS.agent_2_cartography_index.includes(artifact), `cartography agent must read its prior/current layered artifact ${artifact}`);
+}
 for (const artifact of ["target_profile_source_index", "domain_derivation_source_index", "activity_profile_source_index", "data_privacy_navigation_index", "domain_control_obligation_navigation_index", "phase_routing_manifest", "phase_route_validation_manifest"]) assert.ok(CARTOGRAPHY_ARTIFACT_NAMES.includes(artifact));
 for (const artifact of ["target_profile_source_index", "domain_derivation_source_index", "activity_profile_source_index", "data_privacy_navigation_index", "domain_control_obligation_navigation_index", "phase_routing_manifest", "phase_route_validation_manifest"]) assert.equal(CARTOGRAPHY_LAYER5_ARTIFACT_NAMES.includes(artifact), false, `Layer5 must not own ${artifact}`);
 
