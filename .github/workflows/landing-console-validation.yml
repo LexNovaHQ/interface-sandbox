@@ -1,0 +1,39 @@
+name: Landing Console Validation
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "diligence-artifact-backend/**"
+      - ".github/workflows/landing-console-validation.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: diligence-artifact-backend/package-lock.json
+
+      - name: Install locked dependencies
+        working-directory: diligence-artifact-backend
+        run: npm ci
+
+      - name: Run focused Interface UI contract
+        working-directory: diligence-artifact-backend
+        run: npm run check:interface-ui
+
+      - name: Run full critical production gate
+        working-directory: diligence-artifact-backend
+        run: npm run check:critical
