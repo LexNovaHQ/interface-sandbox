@@ -1,0 +1,158 @@
+name: Sarvam Production Run 2
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/sarvam-production-run-2.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  live-run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      BASE_URL: https://sandbox.lexnovahq.com
+      TARGET_URL: https://www.sarvam.ai/
+      TARGET_LABEL: Sarvam AI
+    steps:
+      - name: Create and monitor production matter
+        id: live
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p live-run
+          : > live-run/history.ndjson
+
+          request() {
+            curl --silent --show-error --location \
+              --connect-timeout 20 --max-time 180 \
+              --retry 3 --retry-delay 3 --retry-all-errors \
+              "$@"
+          }
+
+          echo "Verifying deployed public surface..."
+          request --fail "$BASE_URL/interface-diligence/diligence-system/" > live-run/landing.html
+          grep -q 'Sixteen diligence phases' live-run/landing.html
+          grep -q 'there is no manual registry selector on intake' live-run/landing.html
+          if grep -q 'Active Vertical Registry' live-run/landing.html; then
+            echo "Manual registry selector regression detected." >&2
+            exit 20
+          fi
+
+          create_code=$(request -o live-run/create.json -w '%{http_code}' \
+            -X POST "$BASE_URL/public/diligence-system/jobs" \
+            -H 'content-type: application/json' \
+            --data "$(jq -cn --arg target_url "$TARGET_URL" --arg target "$TARGET_LABEL" '{target_url:$target_url,target:$target}')")
+          cat live-run/create.json | jq .
+          test "$create_code" = "201"
+          RUN_ID=$(jq -er '.run_id' live-run/create.json)
+          echo "$RUN_ID" > live-run/run_id.txt
+          echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
+
+          advance() {
+            local reason="$1"
+            echo "Advance request: $reason"
+            local code
+            code=$(request -o live-run/advance-latest.json -w '%{http_code}' \
+              -X POST "$BASE_URL/public/diligence-system/jobs/$RUN_ID/advance" \
+              -H 'content-type: application/json' \
+              --data '{"auto_continue":true}')
+            cat live-run/advance-latest.json | jq .
+            case "$code" in
+              200|202) ;;
+              *) echo "Advance failed with HTTP $code" >&2; return 1 ;;
+            esac
+          }
+
+          advance "initial pipeline start"
+
+          last_key=""
+          idle_polls=0
+          for poll in $(seq 1 350); do
+            now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+            request --fail "$BASE_URL/public/diligence-system/jobs/$RUN_ID" > live-run/status-latest.json
+            jq -c --arg observed_at "$now" '{observed_at:$observed_at,run:.run,artifacts:.artifacts}' live-run/status-latest.json >> live-run/history.ndjson
+
+            status=$(jq -r '.run.status // .status // ""' live-run/status-latest.json)
+            phase=$(jq -r '.run.current_phase // .current_phase // ""' live-run/status-latest.json)
+            central=$(jq -r '.run.central_phase // .central_phase // ""' live-run/status-latest.json)
+            central_label=$(jq -r '.run.central_phase_label // .central_phase_label // ""' live-run/status-latest.json)
+            runner=$(jq -r '.run.runner_state // .runner_state // ""' live-run/status-latest.json)
+            error=$(jq -r '.run.runner_last_error // .runner_last_error // ""' live-run/status-latest.json)
+            artifacts=$(jq -r '(.artifacts // []) | length' live-run/status-latest.json)
+            key="$status|$phase|$central|$runner|$error|$artifacts"
+
+            if [[ "$key" != "$last_key" || $((poll % 10)) -eq 0 ]]; then
+              printf '%s poll=%s status=%s phase=%s central=%s label=%s runner=%s artifacts=%s error=%s\n' \
+                "$now" "$poll" "$status" "$phase" "$central" "$central_label" "$runner" "$artifacts" "$error"
+              last_key="$key"
+            fi
+
+            if [[ "$status" == "COMPLETE" || "$phase" == "COMPLETE" ]]; then
+              echo "LIVE_RUN_COMPLETE" > live-run/outcome.txt
+              exit 0
+            fi
+
+            if [[ "$status" == "AWAITING_QUALIFIED_REVIEW" || "$phase" == "AWAITING_QUALIFIED_REVIEW" || "$phase" == "QUALIFIED_REVIEW" ]]; then
+              echo "SUBSTANTIVE_BOUNDARY_AWAITING_QUALIFIED_REVIEW" > live-run/outcome.txt
+              exit 0
+            fi
+
+            if [[ "$status" == "AWAITING_ASSEMBLY" || "$phase" == "AWAITING_ASSEMBLY" ]]; then
+              echo "SUBSTANTIVE_BOUNDARY_AWAITING_ASSEMBLY_AUTHORIZATION" > live-run/outcome.txt
+              exit 0
+            fi
+
+            if [[ "$runner" == "FAILED" || "$status" == "CRITICAL_FAILURE" || "$status" == "CONTROLLED_FAILURE" || "$status" == "TECHNICAL_RETRY_REQUIRED" ]]; then
+              echo "LIVE_RUN_FAILED:$status:$phase:$central:$runner:$error" > live-run/outcome.txt
+              jq . live-run/status-latest.json
+              exit 30
+            fi
+
+            if [[ "$runner" == "IDLE" && "$phase" != "" && "$phase" != "CREATED" ]]; then
+              idle_polls=$((idle_polls + 1))
+            else
+              idle_polls=0
+            fi
+
+            if [[ "$idle_polls" -ge 2 ]]; then
+              advance "safe continuation after two idle polls at $phase"
+              idle_polls=0
+            fi
+
+            sleep 30
+          done
+
+          echo "LIVE_RUN_MONITOR_TIMEOUT" > live-run/outcome.txt
+          jq . live-run/status-latest.json
+          exit 40
+
+      - name: Publish live-run summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## Sarvam production run 2'
+            echo
+            if [[ -f live-run/run_id.txt ]]; then echo "- Run ID: \`$(cat live-run/run_id.txt)\`"; fi
+            if [[ -f live-run/outcome.txt ]]; then echo "- Outcome: \`$(cat live-run/outcome.txt)\`"; fi
+            if [[ -f live-run/status-latest.json ]]; then
+              echo '- Final observed state:'
+              echo '```json'
+              jq '{run, artifact_count: ((.artifacts // []) | length), artifact_names: ((.artifacts // []) | map(.artifact_name))}' live-run/status-latest.json
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload live-run evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sarvam-production-run-2-${{ steps.live.outputs.run_id || github.run_id }}
+          path: live-run/
+          if-no-files-found: warn
+          retention-days: 14
