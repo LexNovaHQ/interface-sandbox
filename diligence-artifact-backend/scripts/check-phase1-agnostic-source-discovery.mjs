@@ -9,6 +9,7 @@ import {
   RETIRED_COMMON_ROOT_CODES,
   COMMON_ROOT_CODES
 } from "../src/phases/01-source-discovery/services/source-discovery-taxonomy.service.js";
+import { isLegacyFamilyArtifactName } from "../src/phases/01-source-discovery/validators/source-discovery.validator.js";
 
 const ROOT = process.cwd();
 const read = (file) => fs.readFileSync(path.join(ROOT, file), "utf8");
@@ -33,14 +34,18 @@ for (const artifact of ["source_discovery_matrix_manifest", "adapter_expansion_l
   assert.ok(contract.includes(artifact), `contract missing ${artifact}`);
   assert.ok(permissions.includes(artifact), `permissions missing ${artifact}`);
 }
-for (const file of [contract, urlService, extractionService, handoffService, validator, permissions]) {
-  assert.equal(file.includes("lossless_family__"), false, "Phase 1 active runtime must not mention lossless_family__");
+for (const file of [contract, urlService, extractionService, handoffService, permissions]) {
+  assert.equal(file.includes("lossless_family__"), false, "Phase 1 active emitters and contracts must not mention lossless_family__");
   assert.equal(file.includes("ROOT_FAMILY"), false, "Phase 1 active runtime must not mention ROOT_FAMILY");
   assert.equal(file.includes("T0_ROOT"), false, "Phase 1 active runtime must not mention T/P/D/L root codes");
   assert.equal(file.includes("P1_PRODUCT"), false, "Phase 1 active runtime must not mention T/P/D/L root codes");
   assert.equal(file.includes("D1_SECURITY_TRUST"), false, "Phase 1 active runtime must not mention T/P/D/L root codes");
   assert.equal(file.includes("L1_CORE_TERMS_PRIVACY"), false, "Phase 1 active runtime must not mention T/P/D/L root codes");
 }
+assert.equal(isLegacyFamilyArtifactName("lossless_family__homepage_landing"), true, "legacy lossless-family artifacts must be rejected");
+assert.equal(isLegacyFamilyArtifactName("lossless_root__homepage_landing"), false, "active lossless-root artifacts must be accepted");
+assert.ok(validator.includes('const LEGACY_FAMILY_ARTIFACT_PREFIX = "lossless_family__"'), "validator must retain an explicit legacy-only deny prefix");
+assert.equal(validator.includes('name.startsWith("lossless_root__")'), false, "validator must never reject the active lossless-root prefix");
 
 assert.deepEqual(COMMON_ROOTS.map((root) => root.id), LOCKED_ROOTS, "Phase 1 common root matrix must be exactly the locked 17-root order");
 assert.deepEqual(PRIMARY_FULL_EXTRACT_ROOT_CODES, PRIMARY_FULL, "PRIMARY_FULL_EXTRACT roots must match locked Phase 1 v5 doctrine");
@@ -82,7 +87,7 @@ assert.ok(pipelineContract.includes("export const PIPELINE_CONTRACTS"), "runtime
 assert.ok(pipelineContract.includes("export function getPipelineContract"), "runtime pipeline contract must expose the canonical contract reader");
 assert.equal(fs.existsSync(path.join(ROOT, "src/phase-contracts.js")), false, "retired phase-contracts compatibility shim must not return");
 
-console.log(JSON.stringify({ check: "phase1 agnostic source discovery", status: "PASS", locked_roots: LOCKED_ROOTS.length, primary_full_roots: PRIMARY_FULL.length, secondary_conditional_roots: SECONDARY_CONDITIONAL.length }, null, 2));
+console.log(JSON.stringify({ check: "phase1 agnostic source discovery", status: "PASS", locked_roots: LOCKED_ROOTS.length, primary_full_roots: PRIMARY_FULL.length, secondary_conditional_roots: SECONDARY_CONDITIONAL.length, legacy_family_guard: "LEGACY_PREFIX_ONLY" }, null, 2));
 
 function containsArtifactIdentity(source, artifact) {
   return new RegExp(`(^|[^A-Za-z0-9_])${escapeRegExp(artifact)}([^A-Za-z0-9_]|$)`).test(source);
