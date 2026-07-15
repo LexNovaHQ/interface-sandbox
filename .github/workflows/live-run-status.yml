@@ -1,0 +1,109 @@
+name: Live Run Status
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Exact run target label
+        required: true
+        default: Sarvam AI
+        type: string
+      max_runs:
+        description: Maximum matching runs to return
+        required: true
+        default: "5"
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  status:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Read matching production runs
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          GCP_ARTIFACT_RUNTIME_SERVICE_ACCOUNT: ${{ secrets.GCP_ARTIFACT_RUNTIME_SERVICE_ACCOUNT }}
+          TARGET: ${{ inputs.target }}
+          MAX_RUNS: ${{ inputs.max_runs }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$TARGET"
+          [[ "$MAX_RUNS" =~ ^[0-9]+$ ]]
+          test "$MAX_RUNS" -ge 1
+          test "$MAX_RUNS" -le 20
+
+          TOKEN=$(gcloud auth print-access-token --impersonate-service-account="$GCP_ARTIFACT_RUNTIME_SERVICE_ACCOUNT")
+          jq -n --arg target "$TARGET" --argjson limit 100 '{
+            structuredQuery: {
+              from: [{collectionId: "runs"}],
+              where: {
+                fieldFilter: {
+                  field: {fieldPath: "target"},
+                  op: "EQUAL",
+                  value: {stringValue: $target}
+                }
+              },
+              limit: $limit
+            }
+          }' > /tmp/query.json
+
+          curl --fail --silent --show-error \
+            -H "Authorization: Bearer $TOKEN" \
+            -H 'Content-Type: application/json' \
+            --data @/tmp/query.json \
+            "https://firestore.googleapis.com/v1/projects/$GCP_PROJECT_ID/databases/(default)/documents:runQuery" \
+            > /tmp/firestore.json
+
+          jq --argjson max "$MAX_RUNS" '[.[] | select(.document) | .document.fields | {
+            run_id: (.run_id.stringValue // ""),
+            target: (.target.stringValue // ""),
+            root_url: (.root_url.stringValue // ""),
+            created_at: (.created_at.stringValue // ""),
+            updated_at: (.updated_at.stringValue // ""),
+            status: (.status.stringValue // ""),
+            current_phase: (.current_phase.stringValue // ""),
+            central_phase: (.central_phase.stringValue // ""),
+            central_phase_label: (.central_phase_label.stringValue // ""),
+            active_internal_job: (.active_internal_job.stringValue // ""),
+            runner_state: (.runner_state.stringValue // ""),
+            runner_last_error: (.runner_last_error.stringValue // ""),
+            runner_worker_heartbeat_at: (.runner_worker_heartbeat_at.stringValue // ""),
+            runner_last_completed_at: (.runner_last_completed_at.stringValue // ""),
+            artifact_count: ((.artifact_count.integerValue // "0") | tonumber),
+            diligence_qa_complete: (.diligence_qa_complete.booleanValue // false),
+            assembly_authorized: (.assembly_authorized.booleanValue // false),
+            assembly_complete: (.assembly_complete.booleanValue // false)
+          }] | sort_by(.created_at) | reverse | .[0:$max]' /tmp/firestore.json | tee /tmp/live-run-status.json
+
+          test "$(jq length /tmp/live-run-status.json)" -gt 0
+          {
+            echo "## Production run status — $TARGET"
+            echo '```json'
+            cat /tmp/live-run-status.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload status evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-run-status-${{ github.run_id }}
+          path: /tmp/live-run-status.json
+          retention-days: 7
