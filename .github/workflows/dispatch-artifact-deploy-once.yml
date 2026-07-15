@@ -1,5 +1,6 @@
 name: Dispatch Artifact Deploy Once
 # One-use controller for dispatching and verifying the approved production deploy workflow.
+# PR execution trigger v2.
 
 on:
   push:
