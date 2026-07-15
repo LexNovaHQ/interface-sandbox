@@ -1,0 +1,92 @@
+name: Sarvam Queue and Worker Probe
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/sarvam-queue-worker-probe.yml"
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CLOUD_TASKS_QUEUE: ${{ vars.CLOUD_TASKS_QUEUE || 'diligence-reviewer-worker' }}
+    steps:
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Inspect Cloud Tasks queue and worker logs
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          GCP_REGION: ${{ secrets.GCP_REGION }}
+          GCP_ARTIFACT_CLOUD_RUN_SERVICE: ${{ secrets.GCP_ARTIFACT_CLOUD_RUN_SERVICE }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p probe
+          gcloud config set project "$GCP_PROJECT_ID"
+
+          gcloud tasks queues describe "$CLOUD_TASKS_QUEUE" \
+            --location "$GCP_REGION" \
+            --project "$GCP_PROJECT_ID" \
+            --format=json > probe/queue.json
+
+          gcloud tasks list \
+            --queue "$CLOUD_TASKS_QUEUE" \
+            --location "$GCP_REGION" \
+            --project "$GCP_PROJECT_ID" \
+            --limit=100 \
+            --format=json > probe/tasks.json
+
+          SINCE=$(date -u -d '30 minutes ago' +%Y-%m-%dT%H:%M:%SZ)
+          FILTER="resource.type=cloud_run_revision AND resource.labels.service_name=$GCP_ARTIFACT_CLOUD_RUN_SERVICE AND timestamp>=\"$SINCE\""
+          gcloud logging read "$FILTER" \
+            --project "$GCP_PROJECT_ID" \
+            --limit=500 \
+            --order=desc \
+            --format=json > probe/cloud-run-logs.json
+
+          jq '{state, rateLimits, retryConfig, stats}' probe/queue.json | tee probe/queue-summary.json
+          jq '[.[] | {name, scheduleTime, createTime, dispatchCount, responseCount, firstAttempt, lastAttempt, view}]' probe/tasks.json | tee probe/tasks-summary.json
+          jq '[.[] | select((.textPayload // .jsonPayload.message // .jsonPayload.error // "") | test("SARVAM|LN-20260715|ERROR|FAILED|M9|P2_"; "i")) | {
+            timestamp,
+            severity,
+            revision: .resource.labels.revision_name,
+            text: (.textPayload // .jsonPayload.message // .jsonPayload.error // .jsonPayload)
+          }][0:200]' probe/cloud-run-logs.json | tee probe/relevant-logs.json
+
+          {
+            echo '## Queue'
+            echo '```json'
+            cat probe/queue-summary.json
+            echo '```'
+            echo '## Tasks'
+            echo '```json'
+            cat probe/tasks-summary.json
+            echo '```'
+            echo '## Relevant worker logs'
+            echo '```json'
+            cat probe/relevant-logs.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload probe evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sarvam-queue-worker-probe-${{ github.run_id }}
+          path: probe/
+          retention-days: 7
