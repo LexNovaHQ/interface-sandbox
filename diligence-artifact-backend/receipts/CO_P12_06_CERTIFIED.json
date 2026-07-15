@@ -1,0 +1,38 @@
+{
+  "schema_version": "co_p12_06_certified_receipt.v1",
+  "status": "PASS",
+  "command": "npm run check:phase12-post-clean && npm run check",
+  "workflow": "CO P12 06 Validate",
+  "run_id": "29225167707",
+  "job_id": "86737674313",
+  "target_branch": "domain-gate-v0-preflight",
+  "validated_target_sha": "a2cc1eed55d64767f4ccb9b925685c55bd8a9571",
+  "scope": "POST_CLEAN_PRODUCTION_CERTIFICATION",
+  "package_gate": {
+    "check_entrypoint": "npm run check:critical",
+    "critical_runner": "node scripts/run-production-gate.mjs",
+    "phase12_post_clean_gate_included": true,
+    "package_script_surface_rationalized": true,
+    "cors_dependency_corrected": "^2.8.5"
+  },
+  "phase12_runtime": {
+    "compiler_runtime_cutover_status": "PRODUCTION_DIRECT_PROFILE_COMPILER_ACTIVE",
+    "renderer_cutover_status": "PRODUCTION_CLEAN_PROFILE_RENDERER_ACTIVE",
+    "legacy_recursive_compiler_retired": true,
+    "legacy_normalized_aliases_absent": true,
+    "report_facing_artifact_count": 29,
+    "canonical_section_count": 10
+  },
+  "hygiene": {
+    "one_time_applicators_absent": true,
+    "temporary_finalizer_workflows_absent_before_validation": true,
+    "post_clean_validation_gate_active": true,
+    "fake_receipt_forbidden": true
+  },
+  "validation_steps": [
+    "Install dependencies",
+    "Run CO-P12-06 post-clean gate",
+    "Run universal production gate",
+    "Upload CO-P12-06 diagnostics"
+  ]
+}

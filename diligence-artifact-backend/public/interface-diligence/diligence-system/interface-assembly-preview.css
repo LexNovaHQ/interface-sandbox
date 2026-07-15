@@ -1,0 +1,37 @@
+/* INTERFACE_ASSEMBLY_PREVIEW_V1 */
+:root { --interface-assembly-preview-version: "interface_assembly_preview.v1"; }
+.assembly-page .page-shell { width:min(1240px,calc(100% - 32px)); padding-top:10px; }
+.assembly-shell { display:grid; gap:24px; }
+.assembly-hero { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:28px; align-items:start; padding:18px 0 6px; }
+.assembly-preview-badge,.assembly-state { display:inline-flex; width:fit-content; border:1px solid rgba(197,160,89,.32); color:var(--gold); background:rgba(197,160,89,.06); border-radius:999px; padding:.5rem .72rem; font-size:.62rem; letter-spacing:.12em; text-transform:uppercase; font-weight:900; }
+.assembly-boundary { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; border-top:1px solid rgba(197,160,89,.17); border-bottom:1px solid rgba(197,160,89,.17); padding:18px 0; }
+.assembly-boundary div { display:grid; gap:6px; }
+.assembly-boundary strong { color:rgba(247,247,247,.9); font-size:.78rem; }
+.assembly-boundary span { color:rgba(229,229,229,.56); font-size:.72rem; line-height:1.55; }
+.assembly-matter,.assembly-document-families,.assembly-panel,.assembly-action-panel { background:linear-gradient(180deg,rgba(12,12,12,.78),rgba(6,6,6,.72)); border:1px solid rgba(197,160,89,.14); border-radius:28px; padding:clamp(20px,3vw,32px); box-shadow:0 24px 80px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.02); }
+.assembly-section-heading,.assembly-action-panel { display:flex; justify-content:space-between; gap:20px; align-items:flex-start; }
+.assembly-summary-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-top:18px; }
+.assembly-summary-item { border-left:1px solid rgba(197,160,89,.26); padding:.2rem 0 .2rem .85rem; min-height:56px; }
+.assembly-summary-label { color:rgba(229,229,229,.44); font-size:.58rem; letter-spacing:.13em; text-transform:uppercase; font-weight:800; }
+.assembly-summary-value { color:rgba(245,245,245,.88); margin-top:.32rem; font-size:.86rem; overflow-wrap:anywhere; }
+.assembly-family-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; margin-top:18px; }
+.assembly-family-card { position:relative; display:grid; gap:10px; min-height:170px; border:1px solid rgba(229,229,229,.09); background:rgba(255,255,255,.018); border-radius:20px; padding:18px; cursor:pointer; }
+.assembly-family-card input { position:absolute; inset:14px 14px auto auto; accent-color:var(--gold); }
+.assembly-family-card.selected { border-color:rgba(197,160,89,.5); background:rgba(197,160,89,.06); }
+.assembly-family-title { color:rgba(247,247,247,.92); font-size:1rem; font-weight:800; padding-right:28px; }
+.assembly-family-copy { color:rgba(229,229,229,.58); font-size:.74rem; line-height:1.55; }
+.assembly-family-status { margin-top:auto; color:var(--gold); font-size:.6rem; letter-spacing:.11em; text-transform:uppercase; font-weight:900; }
+.assembly-readiness-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; }
+.assembly-check-list,.assembly-blocker-list { display:grid; gap:10px; margin-top:16px; }
+.assembly-check,.assembly-blocker { display:grid; grid-template-columns:18px minmax(0,1fr); gap:10px; align-items:start; padding:12px 0; border-top:1px solid rgba(229,229,229,.07); }
+.assembly-check:first-child,.assembly-blocker:first-child { border-top:0; }
+.assembly-check-mark { width:14px; height:14px; border-radius:999px; border:1px solid rgba(197,160,89,.38); margin-top:2px; }
+.assembly-check.pass .assembly-check-mark { background:rgba(132,194,111,.72); border-color:rgba(132,194,111,.8); }
+.assembly-check.fail .assembly-check-mark,.assembly-blocker .assembly-check-mark { background:rgba(143,61,52,.72); border-color:rgba(143,61,52,.8); }
+.assembly-check-title,.assembly-blocker-title { color:rgba(245,245,245,.82); font-size:.78rem; font-weight:800; }
+.assembly-check-copy,.assembly-blocker-copy { color:rgba(229,229,229,.5); font-size:.7rem; line-height:1.5; margin-top:3px; }
+.assembly-action-panel { align-items:center; }
+.assembly-action-panel .btn[disabled] { opacity:.45; cursor:not-allowed; }
+@media (max-width:920px){.assembly-boundary,.assembly-family-grid,.assembly-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.assembly-readiness-grid{grid-template-columns:minmax(0,1fr);}}
+@media (max-width:640px){.assembly-hero,.assembly-section-heading,.assembly-action-panel{grid-template-columns:minmax(0,1fr);display:grid}.assembly-boundary,.assembly-family-grid,.assembly-summary-grid{grid-template-columns:minmax(0,1fr);}}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition-duration:.001ms!important;animation-duration:.001ms!important;}}

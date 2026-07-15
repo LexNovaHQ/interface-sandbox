@@ -24,7 +24,7 @@ governing_imports:
   - 00_TERMINAL_RECEIPT_RULES_INTEGRATED.md
   - 00_VALIDATOR_RULES_INTEGRATED.md
   - AGENT4_BACKEND_OUTPUT_CONTRACT.md
-  - FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
+  - Diligence_Field_Derivation_Registry.yml
   - FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
   - 01_M6_SOURCE_DISCOVERY_RUNTIME_SYNC_PATCHED.md
   - M7_TARGET_PROFILE_INTEGRATED_AGENT3_LOCKED_PATCHED_SPLIT_OUTPUTS.md
@@ -99,10 +99,15 @@ phase_local_gate:
 
   allowed_gate_outcomes:
     - PASS
-    - REPAIR_REQUIRED
-    - REINVESTIGATE_REQUIRED
+    - REINVESTIGATION_REQUIRED
     - PASS_WITH_LIMITATION
     - CONTROLLED_FAILURE
+
+  reinvestigation_metadata_required:
+    reinvestigation_owner_phase: M10_OR_UPSTREAM_OWNER
+    reinvestigation_scope: required
+    reinvestigation_reason_code: LOCAL_PHASE_DEFECT | EVIDENCE_GAP | UPSTREAM_SOURCE_UNIVERSE_DEFECT
+    attempt_number: 1_OR_2
 
 allowed_inputs:
   - source_discovery_handoff
@@ -118,7 +123,7 @@ allowed_inputs:
   - target_profile_forensics
   - target_feature_profile
   - target_feature_profile_forensics
-  - FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml DAP.* authority
+  - Diligence_Field_Derivation_Registry.yml DAP.* authority
   - FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml forensic authority
   - M6-approved data/privacy/security/control/legal/product/docs/API routes and admitted public material
   - upstream limitations from M6, M7, M8, M9, and M8 forensics
@@ -162,9 +167,11 @@ validator_action:
   fail_behavior: repair M10 only; do not advance to M11
 
 repair_policy:
-  - If local gate returns REPAIR_REQUIRED, repair M10 only and rerun the local gate.
-  - If local gate returns REINVESTIGATE_REQUIRED, emit a scoped reinvestigation request limited to M6-approved routes/materials, locked upstream objects, M9 navigation refs, and documented absence/access records.
-  - If necessary data/privacy/security/control route is absent from M6, return to M6/Agent 1 repair instead of searching or inventing.
+  - For a local M10 shape, derivation, readiness-row, Anti-Unknown, or missing-proof defect, return `REINVESTIGATION_REQUIRED` with owner `M10`, reason `LOCAL_PHASE_DEFECT`, and the smallest affected scope.
+  - For an evidence gap, return `REINVESTIGATION_REQUIRED` with owner `M10`, reason `EVIDENCE_GAP`, and a scoped request limited to approved routes/materials, locked upstream objects, navigation refs, and documented absence/access records.
+  - If a necessary data/privacy/security/control route is absent upstream, keep status `REINVESTIGATION_REQUIRED` and set the upstream owning phase, reason `UPSTREAM_SOURCE_UNIVERSE_DEFECT`, and exact missing route/artifact scope instead of searching or inventing.
+  - Permit at most two targeted reinvestigation attempts. After the second unsuccessful attempt, preserve the unresolved matter as a limitation or warning and continue if the profile remains truthful and structurally usable.
+  - Use `CONTROLLED_FAILURE` only for a separately established critical authority, custody, integrity, permission, or required-artifact failure.
   - Do not recompute unrelated upstream objects.
 
 stop_condition:
@@ -175,9 +182,9 @@ stop_condition:
 
 `M10.S0.C2` In monolith execution, this call card functions as a Module-local lock gate and terminal-projection contract. It does not authorize standalone `<phase_output>` blocks, same-chat receipts, compatibility wrappers, or combined material+forensic backend packets in production execution.
 
-`M10.S0.C3` The Module may not advance, hand off, or be treated as locked until its phase-local gate has returned `PASS`, `PASS_WITH_LIMITATION`, or `CONTROLLED_FAILURE`.
+`M10.S0.C3` The Module may advance or be treated as locked only when its phase-local gate returns `PASS` or `PASS_WITH_LIMITATION`. `CONTROLLED_FAILURE` is a blocking terminal state and never an advance-eligible gate.
 
-`M10.S0.C4` `REPAIR_REQUIRED` and `REINVESTIGATE_REQUIRED` are stop states.
+`M10.S0.C4` `REINVESTIGATION_REQUIRED` is a local stop-and-return state. It must include owner, scope, reason code, and attempt number; after no more than two unsuccessful attempts, ordinary unresolved matters become limitations or warnings rather than global blockers.
 
 ---
 
@@ -210,7 +217,7 @@ stop_condition:
 | Duty | Rule |
 |---|---|
 | Consume upstream artifacts | MUST consume `source_discovery_handoff`, `legal_cartography_index`, saved `target_profile`, saved `target_profile_forensics`, saved `target_feature_profile`, and saved `target_feature_profile_forensics`. |
-| Apply DAP authority | MUST apply selected `DAP.*` rows from `FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml`. |
+| Apply DAP authority | MUST apply selected `DAP.*` rows from `Diligence_Field_Derivation_Registry.yml`. |
 | Build extraction capsule | MUST build the Data-Control Source Extraction Capsule before DAP application. |
 | Use approved evidence only | MUST use only M6-approved/admitted routes/materials, locked upstream objects, and M9 navigation refs. |
 | Apply Anti-Unknown | MUST resolve every material signal through controlled status vocabulary. |
@@ -254,7 +261,7 @@ stop_condition:
 | `target_feature_profile` | Activity mechanics, data/content/object touched, archetypes, surfaces, and routing limitations only. |
 | `target_feature_profile_forensics` | M8 activity-source coverage, selected PA derivation, mechanics proof, archetype/surface proof, targeted re-extraction, and limitations where relevant to M10. |
 | `legal_cartography_index` | Privacy/DPA/security/subprocessor/legal-governance navigation refs only; no legal conclusions. |
-| `FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml` | Governing `DAP.*` derivation authority. |
+| `Diligence_Field_Derivation_Registry.yml` | Governing `DAP.*` derivation authority. |
 | `FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml` | Forensic/proof artifact structure. |
 | Module V ledger | Upstream custody, limitation, repair, and selected-row memory. |
 
@@ -273,7 +280,7 @@ Module X must consume the patched M8 activity card only.
 | Surface/context tokens | `surface_context_tokens[]` | `surface_tokens[]` |
 | Routing limits | `surface_proof_and_routing_limits` | `routing_basis` alone |
 
-`M10.S2B.C1` If the patched M8 fields are missing, return `REPAIR_REQUIRED` to Agent 3 / M8 rather than using retired paths.
+`M10.S2B.C1` If the patched M8 fields are missing, return `REINVESTIGATION_REQUIRED` to Agent 3 / M8 rather than using retired paths.
 
 ### M10.S2C — Route / Material Access Matrix
 
@@ -411,7 +418,7 @@ M10-A passes only if:
 
 `M10.S5.C1` Module X owns only `data_provenance_profile` and `data_provenance_profile_forensics`.
 
-`M10.S5.C2` Material field authority comes from `FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml`.
+`M10.S5.C2` Material field authority comes from `Diligence_Field_Derivation_Registry.yml`.
 
 `M10.S5.C3` DAP registry authority is a derivation authority, not the visible material output schema.
 
@@ -943,7 +950,7 @@ Lock only if all conditions pass:
 
 `M10.S17B.C2` If usable with limitations, set phase-local lock state to `LOCKED_WITH_LIMITATIONS`.
 
-`M10.S17B.C3` If unsafe or unusable, set phase-local lock state to `CONTROLLED_FAILURE` or `REPAIR_REQUIRED` as appropriate.
+`M10.S17B.C3` If unsafe or unusable, set phase-local lock state to `CONTROLLED_FAILURE` or `REINVESTIGATION_REQUIRED` as appropriate.
 
 ### M10.S17C — PHASE B1 Material Repair / Targeted Reinvestigation Behavior
 
@@ -970,9 +977,9 @@ Allowed Phase B1 outcomes:
 - `PASS_WITH_LIMITATION`
 - `CONTROLLED_FAILURE`
 - `REINVESTIGATION_COMPLETED_WITH_LIMITATION`
-- `SOURCE_REPAIR_REQUIRED` only for upstream source-universe defects
+- `REINVESTIGATION_REQUIRED` only during a targeted attempt, with upstream ownership and source scope carried in metadata rather than encoded in the status
 
-Any earlier `REPAIR_REQUIRED` or `REINVESTIGATE_REQUIRED` wording in this module is interpreted as an internal stop-and-repair workflow state, not a handoff-eligible final phase outcome. It does not authorize advancement to M11.
+`REINVESTIGATION_REQUIRED` is an internal stop-and-return state, not a handoff-eligible final outcome. It does not authorize advancement to M11, and it may be used for no more than two targeted attempts before an ordinary unresolved matter is preserved as a limitation or warning.
 
 ### M10.S17D — PHASE D Forensic Repair / Targeted Reinvestigation Behavior
 
@@ -998,9 +1005,9 @@ Allowed Phase D outcomes:
 - `PASS_WITH_LIMITATION`
 - `CONTROLLED_FAILURE`
 - `REINVESTIGATION_COMPLETED_WITH_LIMITATION`
-- `SOURCE_REPAIR_REQUIRED` only for upstream source-universe defects
+- `REINVESTIGATION_REQUIRED` only during a targeted attempt, with upstream ownership and source scope carried in metadata rather than encoded in the status
 
-Any earlier `REPAIR_REQUIRED` or `REINVESTIGATE_REQUIRED` wording in this module is interpreted as an internal stop-and-repair workflow state, not a handoff-eligible final phase outcome. It does not authorize advancement to M11.
+`REINVESTIGATION_REQUIRED` is an internal stop-and-return state, not a handoff-eligible final outcome. It does not authorize advancement to M11, and it may be used for no more than two targeted attempts before an ordinary unresolved matter is preserved as a limitation or warning.
 
 ---
 

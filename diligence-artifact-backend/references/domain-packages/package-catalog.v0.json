@@ -1,0 +1,48 @@
+{
+  "catalog_id": "domain_package_catalog_v0",
+  "version": "0.1",
+  "runtime_mode": "passive_manifest",
+  "primary_domain_packages": [
+    "ai-governance",
+    "saas",
+    "fintech",
+    "healthtech",
+    "hrtech",
+    "legaltech",
+    "edtech",
+    "marketplace",
+    "ecommerce",
+    "cybersecurity",
+    "developer-tools",
+    "data-infrastructure",
+    "enterprise-software",
+    "consumer-app",
+    "other-technology",
+    "unknown"
+  ],
+  "capability_overlays": [
+    "ai-native",
+    "payments",
+    "biometrics",
+    "identity-verification",
+    "location-tracking",
+    "children-minors",
+    "marketplace-matching",
+    "cross-border-data-transfer"
+  ],
+  "regulatory_overlays": [
+    "privacy",
+    "gdpr",
+    "india-dpdp",
+    "india-it-act",
+    "eu-ai-act",
+    "us-state-privacy",
+    "hipaa",
+    "financial-services",
+    "employment",
+    "consumer-protection"
+  ],
+  "review_overlays": [
+    "qualified-review"
+  ]
+}

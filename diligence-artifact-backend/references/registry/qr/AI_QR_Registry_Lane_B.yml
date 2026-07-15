@@ -1,0 +1,33 @@
+registry_part:
+  id: AI_QR_REGISTRY_LANE_B
+  parent: AI_QR_REGISTRY
+  version: v1.0
+  lane: B
+  record_count: 18
+  atomic_value_count: 25
+  sections:
+  - section_id: G15
+    title: Internal-use and workforce gate
+    display_order: 15
+    record_count: 3
+    path: AI_QR_Registry_G15.yml
+  - section_id: G16
+    title: Tools, deliverables and people decisions
+    display_order: 16
+    record_count: 3
+    path: AI_QR_Registry_G16.yml
+  - section_id: G17
+    title: Organization and jurisdiction context
+    display_order: 17
+    record_count: 5
+    path: AI_QR_Registry_G17.yml
+  - section_id: G18
+    title: Governance demand and use-case scale
+    display_order: 18
+    record_count: 2
+    path: AI_QR_Registry_G18.yml
+  - section_id: G19
+    title: IP, HITL and deployment ownership
+    display_order: 19
+    record_count: 5
+    path: AI_QR_Registry_G19.yml

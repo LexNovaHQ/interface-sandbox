@@ -1,0 +1,183 @@
+registry_section:
+  id: G19
+  parent: AI_QR_REGISTRY_LANE_B
+  version: v1.0
+  lane: B
+  title: IP, HITL and deployment ownership
+  display_order: 19
+  record_count: 5
+  atomic_value_count: 10
+  rows:
+  - id: B14
+    key: ai.lane_b.existing_employment_ip_assignment
+    section: G19
+    lane: B
+    shape: OBJECT
+    leaves:
+    - existing_ip_assignment_clause
+    - agreement_reference
+    materiality: MATERIAL
+    required: true
+    effects:
+    - SELECT_VARIANT
+    documents:
+    - DOC_AI_B_IP
+    mapping_key: QR.B14
+    upstream:
+      artifacts:
+      - legal_cartography_index
+      selectors:
+      - Public terms do not normally expose employment agreements
+      coverage: INPUT_REQUIRED
+    resolve: ANSWER
+    ui:
+      label: Existing employment IP-assignment posture
+      prompt: Confirm whether existing employment or contractor agreements already assign AI-assisted work product, prompts, workflows, and related IP.
+      input: object_form
+      mode: REQUIRED_INPUT
+      when:
+        all:
+        - B01 == true
+    demo: Yes | Employment Agreement dated 2025-01-15
+    threats:
+    - CRT_INF_LB1
+  - id: B15
+    key: ai.lane_b.client_originality_or_noninfringement_warranty
+    section: G19
+    lane: B
+    shape: BOOLEAN
+    leaves:
+    - client_originality_warranty
+    materiality: MATERIAL
+    required: true
+    effects:
+    - SELECT_CLAUSE
+    documents:
+    - DOC_AI_B_HND
+    - DOC_AI_B_SOP
+    mapping_key: QR.B15
+    upstream:
+      artifacts:
+      - legal_cartography_index
+      selectors:
+      - Visible customer-contract warranties may seed, but private agreements usually control
+      coverage: PARTIAL_INPUT
+    resolve: COMPLETE
+    ui:
+      label: Client originality or non-infringement warranty
+      prompt: Do client contracts include originality, authorship, or non-infringement warranties that may apply to AI-assisted work?
+      input: boolean
+      mode: PREFILLED_COMPLETION
+      when:
+        all:
+        - B05 == true
+    demo: 'Yes'
+    threats:
+    - CRT_INF_LB1
+  - id: B16
+    key: ai.lane_b.version_control_posture
+    section: G19
+    lane: B
+    shape: OBJECT
+    leaves:
+    - version_control_used
+    - method
+    materiality: MATERIAL
+    required: true
+    effects:
+    - SELECT_VARIANT
+    documents:
+    - DOC_AI_B_SOP
+    mapping_key: QR.B16
+    upstream:
+      artifacts:
+      - target_feature_profile
+      selectors:
+      - technical workflow evidence may show git/docs version history, but no normalized field
+      coverage: PARTIAL_INPUT
+    resolve: COMPLETE
+    ui:
+      label: Version-control posture
+      prompt: Confirm the version-control and audit-trail posture for AI-assisted work product.
+      input: object_form
+      mode: PREFILLED_COMPLETION
+      when:
+        any:
+        - B05 == true
+        - B06 == true
+    demo: Yes | Git and Google Docs version history
+    threats:
+    - JDG_DEC_LB3
+    - SHD_LIA_LB1
+  - id: B17
+    key: ai.lane_b.governance_contact
+    section: G19
+    lane: B
+    shape: OBJECT
+    leaves:
+    - name_or_role
+    - contact_route
+    materiality: STANDARD
+    required: true
+    effects:
+    - POPULATE
+    documents:
+    - DOC_AI_B_HND
+    - DOC_AI_B_SCAN
+    - DOC_AI_B_DPIA
+    - DOC_AI_B_SOP
+    - DOC_AI_B_PBK
+    mapping_key: QR.B17
+    upstream:
+      artifacts:
+      - legal_signal_derivation_profile
+      selectors:
+      - legal/privacy contact can seed but does not prove AI-governance ownership
+      coverage: PARTIAL_INPUT
+    resolve: COMPLETE
+    ui:
+      label: Designated AI governance contact
+      prompt: Designate the person or role responsible for internal AI governance.
+      input: contact_form
+      mode: PREFILLED_COMPLETION
+      when:
+        all:
+        - B01 == true
+    demo: Chief Operating Officer | ai-governance@demo.example
+    threats:
+    - SHD_LIA_LB1
+    - UNI_PRV_IN5
+  - id: B18
+    key: ai.lane_b.scanner_anonymity_mode
+    section: G19
+    lane: B
+    shape: ENUM
+    leaves:
+    - full_anonymity
+    - department_only
+    - named
+    materiality: MATERIAL
+    required: true
+    effects:
+    - SELECT_VARIANT
+    documents:
+    - DOC_AI_B_SCAN
+    mapping_key: QR.B18
+    upstream:
+      artifacts: []
+      selectors:
+      - Recommended default can be derived from team size
+      - operator chooses deployment mode
+      coverage: DEFAULT_OVERRIDE
+    resolve: OVERRIDE_IF_NEEDED
+    ui:
+      label: Shadow AI Scanner anonymity mode
+      prompt: Select whether Shadow AI Scanner responses are anonymous, confidential, or identified.
+      input: select
+      mode: OPTIONAL_OVERRIDE
+      when:
+        all:
+        - B01 == true
+    demo: Full anonymity
+    threats:
+    - UNI_LIA_LB1

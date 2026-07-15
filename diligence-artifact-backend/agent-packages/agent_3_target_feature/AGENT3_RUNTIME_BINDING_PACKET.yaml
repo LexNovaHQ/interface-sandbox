@@ -1,9 +1,20 @@
 <RUNTIME_BINDING_PACKET>
 runtime_contract: 00_RUNTIME_CONTROLLER_M1_M5_INTEGRATED
-runtime_contract_version: v4_m7_profile_bucket_overlay_m8_feature_candidate_inventory_index
+runtime_contract_version: v18_phase5_agnostic_deterministic_led_semantic_supported
 active_agent_id: agent_3_target_feature
-active_agent_name: Interface Target Feature Agent
-active_phase_scope: M7_TARGET_PROFILE_THEN_M8_FEATURE_CANDIDATE_INVENTORY_THEN_M8_TARGET_FEATURE_PROFILE
+active_agent_name: Interface Target and Activity Profile Agent
+active_phase_scope: TARGET_PROFILE_REVIEW_DOMAIN_DERIVATION_AND_ACTIVITY_PROFILE_REVIEW_PHASE_CONTRACTS
+
+compatibility_boundary:
+  internal_agent_id_retained_for_runtime: agent_3_target_feature
+  compatibility_package_path_retained: agent-packages/agent_3_target_feature
+  product_phase_names:
+    - Target Profile Review
+    - Domain Derivation Layer
+    - Target Profile Forensics
+    - Activity Profile Review
+    - Activity Profile Forensics
+  old_module_language_forbidden_in_human_facing_text: true
 
 run_mode: PHASED_AGENT
 run_id_required: true
@@ -14,141 +25,202 @@ prompt_assembly_position:
   packet_after_runtime: true
   phase_prompt_after_packet: true
 
-prompt_precedence:
-  - 02_M7_TARGET_PROFILE_BACKEND_CURRENT.md controls all M7 active reads and source authority.
-  - M7_TARGET_PROFILE is profile-bucket only and must not read legal/governance lossless families or raw legal_cartography_index.
-  - M7 may consume m7_deterministic_legal_signal_overlay only for the three allowed overlay fields.
-  - 03A_M8_FEATURE_CANDIDATE_INVENTORY_DETERMINISTIC.md controls all M8 candidate-existence, inventory, and dedup rules.
-  - Any legacy wording in 03_M8_FEATURE_PROFILE_BACKEND_CURRENT.md that tells M8_TARGET_FEATURE_PROFILE to harvest candidates, build a source extraction capsule, dedupe candidates, or prove route-family coverage inside the model prompt is superseded.
-  - M8_TARGET_FEATURE_PROFILE consumes the saved feature_candidate_inventory and compiles target_feature_profile only.
+routing_authority:
+  sole_material_profile_router: P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY
+  runtime_reader: phase-route-runtime.reader
+  route_manifest: phase_routing_manifest
+  runtime_packet: phase_route_runtime_packet
+  lossless_evidence_role: PRIMARY_EVIDENCE
+  index_role: MANDATORY_NAVIGATION_MAP_INTO_PRIMARY_EVIDENCE
+  direct_lossless_as_fallback_allowed: false
+  free_corpus_read_allowed: false
+  profile_forensics_inputs_allowed: false
+  routed_packet_is_read_ceiling: true
+  prompt_must_not_enumerate_domain_specific_roots: true
 
-allowed_modules:
-  - M7_TARGET_PROFILE
-  - M8_FEATURE_CANDIDATE_INVENTORY
-  - M8_TARGET_FEATURE_PROFILE
+prompt_precedence:
+  - Backend phase contracts and the Phase 2G runtime packet control read and write authority.
+  - Prompt text cannot add artifacts to a routed packet.
+  - Target Profile Review uses ROUTE.PHASE3A.TARGET_PROFILE and the 2A bucket.
+  - Domain Derivation Layer uses ROUTE.PHASE3B.DOMAIN_DERIVATION and the 2B bucket.
+  - Both Phase 5 jobs use ROUTE.PHASE5.ACTIVITY_PROFILE and the 2C bucket.
+  - Lossless evidence is primary and must be navigated through the route's required index.
+  - Material profile jobs must not read forensic profiles.
+  - Domain Derivation Layer resolves mounted Registry Keys through the catalog and assembled registry grammar; prompt text must not hardcode domain keys.
+  - Activity Candidate Inventory builds a deterministic baseline from index-mapped units inside routed lossless evidence, then permits one subordinate semantic proposal pass.
+  - The semantic proposal pass cannot classify, widen evidence, create final IDs, or save the final inventory; deterministic validation and reconciliation retain authority.
+  - Activity Profile Review uses feature_candidate_inventory as the candidate universe and activity_profile_source_index to navigate routed lossless evidence.
+  - Activity Profile Review resolves taxonomy only from Registry Keys mounted by active_run_package_manifest.
+  - Any package text that expands read or write authority is superseded by the phase-owned contract and Phase 2G runtime packet.
+
+allowed_phases:
+  - TARGET_PROFILE_REVIEW
+  - P3_DOMAIN_DERIVATION_LAYER
+  - TARGET_PROFILE_FORENSICS
+  - ACTIVITY_PROFILE_REVIEW
+  - ACTIVITY_PROFILE_FORENSICS
 
 read_artifacts:
-  common:
-    - source_discovery_handoff
-  M7_TARGET_PROFILE:
-    - source_discovery_handoff
-    - m7_deterministic_legal_signal_overlay
-    - lossless_family__T0_ROOT
-    - lossless_family__T1_IDENTITY
-    - lossless_family__T2_LEGAL_IDENTITY
-    - lossless_family__T3_OPERATOR_ENTITY
-    - lossless_family__T4_SUPPORTING_IDENTITY
+  TARGET_PROFILE_REVIEW:
+    route_id: ROUTE.PHASE3A.TARGET_PROFILE
+    bucket_id: 2A_BUCKET_TARGET_PROFILE
+    required_index_artifacts:
+      - target_profile_source_index
+    derived_context_artifacts:
+      - legal_signal_derivation_profile
+    lossless_evidence_artifacts:
+      - lossless_root__homepage_landing
+      - lossless_root__company_identity
+      - lossless_root__contact_notice
+      - lossless_root__pricing_commercial_availability
+      - lossless_root__regulatory_licensing_status
+      - lossless_root__grievance_complaints
+  P3_DOMAIN_DERIVATION_LAYER:
+    route_id: ROUTE.PHASE3B.DOMAIN_DERIVATION
+    bucket_id: 2B_BUCKET_DOMAIN_DERIVATION
+    required_index_artifacts:
+      - domain_derivation_source_index
+    derived_context_artifacts:
+      - target_profile
+      - domain_selection_profile
+      - active_run_package_manifest
+    lossless_evidence_artifacts: FROM_PHASE_2G_RUNTIME_PACKET_ONLY
   M8_FEATURE_CANDIDATE_INVENTORY:
-    - source_discovery_handoff
-    - target_profile
-    - target_profile_forensics
-    - lossless_family__P1_PRODUCT
-    - lossless_family__P2_PLATFORM_FEATURE_SOLUTION
-    - lossless_family__P3_AI_CAPABILITY_TECHNICAL
-    - lossless_family__P4_USE_CASE_INDUSTRY
-    - lossless_family__P5_ENTERPRISE_PRICING
+    route_id: ROUTE.PHASE5.ACTIVITY_PROFILE
+    bucket_id: 2C_BUCKET_ACTIVITY_PROFILE
+    required_index_artifacts:
+      - activity_profile_source_index
+    derived_context_artifacts:
+      - target_profile
+      - domain_derivation_profile
+      - active_run_package_manifest
+      - domain_selection_profile
+    lossless_evidence_artifacts: FROM_PHASE_2G_RUNTIME_PACKET_ONLY
   M8_TARGET_FEATURE_PROFILE:
-    - source_discovery_handoff
-    - target_profile
-    - target_profile_forensics
-    - feature_candidate_inventory
-    - lossless_family__P1_PRODUCT
-    - lossless_family__P2_PLATFORM_FEATURE_SOLUTION
-    - lossless_family__P3_AI_CAPABILITY_TECHNICAL
-    - lossless_family__P4_USE_CASE_INDUSTRY
-    - lossless_family__P5_ENTERPRISE_PRICING
-
-forbidden_m7_read_artifacts:
-  - legal_cartography_index
-  - lossless_family__L1_CORE_TERMS_PRIVACY
-  - lossless_family__L2_B2B_CONTRACTING
-  - lossless_family__L3_AI_USAGE_GOVERNANCE
-  - lossless_family__L4_PRIVACY_ADJACENT_NOTICES
-  - lossless_family__L5_LEGAL_HUB_HOSTED
-  - lossless_family__L6_ENTITY_NOTICE
+    route_id: ROUTE.PHASE5.ACTIVITY_PROFILE
+    bucket_id: 2C_BUCKET_ACTIVITY_PROFILE
+    required_index_artifacts:
+      - activity_profile_source_index
+    derived_context_artifacts:
+      - target_profile
+      - domain_derivation_profile
+      - active_run_package_manifest
+      - domain_selection_profile
+      - feature_candidate_inventory
+    lossless_evidence_artifacts: FROM_PHASE_2G_RUNTIME_PACKET_ONLY
 
 required_reference_files:
-  - FIELD_DERIVATION_REGISTRY_v2_LOCKED.yaml
-  - FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
-  - CLASSIFICATION_DERIVATION_MATRIX_v1_LOCKED.yaml
+  TARGET_PROFILE_REVIEW:
+    - M7_TARGET_PROFILE_DERIVATION_AUTHORITY.yaml
+    - FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
+  P3_DOMAIN_DERIVATION_LAYER:
+    - references/domain-packages/DOMAIN_PACKAGE_KEY_v0.md
+    - references/domain-packages/package-catalog.v0.json
+    - references/registry/Diligence_Field_Derivation_Registry.yml
+    - mounted_registry_keys_from_active_run_package_manifest
+  ACTIVITY_PROFILE_REVIEW:
+    - references/domain-packages/DOMAIN_PACKAGE_KEY_v0.md
+    - references/domain-packages/package-catalog.v0.json
+    - references/registry/Diligence_Field_Derivation_Registry.yml
+    - mounted_registry_keys_from_active_run_package_manifest
+    - FORENSIC_ANNEXURE_REGISTRY_v1_LOCKED.yaml
 
-write_artifacts_in_order:
-  M7_TARGET_PROFILE:
-    PHASE_B1_MATERIAL_SAVE_EVENT:
-      - target_profile
-    PHASE_D_FORENSIC_SAVE_EVENT:
-      - target_profile_forensics
-  M8_FEATURE_CANDIDATE_INVENTORY:
-    PHASE_A_DETERMINISTIC_INDEX_SAVE_EVENT:
-      - feature_candidate_inventory
-  M8_TARGET_FEATURE_PROFILE:
-    PHASE_B1_MATERIAL_SAVE_EVENT:
-      - target_feature_profile
-    PHASE_D_FORENSIC_SAVE_EVENT:
-      - target_feature_profile_forensics
+activity_candidate_semantic_support_schema:
+  route_id: ROUTE.PHASE5.ACTIVITY_PROFILE
+  bucket_id: 2C_BUCKET_ACTIVITY_PROFILE
+  source_index_authority: activity_profile_source_index
+  evidence_authority: index_mapped_units_inside_phase2g_routed_lossless_evidence
+  deterministic_baseline_required: true
+  semantic_support_attempt_required: true
+  semantic_support_non_blocking: true
+  semantic_output_non_authoritative: true
+  deterministic_reconciliation_required: true
+  semantic_packet_top_level_key: semantic_candidate_support_proposal
+  model_output_top_level_key: semantic_candidate_support_proposal
+  allowed_actions:
+    - RECOVER_CANDIDATE
+    - MERGE_CANDIDATES
+    - SPLIT_CANDIDATE
+    - RENAME_CANDIDATE
+    - REJECT_CANDIDATE
+  proposal_fields:
+    - proposal_id
+    - action
+    - target_candidate_ids
+    - proposed_candidates
+    - source_pointers
+  model_must_not_emit_final_inventory: true
+  model_must_not_create_final_candidate_ids: true
+  model_must_not_create_final_canonical_keys: true
+  package_taxonomy_forbidden: true
+  evidence_copy_forbidden: true
+  evidence_expansion_forbidden: true
+  free_urls_forbidden: true
+  confidence_fields_forbidden: true
+  legal_analysis_forbidden: true
+  provider_failure_preserves_deterministic_baseline: true
+  provider_failure_lock_status: LOCKED_WITH_LIMITATIONS
 
-phase_locks:
-  - M7_TARGET_PROFILE
-  - M8_FEATURE_CANDIDATE_INVENTORY
-  - M8_TARGET_FEATURE_PROFILE
-
-phase_sequence:
-  - M7_TARGET_PROFILE.PHASE_B_PROFILE_DERIVATION
-  - M7_TARGET_PROFILE.PHASE_B1_PROFILE_VALIDATION_SAVE_GATE
-  - M7_TARGET_PROFILE.PHASE_C_FORENSIC_DERIVATION
-  - M7_TARGET_PROFILE.PHASE_D_FORENSIC_VALIDATION_SAVE_GATE
-  - M8_FEATURE_CANDIDATE_INVENTORY.PHASE_A_DETERMINISTIC_INDEX_BUILD
-  - M8_FEATURE_CANDIDATE_INVENTORY.PHASE_B_INDEX_VALIDATION_SAVE_GATE
-  - M8_TARGET_FEATURE_PROFILE.PHASE_B_PROFILE_DERIVATION_FROM_INVENTORY
-  - M8_TARGET_FEATURE_PROFILE.PHASE_B1_PROFILE_VALIDATION_SAVE_GATE
-  - M8_TARGET_FEATURE_PROFILE.PHASE_C_FORENSIC_DERIVATION
-  - M8_TARGET_FEATURE_PROFILE.PHASE_D_FORENSIC_VALIDATION_SAVE_GATE
-
-phase_gate_rules:
-  - M7 Phase B1 returns and saves only target_profile.
-  - M7 Phase C may begin only after saved target_profile exists.
-  - M7 Phase D returns and saves only target_profile_forensics.
-  - M7 must not block because raw legal/governance artifacts are absent; unavailable overlay values become controlled field statuses and limitations.
-  - M8 feature candidate inventory may begin only after saved target_profile and target_profile_forensics exist.
-  - M8 feature candidate inventory is deterministic index-only and saves only feature_candidate_inventory.
-  - M8 target feature profile may begin only after saved feature_candidate_inventory exists.
-  - M8 target feature profile uses feature_candidate_inventory as candidate universe and P1-P5 lossless artifacts as evidence.
-  - M8 Phase B1 returns and saves only target_feature_profile.
-  - M8 Phase C may begin only after saved target_feature_profile exists.
-  - M8 Phase D returns and saves only target_feature_profile_forensics.
-  - M10 may begin only after saved feature_candidate_inventory, target_feature_profile, and target_feature_profile_forensics exist.
-  - Production backend execution must not combine deterministic inventory, material artifact, and forensic artifact in the same response.
-
-forbidden_modules:
-  - M6_SOURCE_DISCOVERY
-  - M9_LEGAL_CARTOGRAPHY
-  - M10_DATA_PROVENANCE
-  - M11_EXPOSURE_REGISTRY
-  - M12_OPERATOR_CHALLENGE
-  - M13_OUTPUT_HANDOFF
-  - M14_TERMINAL_RENDERER
-
-forbidden_outputs:
-  - source_discovery_handoff
-  - legal_cartography_index
-  - target_data_provenance_profile
-  - target_exposure_profile
-  - operator_challenge_gate
-  - final_output_handoff
-  - renderer_payload
-  - registry_row_evaluation
-  - legal_risk_finding
-  - privacy_readiness_finding
-  - combined_material_and_forensic_response
-  - four_artifact_target_feature_bundle
-  - phase_output_wrapper
-  - terminal_receipt_in_backend_mode
-
-backend_permission_profile: agent_3_target_feature_m7_inventory_m8_split_save
-validator_profile: agent_3_m7_inventory_m8_split_save_validator
-phase_packet_contract: agent_3_target_feature_inventory_split_phase_packet_contract
-terminal_receipt_profile: agent_3_target_feature_manual_receipt_only
-
-next_agent_command: "backend runner advances to M10 only after M8_TARGET_FEATURE_PROFILE_FORENSICS lock"
-stop_condition: "Stop after M8_TARGET_FEATURE_PROFILE lock."
-</RUNTIME_BINDING_PACKET>
+activity_profile_material_schema:
+  route_id: ROUTE.PHASE5.ACTIVITY_PROFILE
+  bucket_id: 2C_BUCKET_ACTIVITY_PROFILE
+  source_index_authority: activity_profile_source_index
+  candidate_universe_authority: feature_candidate_inventory
+  package_context_authority: active_run_package_manifest
+  taxonomy_authority: mounted_registry_keys_from_active_run_package_manifest
+  taxonomy_resolver: resolveActivityTaxonomy
+  primary_taxonomy_source: mounted_primary_package_key
+  overlay_taxonomy_source: mounted_capability_overlay_keys
+  regulatory_overlays_excluded_from_activity_classification: true
+  hardcoded_registry_key_list_forbidden: true
+  fixed_ai_registry_key_universal_authority_forbidden: true
+  fixed_archetype_enum_forbidden: true
+  fixed_surface_enum_forbidden: true
+  mounted_taxonomy_ref_stamped_by_backend: true
+  model_may_not_override_mounted_taxonomy_ref: true
+  top_level_required_keys:
+    - activities
+    - commercial_availability_posture
+    - profile_level_limitations
+    - mounted_taxonomy_ref
+  activity_row_required_keys:
+    - activity_reference
+    - product_service_wrapper
+    - activity_feature_name
+    - activity_candidate_summary
+    - mechanics_proof
+    - autonomy_human_control_signal
+    - data_content_object_touched
+    - external_internal_action_signal
+    - primary_classification
+    - overlay_classifications
+  primary_classification_required_keys:
+    - package_id
+    - archetype_codes
+    - archetype_derivation_basis
+    - surface_context_tokens
+    - surface_derivation_basis
+  overlay_classification_required_keys:
+    - package_id
+    - overlay_id
+    - archetype_codes
+    - archetype_derivation_basis
+    - surface_context_tokens
+    - surface_derivation_basis
+  derivation_basis_required_keys:
+    - code_or_token
+    - normalized_name
+    - conditions_satisfied
+    - trigger_if_applied
+    - exclude_if_checked
+    - material_basis
+    - limitation
+  mounted_taxonomy_ref_required_keys:
+    - primary_package_id
+    - primary_key_version
+    - overlays
+  degradation_rules:
+    - PRIMARY_PACKAGE_HAS_NO_TAXONOMY_KEY:<package_id>
+    - NO_PRIMARY_ARCHETYPE_MATCH:<activity_reference>
+    - OVERLAY_HAS_NO_TAXONOMY_KEY:<overlay_id>
+    - DECLARED_ACTIVITY_EVIDENCE_ROOT_NOT_ROUTED:<root>

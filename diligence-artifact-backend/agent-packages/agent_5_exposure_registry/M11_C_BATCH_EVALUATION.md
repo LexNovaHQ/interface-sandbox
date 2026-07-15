@@ -1,110 +1,165 @@
 # M11_C_BATCH_EVALUATION
 
 ## PURPOSE
-Evaluate only the active M11 batch supplied in `RUNTIME_PACKET.upstream_artifacts.m11_batch_packet`.
 
-This is a slim semantic batch phase. Do not evaluate rows outside the active batch. Do not rebuild the route plan. Do not merge the workpad. Do not emit controlled/triggered profiles. Do not emit forensics. Do not emit the challenge gate.
+Evaluate only the package-scoped M11 batch supplied in `m11_batch_packet`.
 
-## REQUIRED INPUT
-The backend supplies:
-- `m11_batch_packet.batch_id`
-- `m11_batch_packet.expected_threat_ids`
-- `m11_batch_packet.registry_rows[]`
-- backend-prefilled deterministic registry spine for each expected row, including mandatory `Threat_Name`
-- parsed Hunter Trigger material for those rows
-- selected M9 legal-cartography rows for those rows
-- M9-guided full lossless legal/governance sections or parts for those rows
-- closest relevant full lossless legal/governance sections or parts when M9 is silent or thin
-- backend full-evidence access manifest showing which locked legal/governance lossless packages remain available to the backend
+This is Layer 2 semantic evidence application only. Do not evaluate rows outside the active packet. Do not select registries, classify activities, route rows, choose stream membership, choose batch membership, resize the batch, rebuild the route plan, merge the workpad, project profiles, assemble forensics, emit a challenge gate, or write report prose.
+
+## CONTRACT VERSION
+
+```text
+M11_PACKAGE_SCOPED_SEMANTIC_LEDGER_v1
+```
+
+## REQUIRED PACKET
+
+The backend packet must satisfy `M11_PACKAGE_SCOPED_SEMANTIC_PACKET_v1` and provide immutable batch identity:
+
+```text
+batch_id
+batch_group
+stream_id
+stream_type
+package_id
+source_domain
+expected_registry_row_keys[]
+expected_threat_ids[]
+row_count
+registry_rows[]
+```
+
+The batch contains one package, one stream, and one archetype group. `row_count` is at most 15.
+
+The model must preserve the canonical `Threat_ID` exactly. The model must not emit `registry_row_key`, prepend the package ID to a Threat ID, rename a Threat ID, or compare the active package with another package.
 
 ## SEMANTIC ROLE
-The M11 model does not author the full material row from scratch.
 
-The backend owns deterministic registry spine fields including Threat_ID, Threat_Name, Archetype, Subcategory, Surface, authority anchors, pain fields, legal pain, base registry FP mechanism, remediation source, route reason, batch membership, subcategory normalization, and final status assignment.
+The backend owns the deterministic registry spine and custody fields, including:
 
-The M11 model owns only active-batch evidence application:
-- target_match
-- basis_proof
-- control_exclusion_evaluation
-- evidence_source_basis
-- applied_fp_mechanism
-- row_limitations
-- status_inputs
+```text
+registry_row_key
+Threat_ID
+Threat_Name
+package_id
+source_domain
+stream_id
+stream_type
+Archetype
+Subcategory
+Surface
+authority_anchors
+pain fields
+Legal_Pain
+base FP mechanism
+remediation source
+review route
+parsed Hunter Trigger
+route and route reason
+matched activity references
+batch membership
+final material status
+```
 
-Do not rewrite deterministic registry spine fields. Do not emit or rewrite `Threat_Name`. Do not normalize `Subcategory`. Do not choose final material profile placement. Do not emit `evaluation_status`.
+The model owns only these semantic evidence-application fields:
+
+```text
+target_match
+basis_proof
+control_exclusion_evaluation
+evidence_source_basis
+applied_fp_mechanism
+row_limitations
+status_inputs
+```
+
+`trigger_status` may be returned as a non-authoritative short diagnostic label. It is not a final material status and the backend may ignore it.
+
+Do not emit `evaluation_status`, final profile placement, deterministic spine fields, or any downstream artifact.
+
+## EVIDENCE AUTHORITY
+
+Apply the exact parsed Hunter Trigger for each supplied registry row to the admitted evidence in that row’s packet.
+
+Use this discipline:
+
+1. Hunter Trigger conditions and logic are the row-level evaluation authority.
+2. Supplied primary evidence is the proof basis.
+3. M9 legal cartography is the mandatory navigation map into legal/governance primary evidence.
+4. Recorded index-gap navigation inside the same routed primary evidence bucket remains primary evidence navigation; it is not fallback evidence.
+5. Phase 5 classification and route reason establish why the row entered this batch, not whether the Hunter Trigger is satisfied.
+6. Domain-control-obligation context is contextual only and cannot independently trigger, exclude, or control a row.
+7. Legal-cartography metadata is not substantive proof except for document-presence, document-absence, custody, navigation, or evidence-limitation questions.
+8. Silence, missing pages, gated flows, or unavailable evidence are limitations unless the exact Hunter Trigger expressly makes a verified absence dispositive.
+
+Do not fabricate facts, controls, exclusions, jurisdictions, deployment contexts, user flows, or regulatory applicability.
+
+## CONDITION-BY-CONDITION DISCIPLINE
+
+For every row, `basis_proof` must identify:
+
+- which parsed Hunter Trigger conditions are directly supported;
+- which conditions are contradicted, unsupported, or only partially supported;
+- whether the `TRIGGER_IF` logic is satisfied;
+- whether the `EXCLUDE_IF` logic is satisfied;
+- the specific supplied evidence supporting each conclusion.
+
+Do not set `trigger_if_met = yes` from general product capability, domain classification, route membership, registry status, marketing language, or legal-policy silence.
+
+Jurisdiction-specific, deployment-specific, UI-flow, consent-flow, cancellation-flow, biometric/audio, investor-facing, regulated-claim, or licensing rows require direct evidence of the specific condition. Where that evidence is absent or indirect, use `partial` or `no` and carry the limitation.
 
 ## HUMAN-READABLE FIELD RULE
-The fields below are report-facing and must be short narrative text, not scalar labels:
-- `target_match`
-- `basis_proof`
-- `control_exclusion_evaluation`
-- `evidence_source_basis`
-- `row_limitations`
 
-Do not put only `yes`, `no`, `partial`, `true`, `false`, `unknown`, `n/a`, or similar scalar values in these fields.
+These report-facing fields must be concise narrative text, not scalar labels:
 
-`basis_proof` must state which Hunter Trigger condition(s) were satisfied, which condition(s) were not satisfied or only partially supported, and which public evidence supports that assessment.
+```text
+target_match
+basis_proof
+control_exclusion_evaluation
+evidence_source_basis
+row_limitations
+```
 
-`target_match` must identify the specific target product/activity/document signal that connects the row to the target.
+Do not use only `yes`, `no`, `partial`, `true`, `false`, `unknown`, `n/a`, or equivalent scalar text.
 
-`control_exclusion_evaluation` must state whether a visible control, exclusion, limitation, or silence affected the row.
+- `target_match` identifies the specific supplied target activity, product, data practice, or document signal connected to the row.
+- `basis_proof` applies the Hunter Trigger condition by condition.
+- `control_exclusion_evaluation` explains any supplied visible control or exclusion and whether it defeats or merely reduces the exposure.
+- `evidence_source_basis` names the actual supplied source types and evidence units used.
+- `row_limitations` states the exact missing or ambiguous evidence without generic boilerplate.
 
-`evidence_source_basis` must name the type of source used, such as product page, docs, terms, privacy policy, trust/security page, legal/governance artifact, or M9-guided fallback.
+## STATUS INPUT CONTRACT
 
-## EVIDENCE RULE
-Use M9-guided full lossless units first.
+Every row must include exactly these lower-case `yes | no | partial` inputs:
 
-Use M9 legal cartography as the mandatory navigation layer where available. M9 silence is not evidence absence.
+```text
+target_match_present
+hunter_conditions_met
+trigger_if_met
+exclude_if_met
+visible_control_present
+visible_control_defeats_or_reduces_exposure
+evidence_sufficient
+public_evidence_limitation
+false_positive_concern
+```
 
-If M9 is silent, use the backend-supplied closest relevant full lossless legal/governance sections or parts.
-
-If the supplied lossless evidence is insufficient, do not fabricate a trigger. Return evidence limitation through `status_inputs` and identify the missing evidence route in `row_limitations`.
-
-## YES / PARTIAL / NO DISCIPLINE
-Use `yes` only where the specific row condition is directly supported by public evidence supplied in the batch packet.
-
-Use `partial` where:
-- product capability exists but deployment context is not proven;
-- product capability exists but relevant jurisdiction or regime nexus is not proven;
-- legal/governance silence is the only support;
-- UI, signup, checkout, dashboard, cancellation, or consent flow is not captured;
-- public source is thin, gated, indirect, ambiguous, or only a closest fallback;
-- M9 is silent and backend fallback is only closest relevant evidence.
-
-Use `no` where the condition is contradicted or not supported.
-
-Do not set `trigger_if_met = yes` merely because:
-- the target has an AI product;
-- the target has voice, audio, document, model, translation, or API capability;
-- a policy does not mention a specific control;
-- Terms or Privacy materials are silent;
-- a general marketing claim exists;
-- a regime could theoretically apply.
-
-Jurisdiction-specific, UI-flow, consent-flow, cancellation-flow, biometric/audio, investor-facing, or regulated-claim rows require direct public proof of the specific row condition before `yes`. If the specific proof is not present, set `public_evidence_limitation = yes` or `partial` and `false_positive_concern = yes` or `partial`.
-
-## STATUS INPUT RULE
-Do not freely assign the final material status. Provide structured status inputs so the backend can derive the final status.
-
-The status inputs must address:
-- target_match_present
-- hunter_conditions_met
-- trigger_if_met
-- exclude_if_met
-- visible_control_present
-- visible_control_defeats_or_reduces_exposure
-- evidence_sufficient
-- public_evidence_limitation
-- false_positive_concern
+The model does not derive the final material status. The backend owns that derivation.
 
 ## OUTPUT ROOT
+
 Return exactly one JSON root:
 
 ```json
 {
   "m11_batch_registry_ledger": {
+    "semantic_contract_version": "M11_PACKAGE_SCOPED_SEMANTIC_LEDGER_v1",
     "batch_id": "",
     "batch_group": "",
+    "stream_id": "",
+    "stream_type": "PRIMARY | OVERLAY",
+    "package_id": "",
+    "source_domain": "",
     "expected_threat_ids": [],
     "returned_threat_ids": [],
     "m9_legal_cartography_consumed": true,
@@ -113,8 +168,11 @@ Return exactly one JSON root:
 }
 ```
 
+The echoed batch metadata must match the supplied packet exactly.
+
 ## ROW SHAPE
-Each row in `batch_registry_ledger[]` must have exactly these semantic keys plus `Threat_ID` and optional `trigger_status`:
+
+Each `batch_registry_ledger[]` item must contain exactly these semantic keys plus canonical `Threat_ID`; optional `trigger_status` is permitted:
 
 ```json
 {
@@ -140,14 +198,44 @@ Each row in `batch_registry_ledger[]` must have exactly these semantic keys plus
 }
 ```
 
-## HARD RULES
-- Return one row per `expected_threat_ids` item.
-- Do not group Threat_IDs.
-- Do not add deterministic registry spine fields to the model row.
-- Do not add `Threat_Name` to the model row.
-- Do not add or normalize `Subcategory` in the model row.
-- Do not add `evaluation_status` to the model row.
-- Do not add final material profile containers.
-- Do not assign final material profile placement.
-- Do not treat surface as a route basis.
-- Evidence gaps, unclear public evidence, gated pages, thin evidence, missing context, or insufficient full lossless units are limitations, not hallucination permission.
+## EXACT-COVERAGE RULE
+
+- Return one row for every `expected_threat_ids` item.
+- Return no other row.
+- Preserve expected order.
+- `returned_threat_ids` must equal `expected_threat_ids` exactly.
+- Do not group or summarize Threat IDs.
+- Do not omit a row because evidence is weak; return the row with explicit limitations and conservative status inputs.
+- Do not return a partial ledger.
+
+## FORBIDDEN OUTPUT
+
+The model must not emit:
+
+```text
+registry_row_key
+Threat_Name
+package routing changes
+stream changes
+classification changes
+batch changes
+Archetype
+Subcategory
+Surface
+authority anchors
+pain fields
+remediation
+review_route
+evaluation_status
+active_threat_registry_manifest
+exposure_registry_route_plan
+exposure_registry_batch_validation
+exposure_registry_workpad_98
+exposure_registry_controlled_profile
+exposure_registry_triggered_profile
+exposure_registry_profile_forensics
+challenge_gate
+compiler or renderer output
+```
+
+Evidence gaps are limitations, not hallucination permission. Stop after the single semantic ledger root.

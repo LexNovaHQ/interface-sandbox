@@ -64,12 +64,12 @@ universal_non_negotiables:
   - no legal advice or compliance conclusion outside authorized module boundaries
   - no final_output_handoff except final handoff agent
   - no renderer payload except terminal/renderer agent
-  - no same-chat handoff if current phase is REPAIR_REQUIRED or CONTROLLED_FAILURE
+  - no same-chat handoff if current phase is REINVESTIGATION_REQUIRED or CONTROLLED_FAILURE
 
 allowed_global_lock_status_values:
   - LOCKED
   - LOCKED_WITH_LIMITATIONS
-  - REPAIR_REQUIRED
+  - REINVESTIGATION_REQUIRED
   - CONTROLLED_FAILURE
 
 phase_outcome_to_lock_status_map:
@@ -77,9 +77,16 @@ phase_outcome_to_lock_status_map:
   PASS_WITH_WARNING: LOCKED_WITH_LIMITATIONS
   PASS_WITH_LIMITATION: LOCKED_WITH_LIMITATIONS
   REINVESTIGATION_COMPLETED_WITH_LIMITATION: LOCKED_WITH_LIMITATIONS
-  SOURCE_REPAIR_REQUIRED: REPAIR_REQUIRED
-  REPAIR_REQUIRED: REPAIR_REQUIRED
+  REINVESTIGATION_REQUIRED: REINVESTIGATION_REQUIRED
   CONTROLLED_FAILURE: CONTROLLED_FAILURE
+
+reinvestigation_projection_requirements:
+  status: REINVESTIGATION_REQUIRED
+  reinvestigation_owner_phase: required
+  reinvestigation_scope: required
+  reinvestigation_reason_code: required
+  attempt_number: required_max_2
+  source_or_upstream_scope_must_be_metadata_not_status_alias: true
 
 stop_condition:
   Stop at the active agent profile stop condition.
@@ -431,7 +438,7 @@ NEXT STEP:
 PHASE LOCKED WITH LIMITATIONS: <phase_lock>
 ```
 
-`TRM.S1.C5` If phase status is `REPAIR_REQUIRED` or `CONTROLLED_FAILURE`, do not provide a next-agent command.
+`TRM.S1.C5` If phase status is `REINVESTIGATION_REQUIRED` or `CONTROLLED_FAILURE`, do not provide a next-agent command.
 
 ## 9.2 Phase Receipt Matrix
 

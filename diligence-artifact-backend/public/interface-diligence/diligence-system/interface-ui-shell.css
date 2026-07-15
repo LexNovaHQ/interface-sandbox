@@ -1,0 +1,319 @@
+/* INTERFACE_UI_SHELL_V1
+   Shared visual shell for Interface Sandbox diligence surfaces.
+   Scope: polish shared shell primitives only. Do not rewrite curated copy or product identity.
+*/
+
+:root {
+  --interface-shell-version: "interface_ui_shell.v1";
+  --shell-void: #050505;
+  --shell-surface: rgba(12, 12, 12, .96);
+  --shell-surface-deep: rgba(7, 7, 7, .98);
+  --shell-surface-raised: rgba(255, 255, 255, .026);
+  --shell-border: rgba(229, 229, 229, .105);
+  --shell-border-strong: rgba(197, 160, 89, .32);
+  --shell-gold: #C5A059;
+  --shell-gold-soft: rgba(197, 160, 89, .10);
+  --shell-text: #e5e5e5;
+  --shell-muted: rgba(229, 229, 229, .66);
+  --shell-quiet: rgba(229, 229, 229, .42);
+  --shell-danger: #d67562;
+  --shell-amber: #d8b35d;
+  --shell-green: #64b892;
+  --shell-radius-xl: 30px;
+  --shell-radius-lg: 20px;
+  --shell-radius-md: 14px;
+  --shell-shadow-card: 0 26px 90px rgba(0, 0, 0, .42), inset 0 1px 0 rgba(255, 255, 255, .035);
+  --shell-shadow-gold: 0 0 34px rgba(197, 160, 89, .16);
+  --shell-max: 1240px;
+}
+
+html {
+  background: var(--shell-void);
+}
+
+body {
+  background:
+    radial-gradient(circle at 13% -8%, rgba(197, 160, 89, .16), transparent 29rem),
+    radial-gradient(circle at 88% 11%, rgba(255, 255, 255, .055), transparent 25rem),
+    radial-gradient(circle at 42% 92%, rgba(197, 160, 89, .055), transparent 34rem),
+    linear-gradient(180deg, #050505 0%, #070707 48%, #030303 100%);
+}
+
+body::before {
+  opacity: .07;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(197, 160, 89, .035) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255, 255, 255, .018) 1px, transparent 1px);
+  background-size: 96px 96px;
+  mask-image: radial-gradient(circle at 50% 0%, rgba(0,0,0,.42), transparent 62%);
+}
+
+body > * {
+  position: relative;
+}
+
+.progress-line {
+  background: linear-gradient(90deg, rgba(197, 160, 89, .95), rgba(197, 160, 89, .34), rgba(255, 255, 255, .18));
+  box-shadow: 0 0 18px rgba(197, 160, 89, .65), 0 0 46px rgba(197, 160, 89, .18);
+}
+
+.interface-topbar {
+  background: rgba(5, 5, 5, .76);
+  border-bottom-color: rgba(197, 160, 89, .18);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, .28);
+}
+
+.interface-topbar .topbar-inner {
+  width: min(var(--shell-max), calc(100% - 32px));
+}
+
+.interface-topbar .wordmark-title {
+  text-shadow: 0 0 24px rgba(197, 160, 89, .12);
+}
+
+.interface-topbar .wordmark-subtitle {
+  color: rgba(229, 229, 229, .52);
+}
+
+.engine-nav-link {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .026);
+}
+
+.engine-nav-link.active {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04), 0 0 24px rgba(197, 160, 89, .08);
+}
+
+.page-shell,
+.report-shell-page,
+.qr-shell,
+.gate-shell {
+  width: min(var(--shell-max), calc(100% - 32px));
+}
+
+.hero,
+.card,
+.report-section,
+.vault-panel,
+.qr-panel,
+.qr-hero,
+.qr-work-body-card,
+.report-meta-card,
+.report-control-card,
+.report-closing-actions,
+.report-left-rail,
+.qr-left-rail {
+  border-color: var(--shell-border);
+  box-shadow: var(--shell-shadow-card);
+}
+
+.hero,
+.card,
+.report-section,
+.vault-panel,
+.qr-panel,
+.qr-hero,
+.qr-work-body-card,
+.report-left-rail,
+.qr-left-rail {
+  background:
+    linear-gradient(180deg, var(--shell-surface), var(--shell-surface-deep));
+}
+
+.hero::before,
+.card::before,
+.report-section::before,
+.vault-panel::before,
+.qr-panel::before,
+.qr-hero::before,
+.qr-work-body-card::before,
+.report-left-rail::before,
+.qr-left-rail::before {
+  background:
+    radial-gradient(circle at 13% 0%, rgba(197, 160, 89, .09), transparent 24rem),
+    radial-gradient(circle at 96% 12%, rgba(255, 255, 255, .04), transparent 18rem);
+}
+
+.hero,
+.qr-hero {
+  border-radius: var(--shell-radius-xl);
+  box-shadow: var(--shell-shadow-card), var(--shell-shadow-gold);
+}
+
+.card,
+.report-section,
+.qr-panel,
+.qr-work-body-card,
+.report-left-rail,
+.qr-left-rail {
+  border-radius: var(--shell-radius-lg);
+}
+
+.eyebrow {
+  color: var(--shell-gold);
+  text-shadow: 0 0 18px rgba(197, 160, 89, .10);
+}
+
+.notice,
+.gate-inline-notice,
+.report-boundary {
+  border-color: rgba(197, 160, 89, .30);
+  background:
+    linear-gradient(90deg, rgba(197, 160, 89, .075), rgba(255, 255, 255, .022));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .028);
+}
+
+.btn,
+.quiet-link {
+  transition: transform .22s ease, border-color .22s ease, background .22s ease, color .22s ease, box-shadow .22s ease;
+}
+
+.btn:hover,
+.btn:focus,
+.quiet-link:hover,
+.quiet-link:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(197, 160, 89, .11), 0 12px 34px rgba(0, 0, 0, .22);
+}
+
+.btn:focus-visible,
+.quiet-link:focus-visible,
+.input:focus-visible,
+.engine-nav-link:focus-visible,
+.report-rail-item:focus-visible,
+.qr-rail-item:focus-visible,
+.rail-stage:focus-visible {
+  outline: 2px solid rgba(197, 160, 89, .75);
+  outline-offset: 3px;
+}
+
+.input,
+textarea,
+select {
+  border-color: rgba(229, 229, 229, .13);
+  background: rgba(255, 255, 255, .026);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .018);
+}
+
+.input:focus,
+textarea:focus,
+select:focus {
+  border-color: rgba(197, 160, 89, .62);
+  background: rgba(255, 255, 255, .044);
+  box-shadow: 0 0 0 4px rgba(197, 160, 89, .09), inset 0 1px 0 rgba(255, 255, 255, .028);
+}
+
+.rail-wrap,
+.report-left-rail,
+.qr-left-rail {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(197, 160, 89, .36) rgba(255, 255, 255, .035);
+}
+
+.rail-stage,
+.report-rail-item,
+.qr-rail-item {
+  transition: border-color .22s ease, background .22s ease, color .22s ease, transform .22s ease;
+}
+
+.rail-stage:hover,
+.report-rail-item:hover,
+.qr-rail-item:hover {
+  transform: translateX(2px);
+}
+
+.rail-dot {
+  box-shadow: 0 0 0 5px #050505, 0 0 18px rgba(197, 160, 89, .08);
+}
+
+.report-left-rail,
+.qr-left-rail {
+  position: sticky;
+  top: 92px;
+  align-self: start;
+  max-height: calc(100vh - 112px);
+  overflow: auto;
+}
+
+.report-rail-item,
+.qr-rail-item {
+  border-radius: 14px;
+}
+
+.report-rail-item.active,
+.qr-rail-item.active,
+.report-rail-item[aria-current="true"],
+.qr-rail-item[aria-current="true"] {
+  border-color: rgba(197, 160, 89, .48);
+  background: rgba(197, 160, 89, .075);
+  color: var(--shell-gold);
+}
+
+.meta-tile,
+.report-fact-item,
+.report-finding-card,
+.qr-question-card,
+.array-block {
+  background: var(--shell-surface-raised);
+  border-color: rgba(229, 229, 229, .095);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .018);
+}
+
+.footer-note,
+.qr-footer {
+  margin-top: 34px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(197, 160, 89, .16);
+  color: rgba(229, 229, 229, .48);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  font-size: .62rem;
+}
+
+.no-print {
+  print-color-adjust: exact;
+}
+
+@media (max-width: 860px) {
+  .page-shell,
+  .report-shell-page,
+  .qr-shell,
+  .gate-shell {
+    width: min(100% - 24px, var(--shell-max));
+    padding-top: 22px;
+  }
+
+  .hero,
+  .qr-hero,
+  .card,
+  .report-section,
+  .qr-panel,
+  .qr-work-body-card {
+    border-radius: 22px;
+  }
+
+  .report-left-rail,
+  .qr-left-rail {
+    position: relative;
+    top: auto;
+    max-height: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+  }
+}

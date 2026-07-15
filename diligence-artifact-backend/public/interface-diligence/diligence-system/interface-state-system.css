@@ -1,0 +1,18 @@
+/* INTERFACE_STATE_SYSTEM_V1 */
+:root { --interface-state-system-version:"interface_state_system.v1"; }
+.interface-state { border:1px solid rgba(229,229,229,.12); border-left:4px solid rgba(197,160,89,.62); border-radius:20px; padding:clamp(18px,2.4vw,28px); background:linear-gradient(180deg,rgba(15,15,15,.9),rgba(7,7,7,.86)); box-shadow:0 24px 70px rgba(0,0,0,.24); }
+.interface-state h2,.interface-state h3 { margin:.28rem 0 .55rem; }
+.interface-state p { margin:.35rem 0 0; color:rgba(235,235,235,.68); line-height:1.6; }
+.interface-state-actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:16px; }
+.interface-state-kicker { color:var(--gold); font-size:.62rem; letter-spacing:.14em; text-transform:uppercase; font-weight:900; }
+.interface-state.is-report_not_ready,.interface-state.is-missing_artifact { border-left-color:rgba(197,160,89,.75); }
+.interface-state.is-controlled_failure,.interface-state.is-network_failure { border-left-color:#d35f52; background:linear-gradient(180deg,rgba(35,10,8,.78),rgba(11,5,5,.9)); }
+.interface-state.is-pass_with_limitation { border-left-color:#d0a84e; background:linear-gradient(180deg,rgba(31,24,8,.72),rgba(9,7,4,.9)); }
+.interface-state-code { margin-top:12px; padding:.72rem .82rem; border-radius:12px; background:rgba(0,0,0,.28); border:1px solid rgba(255,255,255,.07); color:rgba(255,255,255,.72); font:600 .72rem/1.45 ui-monospace,SFMono-Regular,Consolas,monospace; overflow-wrap:anywhere; }
+.interface-state-compact { padding:14px 16px; border-radius:14px; }
+html[data-ui-state="pass_with_limitation"] .report-status-strip,html[data-ui-state="pass_with_limitation"] .gate-status-card { box-shadow:inset 3px 0 0 #d0a84e; }
+html[data-ui-state="controlled_failure"] .report-paper,html[data-ui-state="controlled_failure"] .gate-status-card { box-shadow:inset 4px 0 0 #d35f52; }
+.report-unavailable { margin:clamp(18px,3vw,36px); }
+.report-unavailable::before { content:"Report not ready"; display:block; color:var(--report-accent,#80632f); font-size:.66rem; letter-spacing:.14em; text-transform:uppercase; font-weight:900; margin-bottom:.45rem; }
+@media(max-width:640px){.interface-state{border-radius:14px;padding:16px}.interface-state-actions{display:grid}.interface-state-actions .btn{width:100%;justify-content:center}.report-unavailable{margin:14px 0}}
+@media(prefers-reduced-motion:reduce){.interface-state *{scroll-behavior:auto!important;transition:none!important;animation:none!important}}

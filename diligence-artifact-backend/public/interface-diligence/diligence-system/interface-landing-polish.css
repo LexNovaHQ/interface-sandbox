@@ -1,0 +1,391 @@
+/* INTERFACE_LANDING_POLISH_V1
+   Page-specific visual polish for Interface Diligence Engine landing page.
+   Scope: preserve curated copy and IA; refine hierarchy, command center, forms, rail, and mobile funnel only.
+*/
+
+:root {
+  --interface-landing-polish-version: "interface_landing_polish.v1";
+}
+
+.diligence-gate-page .gate-shell {
+  padding-top: clamp(26px, 4vw, 48px);
+}
+
+.diligence-gate-page .gate-main-grid {
+  align-items: start;
+}
+
+.diligence-gate-page .gate-workspace {
+  display: grid;
+  gap: clamp(18px, 2.4vw, 28px);
+}
+
+.diligence-gate-page .gate-hero {
+  min-height: clamp(260px, 34vw, 410px);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: clamp(28px, 5.4vw, 64px);
+  border-color: rgba(197, 160, 89, .24);
+}
+
+.diligence-gate-page .gate-hero::after {
+  content: "";
+  position: absolute;
+  inset: auto clamp(24px, 5vw, 58px) clamp(22px, 4vw, 42px) auto;
+  width: clamp(90px, 14vw, 170px);
+  height: clamp(90px, 14vw, 170px);
+  border: 1px solid rgba(197, 160, 89, .18);
+  border-radius: 999px;
+  background:
+    radial-gradient(circle, rgba(197, 160, 89, .14), transparent 42%),
+    linear-gradient(135deg, rgba(255,255,255,.03), transparent);
+  opacity: .78;
+  pointer-events: none;
+}
+
+.diligence-gate-page .gate-hero > * {
+  position: relative;
+  z-index: 1;
+}
+
+.diligence-gate-page .gate-hero .eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: .75rem;
+}
+
+.diligence-gate-page .gate-hero .eyebrow::before {
+  content: "";
+  width: 24px;
+  height: 1px;
+  background: rgba(197, 160, 89, .76);
+  box-shadow: 0 0 18px rgba(197, 160, 89, .22);
+}
+
+.diligence-gate-page .gate-hero h1 {
+  max-width: 860px;
+  text-wrap: balance;
+}
+
+.diligence-gate-page .gate-hero .hero-copy {
+  max-width: 780px;
+  color: rgba(229, 229, 229, .76);
+}
+
+.diligence-gate-page .gate-boundary {
+  max-width: 960px;
+  margin-top: clamp(18px, 3vw, 30px);
+}
+
+.diligence-gate-page .gate-status-priority {
+  border-color: rgba(197, 160, 89, .26);
+  background:
+    radial-gradient(circle at 12% 0%, rgba(197,160,89,.12), transparent 26rem),
+    linear-gradient(180deg, rgba(13,13,13,.98), rgba(5,5,5,.98));
+}
+
+.diligence-gate-page .gate-status-priority::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(197,160,89,.55), rgba(255,255,255,.10), transparent);
+  pointer-events: none;
+}
+
+.diligence-gate-page .gate-card-kicker {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.diligence-gate-page .gate-step-pill,
+.diligence-gate-page .gate-live-badge,
+.diligence-gate-page .gate-run-clock {
+  border: 1px solid rgba(197,160,89,.28);
+  border-radius: 999px;
+  background: rgba(197,160,89,.055);
+  color: rgba(229,229,229,.80);
+  font-size: .62rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  font-weight: 900;
+}
+
+.diligence-gate-page .gate-step-pill {
+  padding: .38rem .62rem;
+  color: var(--shell-gold, #C5A059);
+}
+
+.diligence-gate-page .gate-run-monitor {
+  margin-top: 1.2rem;
+  padding: 1rem;
+  border: 1px solid rgba(229,229,229,.10);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.032), rgba(255,255,255,.014));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.026);
+}
+
+.diligence-gate-page .gate-run-monitor-head,
+.diligence-gate-page .gate-run-monitor-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .9rem;
+  flex-wrap: wrap;
+}
+
+.diligence-gate-page .gate-live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  min-height: 32px;
+  padding: .38rem .65rem;
+}
+
+.diligence-gate-page .gate-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: 0 0 12px currentColor;
+}
+
+.diligence-gate-page .gate-live-badge.idle {
+  color: rgba(229,229,229,.58);
+  border-color: rgba(229,229,229,.14);
+  background: rgba(255,255,255,.018);
+}
+
+.diligence-gate-page .gate-live-badge.running,
+.diligence-gate-page .gate-live-badge.active {
+  color: var(--shell-gold, #C5A059);
+  animation: interfaceLandingPulse 1.9s ease-in-out infinite;
+}
+
+.diligence-gate-page .gate-run-clock {
+  min-height: 32px;
+  padding: .38rem .65rem;
+  color: rgba(229,229,229,.62);
+}
+
+.diligence-gate-page .gate-run-progress {
+  height: 11px;
+  margin: 1rem 0 .82rem;
+  border: 1px solid rgba(197,160,89,.22);
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(255,255,255,.035);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,.35);
+}
+
+.diligence-gate-page .gate-run-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgba(197,160,89,.95), rgba(216,179,93,.72), rgba(255,255,255,.18));
+  box-shadow: 0 0 18px rgba(197,160,89,.35);
+  transition: width .45s ease;
+}
+
+.diligence-gate-page .gate-run-monitor-foot {
+  color: rgba(229,229,229,.56);
+  font-size: .72rem;
+  line-height: 1.45;
+}
+
+.diligence-gate-page .gate-meta-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: .75rem;
+}
+
+.diligence-gate-page .meta-tile {
+  min-height: 86px;
+  border-color: rgba(229,229,229,.10);
+  background: linear-gradient(180deg, rgba(255,255,255,.030), rgba(255,255,255,.014));
+}
+
+.diligence-gate-page .meta-tile .k {
+  color: rgba(229,229,229,.48);
+}
+
+.diligence-gate-page .meta-tile .v {
+  color: rgba(245,245,245,.90);
+}
+
+.diligence-gate-page .gate-workbench {
+  display: grid;
+  grid-template-columns: minmax(0, 1.16fr) minmax(300px, .84fr);
+  gap: clamp(18px, 2.4vw, 28px);
+  align-items: start;
+}
+
+.diligence-gate-page .gate-left-stack,
+.diligence-gate-page .gate-side-stack {
+  display: grid;
+  gap: 18px;
+}
+
+.diligence-gate-page .gate-primary-card {
+  border-color: rgba(197,160,89,.22);
+}
+
+.diligence-gate-page .gate-form-grid {
+  gap: 1rem;
+}
+
+.diligence-gate-page .input[type="file"] {
+  padding: .78rem .9rem;
+  min-height: 58px;
+  line-height: 1.45;
+}
+
+.diligence-gate-page .small-muted {
+  color: rgba(229,229,229,.54);
+}
+
+.diligence-gate-page .gate-actions {
+  margin-top: 1.25rem;
+}
+
+.diligence-gate-page .gate-actions .btn:first-child {
+  min-width: min(100%, 230px);
+}
+
+.diligence-gate-page .gate-resume-card,
+.diligence-gate-page .gate-guidance-card {
+  background:
+    linear-gradient(180deg, rgba(12,12,12,.94), rgba(7,7,7,.96));
+}
+
+.diligence-gate-page .gate-path-list {
+  display: grid;
+  gap: .8rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.diligence-gate-page .gate-path-list li {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: .85rem;
+  align-items: start;
+  padding: .8rem;
+  border: 1px solid rgba(229,229,229,.09);
+  border-radius: 15px;
+  background: rgba(255,255,255,.018);
+}
+
+.diligence-gate-page .gate-path-list li > span {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(197,160,89,.36);
+  border-radius: 999px;
+  color: var(--shell-gold, #C5A059);
+  background: rgba(197,160,89,.06);
+  font-size: .68rem;
+  font-weight: 900;
+}
+
+.diligence-gate-page .gate-path-list strong {
+  color: rgba(245,245,245,.90);
+}
+
+.diligence-gate-page .gate-path-list p {
+  margin: .18rem 0 0;
+  color: rgba(229,229,229,.58);
+  font-size: .82rem;
+  line-height: 1.5;
+}
+
+.diligence-gate-page .gate-diagnostics summary {
+  cursor: pointer;
+  color: rgba(197,160,89,.86);
+  font-size: .72rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  font-weight: 900;
+}
+
+.diligence-gate-page .gate-diagnostics[open] {
+  border-color: rgba(197,160,89,.22);
+}
+
+.diligence-gate-page .rail-wrap {
+  padding-right: .35rem;
+}
+
+.diligence-gate-page .rail-stage {
+  margin-bottom: .2rem;
+}
+
+.diligence-gate-page .rail-stage.active {
+  background: rgba(197,160,89,.075);
+  border: 1px solid rgba(197,160,89,.18);
+}
+
+.diligence-gate-page .mobile-funnel {
+  min-height: 46px;
+  box-shadow: 0 12px 28px rgba(0,0,0,.20);
+}
+
+.diligence-gate-page .mobile-funnel .lbl {
+  max-width: 42vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@keyframes interfaceLandingPulse {
+  0%, 100% { box-shadow: 0 0 0 rgba(197,160,89,0); }
+  50% { box-shadow: 0 0 24px rgba(197,160,89,.18); }
+}
+
+@media (max-width: 1060px) {
+  .diligence-gate-page .gate-workbench,
+  .diligence-gate-page .gate-meta-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .diligence-gate-page .gate-hero {
+    min-height: auto;
+  }
+
+  .diligence-gate-page .gate-hero::after {
+    display: none;
+  }
+
+  .diligence-gate-page .gate-workbench,
+  .diligence-gate-page .gate-meta-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .diligence-gate-page .gate-card-kicker,
+  .diligence-gate-page .gate-run-monitor-head,
+  .diligence-gate-page .gate-run-monitor-foot {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .diligence-gate-page .gate-actions .btn,
+  .diligence-gate-page .gate-actions .btn:first-child {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .diligence-gate-page .gate-live-badge.running,
+  .diligence-gate-page .gate-live-badge.active {
+    animation: none;
+  }
+}

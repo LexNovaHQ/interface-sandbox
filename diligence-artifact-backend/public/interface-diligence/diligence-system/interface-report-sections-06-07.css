@@ -1,0 +1,123 @@
+/* INTERFACE_REPORT_SECTIONS_06_07_V1
+   Editorial Sector-obligation and legal-governance structures.
+   No applicability or compliance conclusion is created by this layer.
+*/
+:root { --interface-report-sections-06-07-version: "interface_report_sections_06_07.v1"; }
+
+.report-obligation-stream {
+  margin-top: 28px;
+  padding-top: 18px;
+  border-top: 1px solid var(--report-rule);
+}
+
+.report-obligation-posture {
+  display: inline-flex;
+  width: fit-content;
+  padding: .24rem .52rem;
+  border: 1px solid var(--report-rule-strong);
+  border-radius: 999px;
+  color: var(--report-muted);
+  background: rgba(255,255,255,.22);
+  font-size: .56rem;
+  line-height: 1.2;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.report-obligation-posture.is-visible {
+  color: var(--report-success);
+  border-color: rgba(62,107,84,.34);
+  background: rgba(62,107,84,.07);
+}
+
+.report-obligation-posture.is-partial,
+.report-obligation-posture.is-unclear {
+  color: var(--report-warning);
+  border-color: rgba(132,101,31,.34);
+  background: rgba(132,101,31,.08);
+}
+
+.report-obligation-posture.is-not_visible,
+.report-obligation-posture.is-unresolved {
+  color: var(--report-danger);
+  border-color: rgba(143,61,52,.34);
+  background: rgba(143,61,52,.07);
+}
+
+.report-obligation-card {
+  scroll-margin-top: 154px;
+}
+
+.report-obligation-card .report-definition-list {
+  margin-top: 16px;
+}
+
+.report-document-section[data-report-section-id="06"] .report-callout.is-limitation {
+  margin-top: 0;
+  border-left-width: 4px;
+}
+
+.report-document-section[data-report-section-id="07"] .report-part {
+  position: relative;
+}
+
+.report-document-section[data-report-section-id="07"] .report-part::before {
+  content: "";
+  position: absolute;
+  top: -2px;
+  left: 0;
+  width: 72px;
+  height: 2px;
+  background: var(--report-accent);
+}
+
+.report-document-section[data-report-section-id="07"] .report-part-label {
+  max-width: 720px;
+}
+
+.report-document-section[data-report-section-id="07"] .report-callout {
+  max-width: 820px;
+}
+
+.report-document-section[data-report-section-id="07"] .report-table-caption {
+  max-width: 760px;
+}
+
+.report-row-link {
+  color: var(--report-accent);
+  text-decoration-color: rgba(128,99,47,.34);
+  text-underline-offset: .18em;
+  font-weight: 800;
+}
+
+.report-row-link:hover,
+.report-row-link:focus-visible {
+  color: var(--report-ink);
+  text-decoration-color: var(--report-accent);
+  outline: none;
+}
+
+@media (max-width: 760px) {
+  .report-obligation-stream .report-stream-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .report-obligation-posture {
+    white-space: normal;
+  }
+}
+
+@media print {
+  .report-obligation-card { scroll-margin-top: 0; }
+  .report-obligation-posture {
+    color: #222 !important;
+    border-color: #777 !important;
+    background: transparent !important;
+  }
+  .report-document-section[data-report-section-id="07"] .report-part::before {
+    background: #555 !important;
+  }
+}

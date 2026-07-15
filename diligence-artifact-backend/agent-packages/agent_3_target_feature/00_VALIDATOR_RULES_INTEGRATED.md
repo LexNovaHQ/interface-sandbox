@@ -1,71 +1,145 @@
-# 00_VALIDATOR_RULES_INTEGRATED
-
-## Agent 3 validator kernel
-
-This validator is bounded by the backend phase contract. It cannot expand read authority.
+# Target and Activity Profile Validator Rules
 
 ## Universal gates
 
-- Validate exact active phase.
-- Validate exact run_id.
-- Validate phase-owned output only.
-- Validate material artifacts are saved before forensic artifacts.
-- Reject downstream artifacts, source-discovery artifacts, legal-cartography artifacts, data-provenance artifacts, exposure artifacts, challenge gates, final handoffs, and renderer payloads from Agent 3 outputs.
-- Reject model memory, unsupported source claims, route labels copied as facts, and schema-shaped but unsupported values.
+- Validate the exact active phase and phase-owned root.
+- Material artifacts are separate from forensic artifacts.
+- Reject downstream profiles, exposure outputs, challenge gates, compiler output and renderer payloads.
+- Reject unsupported source claims, model memory, copied evidence and schema-shaped but ungrounded values.
 
-## M7 input gate
+## Target Profile Review
 
-For `M7_TARGET_PROFILE`, allowed inputs are exactly:
+`target_profile` contains exactly:
 
-- `source_discovery_handoff`
-- `m7_deterministic_legal_signal_overlay`
-- `lossless_family__T0_ROOT`
-- `lossless_family__T1_IDENTITY`
-- `lossless_family__T2_LEGAL_IDENTITY`
-- `lossless_family__T3_OPERATOR_ENTITY`
-- `lossless_family__T4_SUPPORTING_IDENTITY`
-- selected `TP.*` authority rows
+```text
+target_identity
+jurisdiction_notice
+business_context
+product_service_wrapper
+target_profile_limitations
+```
 
-The M7 validator must reject M7 use of:
+Target Profile Review is bound to `P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY`, route `ROUTE.PHASE3A.TARGET_PROFILE`, bucket `2A_BUCKET_TARGET_PROFILE`.
 
-- `legal_cartography_index`
-- any artifact whose name starts with `lossless_family__L`
-- `source_discovery_handoff.bucket_family_index.legal_governance_profile_urls.families`
-- raw legal/governance source text
-- legal/governance route buckets
+The mandatory navigation authority is `target_profile_source_index`. The following routed artifacts are the complete scoped lossless-evidence universe for this phase:
 
-M7 must not block merely because legal/governance lossless artifacts are unavailable. Missing overlay values must become controlled field statuses and limitation rows.
+```text
+lossless_root__homepage_landing
+lossless_root__company_identity
+lossless_root__contact_notice
+lossless_root__pricing_commercial_availability
+lossless_root__regulatory_licensing_status
+lossless_root__grievance_complaints
+```
 
-## M7 overlay gate
+Treat those artifacts as `PRIMARY_EVIDENCE` and navigate them through the `MANDATORY_NAVIGATION_MAP_INTO_PRIMARY_EVIDENCE`. The routed packet is the read ceiling. Free-corpus expansion, forensic-profile inputs, and direct lossless-evidence fallback framing are forbidden.
 
-`m7_deterministic_legal_signal_overlay` may support only:
+`legal_signal_derivation_profile` is the only bounded legal-signal dependency. Regulatory/licensing and grievance fields remain factual public-context signals, not legal conclusions.
 
-- `target_identity.legal_entity_name`
-- `jurisdiction_notice.governing_law`
-- `jurisdiction_notice.courts_venue`
+`business_context` must not include `lane`. Company-level lane derivation belongs outside Target Profile Review.
 
-If the relevant overlay row status is not `FOUND`, M7 must use a controlled field status and limitation.
+`business_context` must not include `lane`.
 
-## M7 material output gate
+## Internal Sector Derivation Layer
 
-`target_profile` must contain exactly five parent sections:
+The internal artifact remains `domain_derivation_profile`. It is Registry-Key-led and domain-agnostic. Regulatory overlays are candidate-only and may not state legal applicability, licensing validity, compliance status or legal advice.
 
-- `target_identity`
-- `jurisdiction_notice`
-- `business_context`
-- `product_service_wrapper`
-- `target_profile_limitations`
+## Phase 5 Activity Profile Review — v9 Behavior Class canonical
 
-No forensic branch, profile metadata, evidence ledger, source ledger, confidence object, trace object, downstream object, legal-risk object, data object, registry object, final handoff, or renderer payload may appear inside `target_profile`.
+`M8_TARGET_FEATURE_PROFILE` emits exactly one root:
 
-## M8 gate
+```text
+target_feature_profile
+```
 
-M8 may use only target-profile artifacts, feature candidate inventory, and product/activity families authorized by the backend phase contract.
+The profile contains exactly:
 
-M8 may not use M7 to import legal/governance source material.
+```text
+activities
+commercial_availability_posture
+profile_level_limitations
+mounted_taxonomy_ref
+```
 
-## Failure routing
+Each activity contains exactly:
 
-Forbidden artifact use is `CONTROLLED_FAILURE`.
+```text
+activity_reference
+product_service_wrapper
+activity_feature_name
+activity_candidate_summary
+mechanics_proof
+autonomy_human_control_signal
+data_content_object_touched
+external_internal_action_signal
+primary_classification
+overlay_classifications
+```
 
-Unsupported but in-scope fields are controlled limitations, not legal-family repair requests.
+Primary classification contains exactly:
+
+```text
+package_id
+behavior_class_codes
+behavior_class_derivation_basis
+surface_context_tokens
+surface_derivation_basis
+```
+
+Each capability-overlay block contains exactly:
+
+```text
+package_id
+overlay_id
+behavior_class_codes
+behavior_class_derivation_basis
+surface_context_tokens
+surface_derivation_basis
+```
+
+Validate independently for the primary block and every overlay block:
+
+- package-scoped membership against that block's mounted Registry Key;
+- every selected Behavior Class has exactly one matching basis entry;
+- every selected Surface has exactly one matching basis entry;
+- no basis exists for an unselected code or token;
+- primary and overlay arrays may differ and must not be collapsed;
+- no unresolved capability-overlay block;
+- no regulatory-overlay block;
+- no forced catch-all Behavior Class.
+
+Each basis entry contains exactly:
+
+```text
+code_or_token
+normalized_name
+conditions_satisfied
+trigger_if_applied
+exclude_if_checked
+material_basis
+limitation
+```
+
+The backend stamps `mounted_taxonomy_ref`; the model may not override it.
+
+Controlled empty-primary classification requires:
+
+```text
+PRIMARY_PACKAGE_HAS_NO_TAXONOMY_KEY:<package_id>
+```
+
+or:
+
+```text
+NO_PRIMARY_BEHAVIOR_CLASS_MATCH:<activity_reference>
+```
+
+Forbidden in the material profile:
+
+- URLs, source IDs and source pointers;
+- candidate IDs and confidence;
+- validation or lock status;
+- ledgers and runtime traces;
+- copied evidence or lossless text;
+- forensic branches;
+- retired Phase 5 classification paths or limitation tokens.

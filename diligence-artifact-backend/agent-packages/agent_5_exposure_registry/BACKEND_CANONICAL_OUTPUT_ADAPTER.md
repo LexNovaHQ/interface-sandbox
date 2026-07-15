@@ -1,132 +1,121 @@
 # BACKEND CANONICAL OUTPUT ADAPTER — AGENT 5 / M11
-## Batched M11 Boundary Adapter
 
-This adapter is loaded near the end of Agent 5 backend prompt assembly. It controls executable output roots for the new M11 reality.
+## Package-Scoped Semantic Boundary
 
----
-
-# ADAPTER LOCK
-
-`A5.ADAPTER.C1` The old single-root backend artifact `exposure_registry_profile` is retired.
-
-`A5.ADAPTER.C2` The old package aliases `target_exposure_profile` and `target_exposure_profile_forensics` are forbidden in production backend execution.
-
-`A5.ADAPTER.C3` Agent 5 does not emit one final combined response. It emits or saves one active boundary object at a time.
-
----
-
-# ACTIVE BOUNDARY ROOTS
-
-Exactly one of the following roots may appear at any production boundary:
+## ADAPTER VERSION
 
 ```text
-exposure_registry_route_plan
+AGENT5_PACKAGE_SCOPED_OUTPUT_ADAPTER_v1
+```
+
+This adapter separates the model response boundary from backend-produced Phase 10 artifacts.
+
+## MODEL OUTPUT AUTHORITY
+
+For normal semantic evaluation and repair, the model may return exactly one root:
+
+```text
 m11_batch_registry_ledger
+```
+
+No other top-level key is permitted.
+
+The root must follow `M11_PACKAGE_SCOPED_SEMANTIC_LEDGER_v1` and echo the active packet’s immutable batch metadata.
+
+## MODEL OUTPUT SHAPE
+
+```json
+{
+  "m11_batch_registry_ledger": {
+    "semantic_contract_version": "M11_PACKAGE_SCOPED_SEMANTIC_LEDGER_v1",
+    "batch_id": "",
+    "batch_group": "",
+    "stream_id": "",
+    "stream_type": "PRIMARY | OVERLAY",
+    "package_id": "",
+    "source_domain": "",
+    "expected_threat_ids": [],
+    "returned_threat_ids": [],
+    "m9_legal_cartography_consumed": true,
+    "batch_registry_ledger": []
+  }
+}
+```
+
+A repair response may additionally include:
+
+```text
+repair_contract_version
+repair_attempted
+repair_result
+```
+
+inside the same root.
+
+## MODEL ROW AUTHORITY
+
+Model rows contain canonical `Threat_ID` plus semantic evidence-application fields only.
+
+The model must not emit `registry_row_key`, deterministic registry spine fields, package routing fields, final status, or profile placement.
+
+The backend maps canonical Threat IDs to deterministic compound row keys within the single package-scoped batch.
+
+## BACKEND-ONLY ARTIFACTS
+
+The following are backend artifacts and are forbidden as model output roots:
+
+```text
+active_threat_registry_manifest
+exposure_registry_route_plan
+exposure_registry_batch_validation
 exposure_registry_workpad_98
 exposure_registry_controlled_profile
 exposure_registry_triggered_profile
 exposure_registry_profile_forensics
-```
-
-M12 batch validation is Agent 5-owned, outside M11 model output, and returns this root:
-
-```text
-exposure_registry_batch_validation
-```
-
-The backend persists it as:
-
-```text
-exposure_registry_batch_validation__{GROUP}__{NNN}
-```
-
-M12 global root:
-
-```text
 challenge_gate
 ```
 
-Accepted batch save artifacts are backend-controlled and use:
+The backend may persist dynamic artifacts as:
 
 ```text
-exposure_registry_batch__{GROUP}__{NNN}
+exposure_registry_batch_validation__{batch_id}
+exposure_registry_batch__{batch_id}
 ```
 
----
+`batch_id` already contains stream, package, archetype group, and sequence identity.
 
-# BOUNDARY OUTPUT SHAPES
+## BACKEND ARTIFACT ORDER
 
-## Phase A route plan
+After the CO-8 runtime cutover, backend custody order is:
 
-```json
-{
-  "exposure_registry_route_plan": {}
-}
+```text
+1. active_threat_registry_manifest
+2. exposure_registry_route_plan
+3. for each planned batch:
+   a. model m11_batch_registry_ledger response
+   b. exposure_registry_batch_validation__{batch_id}
+   c. exposure_registry_batch__{batch_id}
+4. exposure_registry_workpad_98
+5. exposure_registry_controlled_profile
+6. exposure_registry_triggered_profile
+7. exposure_registry_profile_forensics
 ```
 
-## Phase B active batch model ledger
+The stable workpad artifact name does not impose a fixed row count.
 
-```json
-{
-  "m11_batch_registry_ledger": {}
-}
-```
+## LEGAL CARTOGRAPHY RULE
 
-## Phase C canonical workpad
+`legal_cartography_index` is consumed as the saved navigation artifact. Agent 5 must not output, rebuild, mutate, rename, or replace legal cartography.
 
-```json
-{
-  "exposure_registry_workpad_98": {}
-}
-```
+Legal/governance source selection may appear only as evidence-consumption trace inside packets, accepted rows, workpad trace, or forensics.
 
-## Phase D controlled profile
-
-```json
-{
-  "exposure_registry_controlled_profile": {
-    "controlled_rows": []
-  }
-}
-```
-
-## Phase E triggered profile
-
-```json
-{
-  "exposure_registry_triggered_profile": {
-    "triggered_rows": []
-  }
-}
-```
-
-## Phase F forensics
-
-```json
-{
-  "exposure_registry_profile_forensics": {}
-}
-```
-
----
-
-# LEGAL CARTOGRAPHY ADAPTER RULE
-
-`A5.ADAPTER.C4` `legal_cartography_index` is consumed as the saved M9 artifact. M11 must not output `legal_cartography_index`, a rebuilt legal cartography map, a row-scoped legal cartography artifact, or any replacement legal navigation object.
-
-`A5.ADAPTER.C5` Legal/governance source selection may be represented inside route plan, batch packet metadata, workpad trace, or forensics only as consumption trace. It must not become a new legal-cartography artifact.
-
----
-
-# FORBIDDEN ROOTS
-
-The following production roots are forbidden:
+## RETIRED AND FORBIDDEN ROOTS
 
 ```text
 exposure_registry_profile
 target_exposure_profile
 target_exposure_profile_forensics
-triggered_and_controlled_rows as a top-level artifact
+triggered_and_controlled_rows
 controlled_exposure_rows
 material_exposure_findings
 exposure_summary
@@ -140,17 +129,6 @@ final_output_handoff
 renderer_payload
 ```
 
----
+## STOP RULE
 
-# M11 / M12 CHALLENGE ROOT RULE
-
-M11 forbidden root: challenge_gate
-M12 batch root: exposure_registry_batch_validation
-M12 batch forbidden root: challenge_gate
-M12 global allowed root: challenge_gate
-
----
-
-# STOP RULE
-
-After emitting the active boundary root, stop. M11 and M12 batch must not emit M12 global challenge, compiler, renderer, report prose, terminal receipt text, compatibility wrappers, or additional artifacts. M12 global must stop after emitting challenge_gate.
+The model stops after the single semantic ledger root. It must not simulate save state, validation, workpad merge, profile projection, forensics, global challenge, compiler, renderer, terminal receipt, or compatibility wrapper.

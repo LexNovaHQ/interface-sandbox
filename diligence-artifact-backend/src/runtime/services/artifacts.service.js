@@ -1,0 +1,312 @@
+import { assertRunId } from "../utils/run-id.js";
+import {
+  assertKnownArtifactName,
+  assertInternalJobCanWriteArtifact as assertPhaseCanWriteArtifact,
+  M11_BATCH_ARTIFACT_PATTERN,
+  M11_BATCH_VALIDATION_ARTIFACT_PATTERN,
+  PHASE7_DAP_BATCH_ARTIFACT_PATTERN,
+  PHASE7_DAP_BATCH_VALIDATION_ARTIFACT_PATTERN,
+  COMPILER_ARTIFACT_NAMES,
+  assertCanReadArtifact,
+  assertCanWriteArtifact
+} from "../contracts/artifact-permissions.contract.js";
+import { artifactsForCentralPhase } from "../contracts/artifacts.contract.js";
+import { centralPhaseForInternalJob, getCentralPhase, CENTRAL_PHASE_BY_ID } from "../contracts/central-phase.contract.js";
+import { getInternalJobContract, normalizeInternalJobId } from "../contracts/internal-job.contract.js";
+import { saveJsonArtifactToDrive, readJsonArtifactFromDrive } from "./storage/drive.service.js";
+import { updateRunDashboardRow } from "./storage/sheets.service.js";
+import { getRunRecord, updateRunRecord, getNextArtifactVersion, saveArtifactMetadata, getArtifactMetadata, listArtifactMetadata, logEvent } from "./storage/firestore.service.js";
+import { requireRuntimeConfig } from "../config.js";
+
+const LOCK_STATUSES = new Set(["CREATED", "RUNNING", "LOCKED", "LOCKED_WITH_LIMITATIONS", "REINVESTIGATION_REQUIRED", "CONTROLLED_FAILURE", "COMPLETE"]);
+const LOCK_ADVANCE_STATUSES = new Set(["LOCKED", "LOCKED_WITH_LIMITATIONS", "COMPLETE"]);
+const RUNTIME_ARTIFACT_EXTRAS = new Set(["qualified_review_validation_manifest", "diligence_qa_completion_receipt"]);
+const ART = Object.freeze({
+  dedupedUrlManifest: "deduped_url_manifest",
+  sourceFamilyIndex: "source_family_index",
+  sourceHandoff: "source_discovery_handoff",
+  cartographySourceInventory: "cartography_source_inventory",
+  cartographyLocatorSpine: "cartography_locator_spine",
+  cartographyProfileRouteMatrix: "cartography_profile_route_matrix",
+  cartographySemanticNavigationOverlay: "cartography_semantic_navigation_overlay",
+  legalCartographyDeterministicMap: "legal_cartography_deterministic_map",
+  legalCartographySemanticProfile: "legal_cartography_semantic_profile",
+  legalCartographyIndex: "legal_cartography_index",
+  legalSignalDerivationProfile: "legal_signal_derivation_profile",
+  targetProfileDeterministicMap: "target_profile_deterministic_map",
+  targetProfileSemanticProfile: "target_profile_semantic_profile",
+  targetProfileSourceIndex: "target_profile_source_index",
+  domainDerivationDeterministicMap: "domain_derivation_deterministic_map",
+  domainDerivationSemanticProfile: "domain_derivation_semantic_profile",
+  domainDerivationSourceIndex: "domain_derivation_source_index",
+  activityProfileDeterministicMap: "activity_profile_deterministic_map",
+  activityProfileSemanticProfile: "activity_profile_semantic_profile",
+  activityProfileSourceIndex: "activity_profile_source_index",
+  dataPrivacyDeterministicMap: "data_privacy_deterministic_map",
+  dataPrivacySemanticProfile: "data_privacy_semantic_profile",
+  dataPrivacyNavigationIndex: "data_privacy_navigation_index",
+  domainControlObligationDeterministicMap: "domain_control_obligation_deterministic_map",
+  domainControlObligationSemanticProfile: "domain_control_obligation_semantic_profile",
+  domainControlObligationNavigationIndex: "domain_control_obligation_navigation_index",
+  phaseRoutingManifest: "phase_routing_manifest",
+  phaseRouteValidationManifest: "phase_route_validation_manifest",
+  cartographyIndex: "cartography_index",
+  cartographyValidationManifest: "cartography_validation_manifest",
+  targetProfile: "target_profile",
+  domainDerivationProfile: "domain_derivation_profile",
+  activeRunPackageManifest: "active_run_package_manifest",
+  targetForensics: "target_profile_forensics",
+  activityInventory: "feature_candidate_inventory",
+  activityProfile: "target_feature_profile",
+  activityForensics: "target_feature_profile_forensics",
+  dapRegistryManifest: "dap_registry_manifest",
+  dapStrategicMatrix: "dap_strategic_derivation_matrix",
+  dapRoute: "dap_semantic_batch_route_manifest",
+  dapValidationManifest: "dap_semantic_batch_validation_manifest",
+  dapGate: "data_provenance_profile_semantic_batch_gate",
+  dapForensics: "dap_forensics_profile",
+  exposureRoutePlan: "exposure_registry_route_plan",
+  exposureWorkpad: "exposure_registry_workpad_98",
+  exposureControlled: "exposure_registry_controlled_profile",
+  exposureTriggered: "exposure_registry_triggered_profile",
+  exposureForensics: "exposure_registry_profile_forensics",
+  challengeGate: "challenge_gate",
+  phase12Admission: "phase12_admission",
+  phase12RoutePlan: "phase12_route_plan",
+  phase12ReportCustodyManifest: "phase12_report_custody_manifest",
+  phase12CompilerValidation: "phase12_compiler_validation",
+  reportManifest: "report_manifest",
+  reportHandoff: "report_handoff",
+  finalOutputHandoff: "final_output_handoff",
+  rendererPayload: "renderer_payload"
+});
+
+export const ARTIFACTS_SERVICE_STATUS = Object.freeze({
+  central_runtime_service: "artifacts.service",
+  phase2a_target_profile_source_index_save_order_gate_enforced: true,
+  phase2b_domain_derivation_source_index_save_order_gate_enforced: true,
+  phase2c_activity_profile_source_index_save_order_gate_enforced: true,
+  phase2d_data_privacy_navigation_index_save_order_gate_enforced: true,
+  phase2e_domain_control_obligation_navigation_index_save_order_gate_enforced: true,
+  phase2g_phase_router_save_order_gate_enforced: true,
+  phase3_domain_derivation_save_order_gate_enforced: true,
+  phase3_manifest_update_order_gate_enforced: true,
+  downstream_domain_derivation_required_before_activity: true,
+  phase7_requires_phase2d_data_privacy_navigation_index: true,
+  profile_forensics_are_side_outputs_not_downstream_prerequisites: true,
+  dap_forensics_not_required_by_m11: true,
+  exposure_forensics_not_required_by_m12_or_compiler: true,
+  central_phase_aware: true
+});
+
+export async function saveRuntimeArtifact(input) { return saveArtifact(input); }
+export async function readRuntimeArtifact(input) { return readArtifact(input); }
+export async function readRuntimeArtifactPayload(input) { return readArtifactPayload(input); }
+export async function lockRuntimePhase(input) { return lockPhase(input); }
+export async function listRuntimeArtifacts(runId) { return listArtifacts(runId); }
+export async function assertCentralPhaseArtifactsExist(runId, centralPhaseId) { return assertRequiredArtifactsExist(runId, artifactsForCentralPhase(centralPhaseId)); }
+
+export async function saveArtifact(input) {
+  requireRuntimeConfig();
+  const parsed = parseSaveArtifactInput(input);
+  const phaseContext = phaseContextFor(parsed.phase);
+  assertRunId(parsed.run_id);
+  assertRuntimeKnownArtifact(parsed.artifact_name);
+  assertRuntimeWritePermission(parsed.agent_id, parsed.artifact_name);
+  assertRuntimePhaseCanWriteArtifact(phaseContext, parsed.artifact_name);
+  await assertArtifactSaveOrder(parsed, phaseContext);
+  const effectiveLockStatus = normalizeArtifactLockStatus(parsed);
+  const run = await getRunRecord(parsed.run_id);
+  const version = await getNextArtifactVersion(parsed.run_id, parsed.artifact_name);
+  const driveResult = await saveJsonArtifactToDrive({ run_id: parsed.run_id, artifact_name: parsed.artifact_name, version, drive_folder_id: run.drive_folder_id, artifact: parsed.artifact });
+  const meta = await saveArtifactMetadata({ run_id: parsed.run_id, artifact_name: parsed.artifact_name, phase: phaseContext.persistence_phase, agent_id: parsed.agent_id, lock_status: effectiveLockStatus, version, drive_file_id: driveResult.drive_file_id, drive_web_view_link: driveResult.drive_web_view_link, drive_folder_id: run.drive_folder_id, artifact_size_bytes: driveResult.artifact_size_bytes });
+  await updateRunRecord(parsed.run_id, { current_phase: phaseContext.persistence_phase, status: effectiveLockStatus, central_phase: phaseContext.central_phase_id, central_phase_label: phaseContext.central_phase_label, active_internal_job: phaseContext.internal_job_id });
+  await logEvent({ run_id: parsed.run_id, event_type: "ARTIFACT_SAVED", actor: parsed.agent_id, payload: { artifact_name: parsed.artifact_name, phase: phaseContext.persistence_phase, version, lock_status: effectiveLockStatus, save_order_gate: "PASS" } });
+  return { ok: true, run_id: parsed.run_id, artifact_name: parsed.artifact_name, version, lock_status: effectiveLockStatus, drive_file_id: meta.drive_file_id, drive_web_view_link: meta.drive_web_view_link };
+}
+
+export async function readArtifact({ run_id, artifact_name, agent_id = "operator" }) {
+  assertRunId(run_id);
+  assertRuntimeKnownArtifact(artifact_name);
+  assertRuntimeReadPermission(agent_id, artifact_name);
+  const meta = await getArtifactMetadata(run_id, artifact_name);
+  const artifact = await readJsonArtifactFromDrive(meta.drive_file_id);
+  return { ok: true, run_id, artifact_name, version: meta.latest_version || meta.version, lock_status: meta.lock_status, artifact };
+}
+
+export async function readArtifactPayload({ run_id, artifact_name, agent_id = "operator" }) {
+  return (await readArtifact({ run_id, artifact_name, agent_id })).artifact;
+}
+
+export async function listArtifacts(runId) { assertRunId(runId); return listArtifactMetadata(runId); }
+
+export async function assertRequiredArtifactsExist(runId, artifactNames) {
+  for (const artifactName of artifactNames || []) {
+    const name = String(artifactName || "");
+    if (name.includes("{GROUP}") || name.includes("{BATCH_ID}") || name.includes("{DOC_TYPE}")) continue;
+    await getArtifactMetadata(runId, name);
+  }
+}
+
+export async function lockPhase(input) {
+  const parsed = parseLockPhaseInput(input);
+  const phaseContext = phaseContextFor(parsed.phase);
+  const body = { ...parsed, phase: phaseContext.persistence_phase };
+  assertRunId(body.run_id);
+  await assertArtifactLockOrder(body, phaseContext);
+  const requiredWrites = requiredWritesForPhaseContext(phaseContext);
+  if (LOCK_ADVANCE_STATUSES.has(body.status) && body.phase !== "COMPLETE") await assertRequiredArtifactsExist(body.run_id, requiredWrites);
+  const existing = await getRunRecord(body.run_id);
+  const nextContext = body.next_phase ? phaseContextFor(body.next_phase) : null;
+  const patch = { current_phase: nextContext?.persistence_phase || body.next_phase || body.phase, status: body.status, central_phase: nextContext?.central_phase_id || phaseContext.central_phase_id, central_phase_label: nextContext?.central_phase_label || phaseContext.central_phase_label, active_internal_job: nextContext?.internal_job_id || phaseContext.internal_job_id, final_report_url: body.final_report_url || existing.final_report_url || "" };
+  const updated = await updateRunRecord(body.run_id, patch);
+  await updateRunDashboardRow(updated);
+  await logEvent({ run_id: body.run_id, event_type: "CENTRAL_PHASE_LOCKED", actor: body.agent_id, payload: { phase: body.phase, status: body.status, next_phase: patch.current_phase, next_central_phase: patch.central_phase } });
+  return { ok: true, run_id: body.run_id, phase: body.phase, central_phase: phaseContext.central_phase_id, central_phase_label: phaseContext.central_phase_label, status: body.status, next_phase: patch.current_phase };
+}
+
+function parseSaveArtifactInput(input = {}) {
+  const parsed = { run_id: String(input.run_id || ""), phase: String(input.phase || ""), agent_id: String(input.agent_id || ""), artifact_name: String(input.artifact_name || ""), lock_status: String(input.lock_status || ""), artifact: input.artifact };
+  const missing = [];
+  if (!parsed.run_id) missing.push("run_id");
+  if (!parsed.phase) missing.push("phase");
+  if (!parsed.agent_id) missing.push("agent_id");
+  if (!parsed.artifact_name) missing.push("artifact_name");
+  if (!LOCK_STATUSES.has(parsed.lock_status)) missing.push("lock_status");
+  if (!parsed.artifact || typeof parsed.artifact !== "object" || Array.isArray(parsed.artifact)) missing.push("artifact_object");
+  if (missing.length) throw new Error(`INVALID_REQUEST:${missing.join(",")}`);
+  return parsed;
+}
+
+function parseLockPhaseInput(input = {}) {
+  const parsed = { run_id: String(input.run_id || ""), phase: String(input.phase || ""), agent_id: String(input.agent_id || ""), status: String(input.status || ""), next_phase: input.next_phase ? String(input.next_phase) : "", final_report_url: input.final_report_url ? String(input.final_report_url) : "" };
+  const missing = [];
+  if (!parsed.run_id) missing.push("run_id");
+  if (!parsed.phase) missing.push("phase");
+  if (!parsed.agent_id) missing.push("agent_id");
+  if (!LOCK_STATUSES.has(parsed.status)) missing.push("status");
+  if (missing.length) throw new Error(`INVALID_REQUEST:${missing.join(",")}`);
+  return parsed;
+}
+
+function phaseContextFor(phaseValue) {
+  const raw = String(phaseValue || "");
+  if (!raw) throw new Error("INVALID_PHASE:missing");
+  if (raw === "NORMALIZED_REPORT_RENDERER") return phaseContextFor("RENDERER");
+  if (raw === "COMPILER") return phaseContextFor("NORMALIZED_COMPILER");
+  if (raw === "COMPLETE") return { requested_phase: raw, persistence_phase: "COMPLETE", internal_job_id: "COMPLETE", central_phase_id: "DILIGENCE_QA_COMPLETE", central_phase_label: "Diligence-QA Complete", is_central_phase_request: false };
+  if (CENTRAL_PHASE_BY_ID[raw]) {
+    const central = getCentralPhase(raw);
+    return { requested_phase: raw, persistence_phase: raw, internal_job_id: raw, central_phase_id: central.central_phase_id, central_phase_label: central.public_label, is_central_phase_request: true };
+  }
+  const internalJobId = normalizeInternalJobId(raw);
+  const central = centralPhaseForInternalJob(internalJobId);
+  if (!central) throw new Error(`INVALID_RUNTIME_PHASE:${raw}`);
+  return { requested_phase: raw, persistence_phase: raw, internal_job_id: internalJobId, central_phase_id: central.central_phase_id, central_phase_label: central.public_label, is_central_phase_request: false };
+}
+
+function requiredWritesForPhaseContext(phaseContext) {
+  if (phaseContext.is_central_phase_request) return artifactsForCentralPhase(phaseContext.central_phase_id);
+  if (phaseContext.internal_job_id === "COMPLETE") return [];
+  return getInternalJobContract(phaseContext.internal_job_id).writes || [];
+}
+
+function assertRuntimeKnownArtifact(artifactName) {
+  if (RUNTIME_ARTIFACT_EXTRAS.has(artifactName)) return;
+  if (M11_BATCH_ARTIFACT_PATTERN.test(artifactName) || M11_BATCH_VALIDATION_ARTIFACT_PATTERN.test(artifactName) || PHASE7_DAP_BATCH_ARTIFACT_PATTERN.test(artifactName) || PHASE7_DAP_BATCH_VALIDATION_ARTIFACT_PATTERN.test(artifactName)) return;
+  assertKnownArtifactName(artifactName);
+}
+function assertRuntimeReadPermission(agentId, artifactName) { if (!RUNTIME_ARTIFACT_EXTRAS.has(artifactName)) assertCanReadArtifact(agentId, artifactName); }
+function assertRuntimeWritePermission(agentId, artifactName) { if (!RUNTIME_ARTIFACT_EXTRAS.has(artifactName)) assertCanWriteArtifact(agentId, artifactName); }
+function assertRuntimePhaseCanWriteArtifact(phaseContext, artifactName) {
+  if (phaseContext.is_central_phase_request) {
+    const allowed = artifactsForCentralPhase(phaseContext.central_phase_id);
+    if (!allowed.includes(artifactName) && !(phaseContext.central_phase_id === "DATA_PROVENANCE_PROFILE" && PHASE7_DAP_BATCH_VALIDATION_ARTIFACT_PATTERN.test(artifactName))) throw new Error(`CENTRAL_PHASE_WRITE_FORBIDDEN:${phaseContext.central_phase_id}:${artifactName}`);
+    return;
+  }
+  if (RUNTIME_ARTIFACT_EXTRAS.has(artifactName)) return;
+  if (M11_BATCH_ARTIFACT_PATTERN.test(artifactName) || M11_BATCH_VALIDATION_ARTIFACT_PATTERN.test(artifactName) || PHASE7_DAP_BATCH_VALIDATION_ARTIFACT_PATTERN.test(artifactName)) return;
+  assertPhaseCanWriteArtifact(phaseContext.persistence_phase, artifactName);
+}
+function normalizeArtifactLockStatus(parsed) { if (parsed.artifact_name === ART.exposureForensics && parsed.lock_status === "REINVESTIGATION_REQUIRED") return "LOCKED_WITH_LIMITATIONS"; return parsed.lock_status; }
+
+async function assertArtifactSaveOrder(parsed) {
+  const { run_id, artifact_name } = parsed;
+  if (artifact_name === ART.sourceFamilyIndex) await requireSavedArtifact(run_id, ART.dedupedUrlManifest, "SAVE_ORDER_BLOCKED:source_family_index_requires_deduped_url_manifest");
+  if (artifact_name === ART.sourceHandoff) await requireSavedArtifact(run_id, ART.sourceFamilyIndex, "SAVE_ORDER_BLOCKED:source_handoff_requires_source_family_index");
+  if (artifact_name === ART.cartographySourceInventory) await requireSavedArtifact(run_id, ART.sourceHandoff, "SAVE_ORDER_BLOCKED:cartography_source_inventory_requires_source_handoff");
+  if (artifact_name === ART.cartographyLocatorSpine) await requireSavedArtifact(run_id, ART.cartographySourceInventory, "SAVE_ORDER_BLOCKED:locator_spine_requires_source_inventory");
+  if (artifact_name === ART.cartographyProfileRouteMatrix) await requireSavedArtifact(run_id, ART.cartographyLocatorSpine, "SAVE_ORDER_BLOCKED:profile_route_matrix_requires_locator_spine");
+  if (artifact_name === ART.cartographySemanticNavigationOverlay) await requireSavedArtifact(run_id, ART.cartographyProfileRouteMatrix, "SAVE_ORDER_BLOCKED:semantic_overlay_requires_profile_route_matrix");
+  if (artifact_name === ART.legalCartographyIndex) await requireSavedArtifact(run_id, ART.legalCartographySemanticProfile, "SAVE_ORDER_BLOCKED:m9_final_index_requires_semantic_profile");
+  if (artifact_name === ART.legalSignalDerivationProfile) await requireSavedArtifact(run_id, ART.legalCartographyIndex, "SAVE_ORDER_BLOCKED:legal_signal_derivation_requires_legal_cartography_index");
+  if (artifact_name === ART.targetProfileDeterministicMap) await requireSavedArtifact(run_id, ART.legalSignalDerivationProfile, "SAVE_ORDER_BLOCKED:target_profile_map_requires_legal_signals");
+  if (artifact_name === ART.targetProfileSemanticProfile) await requireSavedArtifact(run_id, ART.targetProfileDeterministicMap, "SAVE_ORDER_BLOCKED:target_profile_semantic_requires_map");
+  if (artifact_name === ART.targetProfileSourceIndex) await requireSavedArtifact(run_id, ART.targetProfileSemanticProfile, "SAVE_ORDER_BLOCKED:target_profile_index_requires_semantic_profile");
+  if (artifact_name === ART.domainDerivationSemanticProfile) await requireSavedArtifact(run_id, ART.domainDerivationDeterministicMap, "SAVE_ORDER_BLOCKED:domain_semantic_requires_map");
+  if (artifact_name === ART.domainDerivationSourceIndex) await requireSavedArtifact(run_id, ART.domainDerivationSemanticProfile, "SAVE_ORDER_BLOCKED:domain_index_requires_semantic_profile");
+  if (artifact_name === ART.activityProfileSemanticProfile) await requireSavedArtifact(run_id, ART.activityProfileDeterministicMap, "SAVE_ORDER_BLOCKED:activity_semantic_requires_map");
+  if (artifact_name === ART.activityProfileSourceIndex) await requireSavedArtifact(run_id, ART.activityProfileSemanticProfile, "SAVE_ORDER_BLOCKED:activity_index_requires_semantic_profile");
+  if (artifact_name === ART.dataPrivacySemanticProfile) await requireSavedArtifact(run_id, ART.dataPrivacyDeterministicMap, "SAVE_ORDER_BLOCKED:data_semantic_requires_map");
+  if (artifact_name === ART.dataPrivacyNavigationIndex) await requireSavedArtifact(run_id, ART.dataPrivacySemanticProfile, "SAVE_ORDER_BLOCKED:data_index_requires_semantic_profile");
+  if (artifact_name === ART.domainControlObligationSemanticProfile) await requireSavedArtifact(run_id, ART.domainControlObligationDeterministicMap, "SAVE_ORDER_BLOCKED:obligation_semantic_requires_map");
+  if (artifact_name === ART.domainControlObligationNavigationIndex) await requireSavedArtifact(run_id, ART.domainControlObligationSemanticProfile, "SAVE_ORDER_BLOCKED:obligation_index_requires_semantic_profile");
+  if (artifact_name === ART.phaseRoutingManifest) await Promise.all([requireSavedArtifact(run_id, ART.targetProfileSourceIndex, "SAVE_ORDER_BLOCKED:router_requires_2a"), requireSavedArtifact(run_id, ART.domainDerivationSourceIndex, "SAVE_ORDER_BLOCKED:router_requires_2b"), requireSavedArtifact(run_id, ART.activityProfileSourceIndex, "SAVE_ORDER_BLOCKED:router_requires_2c"), requireSavedArtifact(run_id, ART.dataPrivacyNavigationIndex, "SAVE_ORDER_BLOCKED:router_requires_2d"), requireSavedArtifact(run_id, ART.domainControlObligationNavigationIndex, "SAVE_ORDER_BLOCKED:router_requires_2e"), requireSavedArtifact(run_id, ART.legalCartographyIndex, "SAVE_ORDER_BLOCKED:router_requires_2f")]);
+  if (artifact_name === ART.phaseRouteValidationManifest) await requireSavedArtifact(run_id, ART.phaseRoutingManifest, "SAVE_ORDER_BLOCKED:route_validation_requires_manifest");
+  if (artifact_name === ART.cartographyIndex) await requireSavedArtifact(run_id, ART.phaseRouteValidationManifest, "SAVE_ORDER_BLOCKED:cartography_index_requires_route_validation");
+
+  if (artifact_name === ART.targetProfile) await Promise.all([requireSavedArtifact(run_id, ART.phaseRoutingManifest, "SAVE_ORDER_BLOCKED:target_profile_requires_2g"), requireSavedArtifact(run_id, ART.targetProfileSourceIndex, "SAVE_ORDER_BLOCKED:target_profile_requires_2a")]);
+  if (artifact_name === ART.domainDerivationProfile) await Promise.all([requireSavedArtifact(run_id, ART.targetProfile, "SAVE_ORDER_BLOCKED:domain_profile_requires_target_profile"), requireSavedArtifact(run_id, ART.domainDerivationSourceIndex, "SAVE_ORDER_BLOCKED:domain_profile_requires_2b"), requireSavedArtifact(run_id, ART.phaseRoutingManifest, "SAVE_ORDER_BLOCKED:domain_profile_requires_2g")]);
+  if (artifact_name === ART.activeRunPackageManifest && parsed.phase === "P3_DOMAIN_DERIVATION_LAYER") await requireSavedArtifact(run_id, ART.domainDerivationProfile, "SAVE_ORDER_BLOCKED:manifest_update_requires_domain_profile");
+  if (artifact_name === ART.targetForensics) await requireSavedArtifact(run_id, ART.targetProfile, "SAVE_ORDER_BLOCKED:target_forensics_requires_target_profile");
+  if (artifact_name === ART.activityInventory) await Promise.all([requireSavedArtifact(run_id, ART.domainDerivationProfile, "SAVE_ORDER_BLOCKED:activity_inventory_requires_domain_profile"), requireSavedArtifact(run_id, ART.activityProfileSourceIndex, "SAVE_ORDER_BLOCKED:activity_inventory_requires_2c"), requireSavedArtifact(run_id, ART.phaseRoutingManifest, "SAVE_ORDER_BLOCKED:activity_inventory_requires_2g")]);
+  if (artifact_name === ART.activityProfile) await Promise.all([requireSavedArtifact(run_id, ART.activityInventory, "SAVE_ORDER_BLOCKED:activity_profile_requires_inventory"), requireSavedArtifact(run_id, ART.targetProfile, "SAVE_ORDER_BLOCKED:activity_profile_requires_target_profile"), requireSavedArtifact(run_id, ART.domainDerivationProfile, "SAVE_ORDER_BLOCKED:activity_profile_requires_domain_profile")]);
+  if (artifact_name === ART.activityForensics) await Promise.all([requireSavedArtifact(run_id, ART.activityInventory, "SAVE_ORDER_BLOCKED:activity_forensics_requires_inventory"), requireSavedArtifact(run_id, ART.activityProfile, "SAVE_ORDER_BLOCKED:activity_forensics_requires_activity_profile")]);
+
+  if (artifact_name === ART.dapRegistryManifest) await Promise.all([requireSavedArtifact(run_id, ART.phaseRoutingManifest, "SAVE_ORDER_BLOCKED:dap_requires_2g"), requireSavedArtifact(run_id, ART.dataPrivacyNavigationIndex, "SAVE_ORDER_BLOCKED:dap_requires_2d"), requireSavedArtifact(run_id, ART.targetProfile, "SAVE_ORDER_BLOCKED:dap_requires_target_profile"), requireSavedArtifact(run_id, ART.domainDerivationProfile, "SAVE_ORDER_BLOCKED:dap_requires_domain_profile"), requireSavedArtifact(run_id, ART.activityProfile, "SAVE_ORDER_BLOCKED:dap_requires_activity_profile")]);
+  if (artifact_name === ART.dapStrategicMatrix) await requireSavedArtifact(run_id, ART.dapRegistryManifest, "SAVE_ORDER_BLOCKED:dap_matrix_requires_registry");
+  if (artifact_name === ART.dapRoute) await Promise.all([requireSavedArtifact(run_id, ART.dapStrategicMatrix, "SAVE_ORDER_BLOCKED:dap_route_requires_matrix"), requireSavedArtifact(run_id, ART.dataPrivacyNavigationIndex, "SAVE_ORDER_BLOCKED:dap_route_requires_2d")]);
+  if (PHASE7_DAP_BATCH_VALIDATION_ARTIFACT_PATTERN.test(artifact_name)) await requireSavedArtifact(run_id, ART.dapRoute, "SAVE_ORDER_BLOCKED:dap_batch_validation_requires_route");
+  if (PHASE7_DAP_BATCH_ARTIFACT_PATTERN.test(artifact_name)) await requireSavedArtifact(run_id, ART.dapRoute, "SAVE_ORDER_BLOCKED:dap_batch_requires_route");
+  if (artifact_name === ART.dapValidationManifest) await requireSavedArtifact(run_id, ART.dapRoute, "SAVE_ORDER_BLOCKED:dap_validation_manifest_requires_route");
+  if (artifact_name === ART.dapGate) await requireSavedArtifact(run_id, ART.dapValidationManifest, "SAVE_ORDER_BLOCKED:dap_gate_requires_validation_manifest");
+  if (artifact_name === ART.dapForensics) await Promise.all([requireSavedArtifact(run_id, ART.dapRoute, "SAVE_ORDER_BLOCKED:dap_forensics_requires_route"), requireSavedArtifact(run_id, ART.dapGate, "SAVE_ORDER_BLOCKED:dap_forensics_requires_material_gate")]);
+
+  if (artifact_name === ART.exposureRoutePlan) await Promise.all([requireSavedArtifact(run_id, ART.phaseRoutingManifest, "SAVE_ORDER_BLOCKED:m11_route_requires_2g"), requireSavedArtifact(run_id, ART.legalCartographyIndex, "SAVE_ORDER_BLOCKED:m11_route_requires_2f"), requireSavedArtifact(run_id, ART.legalSignalDerivationProfile, "SAVE_ORDER_BLOCKED:m11_route_requires_legal_signals"), requireSavedArtifact(run_id, ART.dapGate, "SAVE_ORDER_BLOCKED:m11_route_requires_dap_material_gate"), requireSavedArtifact(run_id, ART.activityProfile, "SAVE_ORDER_BLOCKED:m11_route_requires_activity_profile")]);
+  if (M11_BATCH_VALIDATION_ARTIFACT_PATTERN.test(artifact_name)) await requireSavedArtifact(run_id, ART.exposureRoutePlan, "SAVE_ORDER_BLOCKED:m11_batch_validation_requires_route_plan");
+  if (M11_BATCH_ARTIFACT_PATTERN.test(artifact_name)) await Promise.all([requireSavedArtifact(run_id, ART.exposureRoutePlan, "SAVE_ORDER_BLOCKED:m11_batch_requires_route_plan"), requireSavedArtifact(run_id, pairedBatchValidationName(artifact_name), "SAVE_ORDER_BLOCKED:m11_batch_requires_paired_validation")]);
+  if (artifact_name === ART.exposureWorkpad) { await requireSavedArtifact(run_id, ART.exposureRoutePlan, "SAVE_ORDER_BLOCKED:m11_workpad_requires_route_plan"); await requireAllPlannedM11BatchesSaved(run_id, "SAVE_ORDER_BLOCKED:m11_workpad_requires_all_batches_and_validations"); }
+  if (artifact_name === ART.exposureControlled) await requireSavedArtifact(run_id, ART.exposureWorkpad, "SAVE_ORDER_BLOCKED:controlled_profile_requires_workpad");
+  if (artifact_name === ART.exposureTriggered) await Promise.all([requireSavedArtifact(run_id, ART.exposureWorkpad, "SAVE_ORDER_BLOCKED:triggered_profile_requires_workpad"), requireSavedArtifact(run_id, ART.exposureControlled, "SAVE_ORDER_BLOCKED:triggered_profile_requires_controlled_profile")]);
+  if (artifact_name === ART.exposureForensics) await Promise.all([requireSavedArtifact(run_id, ART.exposureRoutePlan, "SAVE_ORDER_BLOCKED:m11_forensics_requires_route"), requireSavedArtifact(run_id, ART.exposureWorkpad, "SAVE_ORDER_BLOCKED:m11_forensics_requires_workpad"), requireSavedArtifact(run_id, ART.exposureControlled, "SAVE_ORDER_BLOCKED:m11_forensics_requires_controlled"), requireSavedArtifact(run_id, ART.exposureTriggered, "SAVE_ORDER_BLOCKED:m11_forensics_requires_triggered")]);
+  if (artifact_name === ART.challengeGate) { await Promise.all([requireSavedArtifact(run_id, ART.exposureRoutePlan, "SAVE_ORDER_BLOCKED:challenge_requires_route"), requireSavedArtifact(run_id, ART.exposureWorkpad, "SAVE_ORDER_BLOCKED:challenge_requires_workpad"), requireSavedArtifact(run_id, ART.exposureControlled, "SAVE_ORDER_BLOCKED:challenge_requires_controlled"), requireSavedArtifact(run_id, ART.exposureTriggered, "SAVE_ORDER_BLOCKED:challenge_requires_triggered")]); await requireAllPlannedM11BatchesSaved(run_id, "SAVE_ORDER_BLOCKED:challenge_requires_all_batches_and_validations"); }
+  if (COMPILER_ARTIFACT_NAMES.includes(artifact_name) && artifact_name !== ART.rendererPayload) await requireSavedArtifact(run_id, ART.challengeGate, "SAVE_ORDER_BLOCKED:phase12_compiler_requires_challenge_gate");
+  if (artifact_name === ART.rendererPayload) await requireSavedArtifact(run_id, ART.finalOutputHandoff, "SAVE_ORDER_BLOCKED:renderer_requires_final_output_handoff");
+}
+
+async function assertArtifactLockOrder(body, phaseContext) {
+  if (!LOCK_ADVANCE_STATUSES.has(body.status)) return;
+  const { run_id } = body;
+  const job = phaseContext.internal_job_id;
+  if (job === "M8_FEATURE_CANDIDATE_INVENTORY") await Promise.all([requireSavedArtifact(run_id, ART.domainDerivationProfile, "PHASE_LOCK_BLOCKED:activity_inventory_requires_domain_profile"), requireSavedArtifact(run_id, ART.activityProfileSourceIndex, "PHASE_LOCK_BLOCKED:activity_inventory_requires_2c")]);
+  if (job === "M8_TARGET_FEATURE_PROFILE") await requireSavedArtifact(run_id, ART.activityInventory, "PHASE_LOCK_BLOCKED:activity_profile_requires_inventory");
+  if (job === "DATA_PROVENANCE_PROFILE_LAYER4") await Promise.all([requireSavedArtifact(run_id, ART.dataPrivacyNavigationIndex, "PHASE_LOCK_BLOCKED:dap_requires_2d"), requireSavedArtifact(run_id, ART.activityProfile, "PHASE_LOCK_BLOCKED:dap_requires_activity_profile")]);
+  if (job === "DATA_PROVENANCE_PROFILE_FORENSICS") await requireSavedArtifact(run_id, ART.dapGate, "PHASE_LOCK_BLOCKED:dap_forensics_requires_material_gate");
+  if (job === "M11") await Promise.all([requireSavedArtifact(run_id, ART.dapGate, "PHASE_LOCK_BLOCKED:m11_requires_dap_material_gate"), requireSavedArtifact(run_id, ART.legalCartographyIndex, "PHASE_LOCK_BLOCKED:m11_requires_2f")]);
+  if (job === "M12") await requireSavedArtifact(run_id, ART.exposureTriggered, "PHASE_LOCK_BLOCKED:m12_requires_m11_material_outputs");
+  if (job === "NORMALIZED_COMPILER") await requireSavedArtifact(run_id, ART.challengeGate, "PHASE_LOCK_BLOCKED:compiler_requires_challenge_gate");
+}
+
+async function requireAllPlannedM11BatchesSaved(runId, message) {
+  const routePlan = await readInternalArtifactPayload(runId, ART.exposureRoutePlan);
+  const batches = routePlan?.batch_plan || routePlan?.exposure_registry_route_plan?.batch_plan || [];
+  if (!Array.isArray(batches)) throw new Error(`${message}:batch_plan_missing_or_not_array`);
+  for (const batch of batches) {
+    if (!batch?.batch_id) throw new Error(`${message}:batch_id_missing`);
+    await requireSavedArtifact(runId, `exposure_registry_batch_validation__${batch.batch_id}`, `${message}:missing_validation:${batch.batch_id}`);
+    await requireSavedArtifact(runId, `exposure_registry_batch__${batch.batch_id}`, `${message}:missing_batch:${batch.batch_id}`);
+  }
+}
+function pairedBatchValidationName(batchArtifactName) { return batchArtifactName.replace(/^exposure_registry_batch__/, "exposure_registry_batch_validation__"); }
+async function readInternalArtifactPayload(runId, artifactName) { const meta = await getArtifactMetadata(runId, artifactName); return readJsonArtifactFromDrive(meta.drive_file_id); }
+async function requireSavedArtifact(runId, artifactName, errorCode) { try { await getArtifactMetadata(runId, artifactName); } catch { throw new Error(errorCode); } }

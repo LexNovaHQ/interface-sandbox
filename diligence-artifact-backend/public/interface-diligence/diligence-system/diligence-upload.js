@@ -62,7 +62,7 @@ document.addEventListener("DOMContentLoaded", () => {
         setTimeout(() => { window.location.href = href; }, 1200);
         return;
       }
-      if (["REPAIR_REQUIRED", "CONTROLLED_FAILURE"].includes(run.status) || run.runner_state === "FAILED") {
+      if (["REINVESTIGATION_REQUIRED", "CONTROLLED_FAILURE"].includes(run.status) || run.runner_state === "FAILED") {
         busy(false);
         message(`Run stopped: ${run.status || run.runner_state || "FAILED"}. ${run.runner_last_error || ""}`, true);
         return;

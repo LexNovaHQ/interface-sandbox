@@ -1,0 +1,203 @@
+runtime_contract: AGENT7_PHASE11_OPERATOR_CHALLENGE
+runtime_contract_version: v6_attempt_safe_staged_mutation
+compatibility_marker_v5: "runtime_contract_version: v5_production_integration_mutation_checkpoint"
+compatibility_marker_v6: "runtime_contract_version: v6_phase11_production_closure"
+compatibility_marker_v4: "runtime_contract_version: v4_reinvestigation_dispatch_return"
+active_agent_id: agent_7_m12
+active_phase_scope: OPERATOR_CHALLENGE
+public_phase_name: Operator Challenge
+functional_name: CROSS_PHASE_ADVERSARIAL_CHALLENGE_AND_COMPILER_READINESS_GATE
+synchronization_status: PHASE11_PRODUCTION_RUNTIME_CONTRACT_SYNCED
+
+routing_contract:
+  authority: P2G_CENTRALIZED_PHASE_ROUTING_AUTHORITY
+  route_id: ROUTE.PHASE10.EXPOSURE_PROFILE
+  delivery_mode: DERIVED_ONLY
+  source_bucket_delivered: false
+  forensic_inputs_allowed: false
+
+layer_1:
+  status: ACTIVE
+  version: PHASE11_LAYER1_DETERMINISTIC_CROSS_PHASE_INVENTORY_v1
+  canonical_artifact: operator_challenge_inventory
+  creates_new_findings: false
+  blocks_run: false
+
+layer_2:
+  status: ACTIVE
+  packet_version: PHASE11_LAYER2_SEMANTIC_PACKET_v1
+  ledger_version: operator_challenge_semantic_ledger.v1
+  canonical_artifact: operator_challenge_semantic_ledger
+  exact_candidate_coverage_required: true
+  maximum_output_repair_attempts: 1
+  source_search_forbidden: true
+  upstream_rewrite_forbidden: true
+  final_adjudication_forbidden: true
+  blocking_decision_forbidden: true
+  allowed_recommendations:
+    - REJECT
+    - ADVISORY
+    - MATERIAL_REINVESTIGATION
+    - CRITICAL_REVIEW_CANDIDATE
+
+layer_3:
+  status: ACTIVE
+  version: PHASE11_LAYER3_DETERMINISTIC_ADJUDICATION_v1
+  reinvestigation_ledger_version: operator_challenge_reinvestigation_ledger.v1
+  final_gate_version: challenge_gate.v4.operator_challenge
+  final_adjudication_authority: DETERMINISTIC_BACKEND
+  blocking_exception_only: true
+  only_critical_failure_blocks: true
+  material_field_problem_is_blocking: false
+  material_field_problem_routes_to_reinvestigation: true
+  maximum_reinvestigation_attempts: 2
+  unresolved_after_two_attempts: PASS_WITH_LIMITATION
+  third_attempt_forbidden: true
+  resolved_attempt_requires_backend_validation: true
+  full_phase_rerun_default: false
+  smallest_affected_unit_only: true
+  allowed_final_gate_statuses:
+    - PASS
+    - PASS_WITH_LIMITATION
+    - REINVESTIGATION_REQUIRED
+    - CONTROLLED_FAILURE
+
+production_integration:
+  status: ACTIVE
+  effective_contract_version: PHASE11_PRODUCTION_RUNTIME_CONTRACT_v2
+  independent_artifact_contract_version: PHASE11_INDEPENDENT_ARTIFACT_CONTRACT_v1
+  mutation_guard_version: phase11_mutation_guard.v1
+  dispatch_checkpoint_version: phase11_dispatch_checkpoint.v2
+  dispatch_lease_version: phase11_dispatch_lease.v2
+  dispatch_adapter_version: phase11_reinvestigation_dispatch_return_adapter.v4.attempt_safe
+  owner_adapter_registry_version: phase11_owner_adapter_registry.v2
+  write_authority_version: phase11_write_authority.v1
+  write_manifest_validation_version: phase11_write_manifest_validation.v2.backend_authority
+  targeted_commit_version: phase11_targeted_mutation_commit.v2.backend_authority
+  internal_job_contract_override_active: false
+  artifact_permission_cutover_active: true
+  restart_safe_dispatch_active: true
+  run_scoped_lease_active: true
+  lease_owner_token_required: true
+  unauthorized_mutation_rollback_active: true
+  staged_mutation_proposals_active: true
+  persistence_before_mutation_guard: false
+  technical_failures_are_not_substantive_attempts: true
+  owner_contract_exactness_preserved: true
+  ordinary_owner_runners_forbidden: true
+  normal_owner_downstream_cascade_allowed: false
+  owner_phase_locking_performed: false
+  return_directly_to_phase11: true
+
+independent_artifacts:
+  operator_challenge_inventory:
+    producer: LAYER_1_DETERMINISTIC_BACKEND
+    compiler_read_allowed: false
+  operator_challenge_semantic_ledger:
+    producer: LAYER_2_MODEL_BACKEND_VALIDATED
+    authoritative: false
+    compiler_read_allowed: false
+  operator_challenge_reinvestigation_ledger:
+    producer: LAYER_3_DETERMINISTIC_BACKEND
+    compiler_read_allowed: false
+  operator_challenge_dispatch_checkpoint:
+    producer: PHASE11_DISPATCH_RUNTIME
+    compiler_read_allowed: false
+  challenge_gate:
+    producer: LAYER_3_DETERMINISTIC_BACKEND
+    compiler_authority: true
+
+mutation_guard:
+  status: ACTIVE
+  exact_field_paths_only: true
+  mechanically_required_metadata_allowed: true
+  unrelated_mutation_forbidden: true
+  unauthorized_change_result: ATTEMPT_UNRESOLVED_AND_ROLLBACK
+  owner_self_report_is_resolution_authority: false
+  resolution_authority: REBUILT_LAYER1_DETERMINISTIC_INVENTORY
+
+checkpoint_state_machine:
+  - DISPATCH_CREATED
+  - OWNER_PROPOSAL_RUNNING
+  - OWNER_PROPOSAL_CREATED
+  - OWNER_PROPOSAL_RETURNED
+  - WRITE_AUTHORITY_VALIDATED
+  - TARGETED_COMMIT_APPLIED
+  - LAYER1_REBUILT
+  - PROPOSAL_COMMITTED
+  - NON_SUBSTANTIVE_RETRY_REQUIRED
+  - ATTEMPT_RECORDED
+  - COMPLETE
+
+reinvestigation_dispatch_return:
+  status: ACTIVE
+  dispatch_version: phase11_reinvestigation_dispatch.v1
+  return_version: phase11_reinvestigation_return.v1
+  exact_field_scope_preserved: true
+  exact_row_identity_preserved: true
+  resolved_only_if_exact_candidate_disappears: true
+  artifact_version_advance_required: true
+  owner_runtime_error_is_technical_failure: true
+  technical_failure_consumes_substantive_attempt: false
+  owner_runtime_error_counts_as_unresolved_attempt: false
+  technical_failures_consume_substantive_attempts: false
+  non_substantive_retry_cycle_limit: 3
+  maximum_substantive_attempts_per_candidate: 2
+  third_substantive_attempt_forbidden: true
+  maximum_dispatches_per_candidate: 2
+  third_dispatch_forbidden: true
+
+supported_reinvestigation_owners:
+  PHASE_3_DOMAIN_DERIVATION: P3_DOMAIN_DERIVATION_LAYER
+  PHASE_5_ACTIVITY_PROFILE: M8_TARGET_FEATURE_PROFILE
+  PHASE_7_DATA_PROVENANCE: DATA_PROVENANCE_PROFILE_LAYER4
+  PHASE_8_DOMAIN_CONTROL_OBLIGATION: DOMAIN_CONTROL_OBLIGATION_PROFILE
+  PHASE_10_EXPOSURE_PROFILE: M11_TARGETED_BATCH_ONLY
+
+non_dispatch_owners:
+  PHASE_2G_ROUTING: CRITICAL_CUSTODY_PATH_OR_LAYER3_REVIEW_ONLY
+  COMPILER_PRESENTATION_ONLY: ADVISORY_WARNING_CARRIED_TO_COMPILER
+
+critical_failure_classes:
+  - REQUIRED_ARTIFACT_MISSING
+  - REQUIRED_ARTIFACT_UNUSABLE
+  - FORENSIC_INPUT_BOUNDARY_BREACH
+  - PHASE10_COMPOUND_CUSTODY_MISMATCH
+  - PHASE10_PROFILE_OVERLAP
+
+required_derived_inputs:
+  - target_profile
+  - domain_derivation_profile
+  - target_feature_profile
+  - data_provenance_profile_semantic_batch_gate
+  - domain_control_obligation_profile
+  - active_threat_registry_manifest
+  - exposure_registry_route_plan
+  - exposure_registry_workpad_98
+  - exposure_registry_controlled_profile
+  - exposure_registry_triggered_profile
+
+forbidden_inputs:
+  - target_profile_forensics
+  - target_feature_profile_forensics
+  - dap_forensics_profile
+  - exposure_registry_profile_forensics
+
+contract_files:
+  - PHASE11_LAYER1_DETERMINISTIC_CHALLENGE_INVENTORY.md
+  - PHASE11_LAYER2_SEMANTIC_ADVERSARIAL_CHALLENGE.md
+  - PHASE11_LAYER3_DETERMINISTIC_ADJUDICATION.md
+  - PHASE11_TARGETED_REINVESTIGATION_ADDENDUM.md
+  - PHASE11_PRODUCTION_INTEGRATION_CONTRACT.md
+
+runtime_state_machine:
+  no_pending_issues_no_warnings:
+    gate_status: PASS
+    runtime_lock_status: LOCKED
+    compiler_handoff_allowed: true
+  warnings_or_exhausted_material_fields:
+    gate_status: PASS_WITH_LIMITATION
+    runtime_lock_status: LOCKED_WITH_LIMITATIONS
+    compiler_handoff_allowed: true
+  pending_material_reinvestigation:
+    action: EXECUTE_TARGETED_OWNER_DISPATCH

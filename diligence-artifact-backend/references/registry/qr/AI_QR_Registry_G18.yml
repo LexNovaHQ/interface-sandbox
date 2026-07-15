@@ -1,0 +1,75 @@
+registry_section:
+  id: G18
+  parent: AI_QR_REGISTRY_LANE_B
+  version: v1.0
+  lane: B
+  title: Governance demand and use-case scale
+  display_order: 18
+  record_count: 2
+  atomic_value_count: 2
+  rows:
+  - id: B12
+    key: ai.lane_b.internal_use_case_count
+    section: G18
+    lane: B
+    shape: SCALAR
+    leaves:
+    - internal_ai_use_case_count_band
+    materiality: MATERIAL
+    required: true
+    effects:
+    - SELECT_VARIANT
+    documents:
+    - DOC_AI_B_DPIA
+    mapping_key: QR.B12
+    upstream:
+      artifacts: []
+      selectors:
+      - Public product activities are not internal workforce use cases
+      coverage: INPUT_REQUIRED
+    resolve: ANSWER
+    ui:
+      label: Number of internal AI use cases
+      prompt: How many distinct internal AI use cases are currently known?
+      input: number
+      mode: REQUIRED_INPUT
+      when:
+        all:
+        - B01 == true
+    demo: 1–3
+    threats:
+    - JDG_DEC_LB2
+    - SHD_LIA_LB1
+  - id: B13
+    key: ai.lane_b.enterprise_governance_documentation_demand
+    section: G18
+    lane: B
+    shape: BOOLEAN
+    leaves:
+    - enterprise_governance_documentation_required
+    materiality: MATERIAL
+    required: true
+    effects:
+    - SELECT_CLAUSE
+    documents:
+    - DOC_AI_B_DPIA
+    - DOC_AI_B_PBK
+    mapping_key: QR.B13
+    upstream:
+      artifacts: []
+      selectors:
+      - Private customer procurement requirement
+      coverage: INPUT_REQUIRED
+    resolve: ANSWER
+    ui:
+      label: Enterprise clients require AI-governance documentation
+      prompt: Do enterprise clients require AI-governance policies, assessments, logs, or other documentation?
+      input: boolean
+      mode: REQUIRED_INPUT
+      when:
+        all:
+        - B01 == true
+    demo: 'Yes'
+    threats:
+    - SHD_LIA_LB1
+    - UNI_FRD_LB1

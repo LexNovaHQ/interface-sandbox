@@ -1,0 +1,9 @@
+active_qr_registry:
+  authority_id: ACTIVE_QR_REGISTRY_v1
+  version: 1.0.0
+  status: ACTIVE
+  active_catalog_path: references/registry/qr/v2_1/QR_Registry_Catalog.yml
+  expected_catalog_id: QR_REGISTRY_CATALOG_v2_1
+  expected_catalog_version: 2.1.0
+  legacy_catalog_authority_forbidden: true
+  legacy_matrix_authority_forbidden: true

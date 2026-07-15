@@ -1,0 +1,33 @@
+{
+  "change_order": "CO-E2E-01_THROUGH_CO-E2E-03",
+  "status": "PASS",
+  "certified_implementation_head": "aa76914cbdcf9cadb3e3a408b1ed0f0dfcf3f875",
+  "certification_workflow_run_id": 29322296798,
+  "certification_job_id": 87050206028,
+  "targeted_authority_gate": "PASS",
+  "phase13_16_production_suite": "PASS",
+  "phase1_16_universal_production_gate": "PASS",
+  "blocking_doctrine": {
+    "blocking_is_exception": true,
+    "only_critical_failure_blocks": true,
+    "technical_failures_use_retry_status": true,
+    "material_domain_selection_failures_use_reinvestigation": true,
+    "maximum_phase3b_reinvestigation_attempts": 2
+  },
+  "domain_authority": {
+    "model_selected_package_authority": false,
+    "backend_deterministic_exclusion_authority": true,
+    "package_lifecycle_gate_active": true,
+    "ai_governance": "ACTIVE_E2E",
+    "fintech": "ACTIVE_REPORT_ONLY",
+    "other_declared_domains": "DECLARED_NOT_INSTALLED"
+  },
+  "post_review_boundary": {
+    "active_e2e_enters_qualified_review": true,
+    "active_report_only_terminates_after_report": true,
+    "report_only_enters_ai_qr": false,
+    "report_only_enters_assembly": false
+  },
+  "live_cloud_execution_performed": false,
+  "source_certification_only": true
+}

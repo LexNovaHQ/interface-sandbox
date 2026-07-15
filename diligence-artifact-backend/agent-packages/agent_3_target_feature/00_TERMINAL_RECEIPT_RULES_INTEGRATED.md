@@ -35,7 +35,7 @@ terminal_required_inputs:
   next_phase_or_backend_advance_instruction: required for successful non-final phases
 ```
 
-`TERM.S1.C2` If validator status is `REPAIR_REQUIRED`, `SOURCE_REPAIR_REQUIRED`, or `CONTROLLED_FAILURE`, terminal must not emit a next-phase or next-agent command.
+`TERM.S1.C2` If validator status is `REINVESTIGATION_REQUIRED` or `CONTROLLED_FAILURE`, terminal must not emit a next-phase or next-agent command. Source scope, owning phase, reason code, and attempt number must be carried as receipt metadata, not encoded as a new status.
 
 `TERM.S1.C3` If validator status is `PASS_WITH_LIMITATION`, `PASS_WITH_WARNING`, or `REINVESTIGATION_COMPLETED_WITH_LIMITATION`, terminal may emit the backend advance instruction only if validator result sets `next_agent_command_allowed: true` or equivalent downstream-safe flag.
 
@@ -91,31 +91,37 @@ NEXT STEP:
 
 ---
 
-# SECTION 3 — FAILURE AND REPAIR RECEIPTS
+# SECTION 3 — REINVESTIGATION AND CRITICAL-FAILURE RECEIPTS
 
-## 3.1 REPAIR_REQUIRED Receipt
+## 3.1 REINVESTIGATION_REQUIRED Receipt
 
-`TERM.S3.C1` If validator status is `REPAIR_REQUIRED` or `SOURCE_REPAIR_REQUIRED`, emit in manual mode:
+`TERM.S3.C1` If validator status is `REINVESTIGATION_REQUIRED`, emit in manual mode. The receipt must identify `reinvestigation_owner_phase`, `reinvestigation_scope`, `reinvestigation_reason_code`, and `attempt_number` without inventing a source-specific status:
 
 ```text
-PHASE REPAIR REQUIRED: <phase_lock_or_active_phase>
+PHASE REINVESTIGATION REQUIRED: <phase_lock_or_active_phase>
 Run ID: <run_id>
 
-Repair owner:
-<repair_owner>
+Reinvestigation owner phase:
+<reinvestigation_owner_phase>
 
-Repair scope:
-<repair_scope>
+Reinvestigation scope:
+<reinvestigation_scope>
 
-Blocking reasons:
-- <blocking_reason_1>
-- <blocking_reason_2>
+Reason code:
+<reinvestigation_reason_code>
+
+Attempt:
+<attempt_number_of_2>
+
+Unresolved reasons:
+- <unresolved_reason_1>
+- <unresolved_reason_2>
 
 NEXT STEP:
-Repair this phase before continuing. Do not move to the next phase yet.
+Return control to the backend for targeted reinvestigation. Do not advance this phase yet. This is not a global run block.
 ```
 
-`TERM.S3.C2` Do not include a next-agent command in `REPAIR_REQUIRED` or `SOURCE_REPAIR_REQUIRED` receipts.
+`TERM.S3.C2` Do not include a next-agent command in a `REINVESTIGATION_REQUIRED` receipt. After the second unsuccessful targeted attempt, ordinary unresolved matters must be projected as limitations or warnings and the run must continue unless a separately classified critical failure exists.
 
 ## 3.2 CONTROLLED_FAILURE Receipt
 
@@ -137,25 +143,31 @@ No next-phase command is available because this phase did not lock.
 
 `TERM.S3.C4` Do not include a next-agent command in `CONTROLLED_FAILURE` receipts.
 
-## 3.3 RETURN_TO_UPSTREAM_REPAIR Receipt
+## 3.3 RETURN_TO_UPSTREAM_REINVESTIGATION Receipt
 
 `TERM.S3.C5` If the defect belongs to an upstream source/routing agent, emit in manual mode:
 
 ```text
-PHASE REPAIR REQUIRED: <phase_lock_or_active_phase>
+PHASE REINVESTIGATION REQUIRED: <phase_lock_or_active_phase>
 Run ID: <run_id>
 
-Repair owner:
+Reinvestigation owner phase:
 <upstream_agent_name>
 
-Repair scope:
+Reinvestigation scope:
 <upstream_artifact_or_route_defect>
 
+Reason code:
+<upstream_reinvestigation_reason_code>
+
+Attempt:
+<attempt_number_of_2>
+
 NEXT STEP:
-Return to the upstream repair phase identified above. Do not continue this phase until upstream repair is saved.
+Return control to the upstream owning phase for targeted reinvestigation. Do not advance this phase until the return artifact is saved.
 ```
 
-`TERM.S3.C6` Upstream repair instructions are allowed only for repair routing. They are not successful next-phase handoff commands.
+`TERM.S3.C6` Upstream reinvestigation instructions are allowed only for scoped return routing. They are not successful next-phase handoff commands and do not create a global blocking status.
 
 ---
 
@@ -169,7 +181,8 @@ Return to the upstream repair phase identified above. Do not continue this phase
 | `agent_1b_extract` | `agent_1b_manual_receipt` | `PHASE LOCKED: AGENT_1B_EXTRACT` | `source_family_index`, `lossless_family__*` artifacts | backend runner advances to `M6_BUCKET_INDEX` |
 | `agent_2a_bucket_routing` | `agent_2a_manual_receipt` | `PHASE LOCKED: M6_BUCKET_INDEX` | `source_discovery_handoff` | backend runner advances to `M9` |
 | `agent_2b_m9` | `agent_2b_m9_manual_receipt` | `PHASE LOCKED: M9_LEGAL_CARTOGRAPHY` | `legal_cartography_index` | backend runner advances to `M7_TARGET_PROFILE` |
-| `agent_3_target_feature` / M7 | `agent_3_m7_manual_receipt` | `PHASE LOCKED: M7_TARGET_PROFILE` | `target_profile`, `target_profile_forensics` | backend runner advances to `M8_TARGET_FEATURE_PROFILE` |
+| `agent_3_target_feature` / M7 | `agent_3_m7_manual_receipt` | `PHASE LOCKED: M7_TARGET_PROFILE` | `target_profile` | backend runner advances to `P3_DOMAIN_DERIVATION_LAYER` |
+| `agent_3_target_feature` / P3 | `agent_3_p3_manual_receipt` | `PHASE LOCKED: P3_DOMAIN_DERIVATION_LAYER` | `domain_derivation_profile`, `active_run_package_manifest` | backend runner advances to `M7_TARGET_PROFILE_FORENSICS` |
 | `agent_3_target_feature` / M8 | `agent_3_m8_manual_receipt` | `PHASE LOCKED: M8_TARGET_FEATURE_PROFILE` | `target_feature_profile`, `target_feature_profile_forensics` | backend runner advances to `M10` |
 | `agent_4_data_privacy` | `agent_3_m10_manual_receipt_PLACEHOLDER` | `PHASE LOCKED: M10_DATA_PROVENANCE` | `target_data_provenance_profile`, `target_data_provenance_profile_forensics` | backend runner advances to `M11` |
 | `agent_5_exposure_registry` | `agent_4_m11_manual_receipt_PLACEHOLDER` | `PHASE LOCKED: M11_EXPOSURE_REGISTRY` | `target_exposure_profile`, `target_exposure_profile_forensics` | backend runner advances to `M12` |
@@ -198,10 +211,9 @@ Run ID: <run_id>
 
 Saved:
 - target_profile
-- target_profile_forensics
 
 NEXT STEP:
-Backend runner may advance this run to M8_TARGET_FEATURE_PROFILE.
+Backend runner may advance this run to P3_DOMAIN_DERIVATION_LAYER.
 ```
 
 ## 5.2 Agent 3 M8 LOCKED_WITH_LIMITATIONS Receipt
@@ -225,7 +237,25 @@ Backend runner may advance this run to M10.
 
 `TERM.A3.C3` Do not include detailed M7/M8 forensics, route coverage ledgers, field derivation rows, archetype derivation rows, surface derivation rows, source quotes, debug notes, or validator logs in the terminal receipt.
 
-## 5.3 Agent 3 Target Feature Repair Receipt
+## 5.3 Agent 3 P3 Domain Derivation LOCKED Receipt
+
+`TERM.A3.P3.C1` In manual same-chat mode only, if P3 status is `LOCKED`, emit exactly:
+
+```text
+PHASE LOCKED: P3_DOMAIN_DERIVATION_LAYER
+Run ID: <run_id>
+
+Saved:
+- domain_derivation_profile
+- active_run_package_manifest
+
+NEXT STEP:
+Backend runner may advance this run to M7_TARGET_PROFILE_FORENSICS.
+```
+
+`TERM.A3.P3.C2` The model emits only `domain_derivation_profile`; the compiler writes `active_run_package_manifest`. If P3 status is `CONTROLLED_FAILURE`, emit the CONTROLLED_FAILURE receipt and no next-phase command.
+
+## 5.4 Agent 3 Target Feature Repair Receipt
 
 `TERM.A3.C4` If M7 fails before M8, repair scope must say `M7_TARGET_PROFILE`, and the backend must not advance to M8.
 

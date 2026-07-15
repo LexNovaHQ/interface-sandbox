@@ -36,7 +36,7 @@ const PHASE_TEXT = {
   COMPLETE: "The diligence report is ready."
 };
 
-const TERMINAL_FAILURES = new Set(["REPAIR_REQUIRED", "CONTROLLED_FAILURE"]);
+const TERMINAL_FAILURES = new Set(["REINVESTIGATION_REQUIRED", "CONTROLLED_FAILURE"]);
 const POLL_MS = 10000;
 const RUN_ID_PATTERN = /^LN-\d{8}-\d{6}-[A-Z0-9-]+-\d{6}$/i;
 let pollTimer = null;

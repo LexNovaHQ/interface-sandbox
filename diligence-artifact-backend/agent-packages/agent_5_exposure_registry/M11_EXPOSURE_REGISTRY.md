@@ -1,56 +1,59 @@
-# MODULE XI — REGISTRY HANDSHAKE AND EXPOSURE PROFILE
+# MODULE XI — PACKAGE-SCOPED EXPOSURE REGISTRY
+
 ## Three-Layer M11 Contract
 
-# LOCK
+## LOCK
 
-M11 remains batched. The model evaluates only the active batch supplied by backend.
+M11 remains batched and package-scoped.
+
+The active model evaluates only one backend-selected batch containing one package, one stream, and one archetype group. It never receives or evaluates the full mounted union at once.
 
 M11 uses three layers:
 
-1. deterministic backend registry spine and packet formation;
-2. semantic model evidence application for the active batch;
-3. deterministic backend final status, workpad merge, projection, and forensics.
+1. deterministic backend registry selection, classification inventory projection, route planning, batch planning, evidence packet formation, and registry spine prefill;
+2. semantic model evidence application for the active package-scoped batch;
+3. deterministic backend validation, final status, accepted-batch save, dynamic workpad merge, material projection, and forensics.
 
-Public/report wording normalization is outside M11 scope.
+## EXECUTION IDENTITY
 
-# LAYER 1 — DETERMINISTIC BACKEND
+Global deterministic identity is:
+
+```text
+registry_row_key = <package_id>::<Threat_ID>
+```
+
+Canonical `Threat_ID` remains unchanged.
+
+- The backend owns `registry_row_key`.
+- The model reads canonical Threat IDs and returns canonical Threat IDs only.
+- Raw Threat IDs may repeat across different package streams but cannot repeat inside one package-scoped batch.
+- Silent renaming or namespacing of canonical Threat IDs is forbidden.
+
+## LAYER 1 — DETERMINISTIC BACKEND
 
 Backend owns:
 
 ```text
-registry load
-registry validation
-Threat_ID decomposition validation
-M9 navigation consumption
-route plan
-batch plan
-evidence packet formation
+Phase 3 package and AI-mount resolution
+selected registry loading and validation
+active_threat_registry_manifest
+compound execution identity
+Phase 5 package-scoped classification inventory projection
+separate primary and overlay route streams
+UNI mandatory routing
+non-UNI package-archetype routing
+maximum-15 package-scoped batch plan
+packet-size ceiling
+legal-cartography navigation and evidence packet formation
 registry spine prefill
+checkpoint fingerprints
 ```
 
-Registry spine fields are backend-owned:
+Phase 5 owns classification. Phase 10 projects classifications only and must not invent codes or move values between primary and overlay streams.
 
-```text
-Threat_ID
-Archetype
-Subcategory
-Surface
-authority_anchors
-Pain_Tier
-Pain_Depth
-Pain_Category
-Legal_Pain
-base registry FP_Mechanism
-registry remediation source from Lex_Nova_Fix
-review_route default
-parsed Hunter_Trigger
-route reason
-batch membership
-```
+Surface is context only and cannot route a row.
 
-The model must not rewrite these fields.
-
-# LAYER 2 — SEMANTIC MODEL
+## LAYER 2 — SEMANTIC MODEL
 
 The model owns only active-batch evidence application:
 
@@ -64,20 +67,58 @@ row_limitations
 status_inputs
 ```
 
-The model applies the exact Hunter Trigger to admitted target, product, data, and governance evidence.
+The model applies the exact parsed Hunter Trigger to admitted target, product, data, and governance evidence.
 
-The model must not route rows, batch rows, save artifacts, validate as M12, merge the workpad, project material profiles, assemble forensics, choose profile placement, or normalize public wording.
+The model must not:
 
-# LAYER 3 — DETERMINISTIC FINALIZATION
+```text
+select or mount registries
+classify activities
+route rows
+choose streams
+choose batch membership
+change batch size
+emit registry_row_key
+rewrite registry spine fields
+choose final material status
+save artifacts
+merge the workpad
+project profiles
+assemble forensics
+perform M12 global challenge
+compile or render
+write report prose
+```
+
+Semantic packet contract:
+
+```text
+M11_PACKAGE_SCOPED_SEMANTIC_PACKET_v1
+```
+
+Semantic output contract:
+
+```text
+M11_PACKAGE_SCOPED_SEMANTIC_LEDGER_v1
+```
+
+Repair contract:
+
+```text
+M11_PACKAGE_SCOPED_SEMANTIC_REPAIR_v1
+```
+
+## LAYER 3 — DETERMINISTIC BACKEND
 
 Backend owns:
 
 ```text
-pre-save discipline
+structural and semantic validation
+canonical Threat_ID to registry_row_key reconciliation
 final material status derivation
 full material row assembly
 accepted batch save
-98-row workpad merge
+dynamic mounted-registry workpad merge
 controlled projection
 triggered projection
 forensic assembly
@@ -92,7 +133,7 @@ CONTROLLED_BY_EXCLUSION
 CONTROLLED_BY_PUBLIC_EVIDENCE_LIMITATION
 ```
 
-# ROUTING
+## PACKAGE-SCOPED ROUTING
 
 Route values:
 
@@ -105,23 +146,51 @@ Route reasons:
 
 ```text
 UNI_ALWAYS_RUN
-ARCHETYPE_TRIGGERED
-INT_NOT_TRIGGERED_NOT_APPLICABLE
+PACKAGE_ARCHETYPE_MATCH
+PACKAGE_ARCHETYPE_NOT_ACTIVE
 ```
 
-Surface-only routing is forbidden. Surface is context only.
+Rules:
 
-# M9 EVIDENCE DISCIPLINE
+- UNI rows always route within each mounted registry.
+- Non-UNI rows route only when their archetype exists in the matching package and stream inventory.
+- Primary and overlay streams remain separate.
+- Different packages never share a batch.
+- Surface-only routing is forbidden.
 
-M9 is navigation and custody authority. M9 is not proof by itself except for rows about document presence, absence, custody, navigation, or limitation.
+## BATCH CONTRACT
 
-For trigger/control proof, M11 must bind to full lossless text, locked upstream proof, or formal limitation.
+Each batch contains:
 
-M9 silence is not evidence absence. If M9 is silent or thin, backend may supply closest relevant full lossless section or part from loaded evidence.
+```text
+one package_id
+one stream_id
+one stream_type
+one archetype group
+one to fifteen rows
+```
 
-# REGISTRY CANON
+Every batch carries both deterministic compound row keys and canonical Threat IDs. The model returns only canonical Threat IDs.
 
-M11 treats these registry keys as source authority:
+Fifteen is a maximum, not a fixed size. Packet-size limits may produce smaller batches. Evidence and registry text cannot be truncated to force fifteen rows.
+
+## EVIDENCE DISCIPLINE
+
+Lossless legal/governance evidence is primary evidence.
+
+`legal_cartography_index` is the mandatory navigation map into that evidence. Recorded index-gap navigation inside the same routed primary evidence bucket is not fallback evidence.
+
+M9 is not substantive proof by itself except for document presence, absence, custody, navigation, or limitation questions.
+
+Phase 5 classification and route membership explain why a row entered the batch; they do not prove the Hunter Trigger.
+
+Domain-control-obligation context is non-dispositive context only.
+
+Where direct proof is absent, the model must carry evidence limitation and false-positive concern rather than invent a trigger, control, exclusion, jurisdiction, deployment context, or user flow.
+
+## REGISTRY CANON
+
+Each selected registry row remains authoritative for:
 
 ```text
 Threat_ID
@@ -149,16 +218,33 @@ FIELD22
 FIELD23
 ```
 
-FIELD21 is archetype/scope. FIELD22 is subcategory. FIELD23 is variant.
+Hunter Trigger plus the locked registry evaluation rules are the row-level derivation authority.
 
-Hunter_Trigger plus registry evaluation rules are the row-level derivation authority.
+## MODEL ROW
 
-# MATERIAL ROW CONTRACT
-
-Controlled and triggered material profiles use the same full row schema:
+The model returns exactly one semantic row per expected canonical Threat ID:
 
 ```text
 Threat_ID
+optional trigger_status
+target_match
+basis_proof
+control_exclusion_evaluation
+evidence_source_basis
+applied_fp_mechanism
+row_limitations
+status_inputs
+```
+
+No extra rows. No grouped rows. No deterministic fields. No profile containers.
+
+## FULL MATERIAL ROW
+
+The backend assembles 19 fields:
+
+```text
+Threat_ID
+Threat_Name
 target_match
 evaluation_status
 basis_proof
@@ -178,48 +264,18 @@ review_route
 row_limitations
 ```
 
-The full row is assembled by backend from deterministic spine plus semantic evidence application plus deterministic final status.
+## DYNAMIC COVERAGE
 
-# PHASE B MODEL ROW
+Workpad and forensic coverage reconcile against `active_threat_registry_manifest.expected_registry_row_key_count`.
 
-The model returns exactly one semantic row per expected Threat_ID:
+The stable artifact token `exposure_registry_workpad_98` may remain for compatibility, but it does not impose a fixed row count.
 
-```text
-Threat_ID
-trigger_status
-target_match
-basis_proof
-control_exclusion_evaluation
-evidence_source_basis
-applied_fp_mechanism
-row_limitations
-status_inputs
-```
+LEP coverage remains a separate locked 22-row obligation.
 
-No extra rows. No grouped rows. No profile containers.
+## REPAIR
 
-# PROJECTION
+Repair the smallest affected semantic batch. A repair call must preserve package, stream, group, batch identity, and exact expected Threat ID coverage.
 
-Controlled profile includes:
+## CURRENT BUILD BOUNDARY
 
-```text
-CONTROLLED_BY_VISIBLE_CONTROL
-CONTROLLED_BY_EXCLUSION
-CONTROLLED_BY_PUBLIC_EVIDENCE_LIMITATION
-```
-
-Triggered profile includes:
-
-```text
-TRIGGERED
-```
-
-Workpad-only rows remain internal.
-
-# FORENSICS
-
-Forensics preserve registry custody, route plan, semantic evidence application, status inputs, evidence binding, control/exclusion evaluation, final status derivation, projection reconciliation, and M9 consumption trace.
-
-# REPAIR
-
-Repair the smallest affected unit only: route plan, single batch, batch validation, accepted batch save, workpad merge, projection, or forensics.
+CO-7 makes the semantic package contract ready. The active runtime must still stop before the model call until CO-8 implements and validates the domain-agnostic Layer 2 runtime.

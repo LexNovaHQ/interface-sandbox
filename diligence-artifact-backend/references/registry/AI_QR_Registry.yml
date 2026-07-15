@@ -1,0 +1,320 @@
+registry:
+  id: AI_QR_REGISTRY
+  version: v1.0
+  status: LOCKED_FOR_PHASE_13_BUILD
+  scope: AI_GOVERNANCE
+  record_count: 46
+  lane_a_count: 28
+  lane_b_count: 18
+  atomic_value_count: 82
+  schema: qr_assembly_registry.v1
+  phase_owner: PHASE_13_ASSEMBLY_QR_RESOLUTION
+  boundary:
+    document_consequence_required: true
+    raw_evidence_reads_forbidden: true
+    threats_traceability_only: true
+    optional_full_review_forbidden: true
+    execution_fields_forbidden: true
+    completed_operational_records_forbidden: true
+    document_generation_forbidden: true
+    demo_values_labelled: true
+    review_ready_only: true
+    local_counsel_required: true
+    role: LEGAL_ARCHITECT_NOT_LAW_FIRM
+  enums:
+    coverage:
+    - PREFILLED_EXACT
+    - PREFILLED_CONFIRM
+    - PARTIAL_INPUT
+    - INPUT_REQUIRED
+    - DEFAULT_OVERRIDE
+    resolve:
+    - AUTO_FILL
+    - CONFIRM
+    - COMPLETE
+    - ANSWER
+    - OVERRIDE_IF_NEEDED
+    effects:
+    - POPULATE
+    - ACTIVATE_DOCUMENT
+    - SELECT_CLAUSE
+    - SELECT_VARIANT
+    - SET_CLAUSE_FLAG
+  sources:
+  - AI_Registry_Key.v4.0
+  - Diligence_Field_Derivation_Registry.v3.1
+  - AI_THREAT_REGISTRY.98
+  - DOC_AI_A_*
+  - DOC_AI_B_*
+  activation:
+    full_when:
+    - primary_domain_package == ai-governance
+    - capability_overlays contains ai-native
+    non_ai_primary_mode: TAGGED_ROWS_ONLY
+    load_order: 2
+    requires: UNIVERSAL_QR_REGISTRY
+  lane_resolution:
+    scope: PER_ACTIVITY_AND_PER_EXPOSURE
+    lane_a: external AI product/service exposure
+    lane_b: internal deployer/employer exposure
+    both_allowed: true
+    operator_lane_selection_forbidden: true
+    lane_b_absence_of_public_evidence: UNKNOWN_NOT_INACTIVE; render B01
+  document_activation:
+  - document_id: DOC_AI_A_TOS
+    activate_when:
+      all:
+      - lane_a_active == true
+  - document_id: DOC_AI_A_AUP
+    activate_when:
+      all:
+      - lane_a_active == true
+  - document_id: DOC_AI_A_AGT
+    activate_when:
+      all:
+      - lane_a_active == true
+      - A03 == true
+  - document_id: DOC_AI_A_DPA
+    activate_when:
+      all:
+      - lane_a_active == true
+      - A26 includes PROCESSOR or SERVICE_PROVIDER or CONTRACTOR
+  - document_id: DOC_AI_A_PP
+    activate_when:
+      all:
+      - lane_a_active == true
+      - A17 is not empty
+  - document_id: DOC_AI_A_SLA
+    activate_when:
+      all:
+      - lane_a_active == true
+      - U19 == true
+  - document_id: DOC_AI_A_PBK
+    activate_when:
+      all:
+      - lane_a_active == true
+    inherit_only: true
+  - document_id: DOC_AI_B_HND
+    activate_when:
+      all:
+      - lane_b_active == true
+      - B01 == true
+  - document_id: DOC_AI_B_SCAN
+    activate_when:
+      all:
+      - lane_b_active == true
+      - B01 == true
+    blank_operational_instrument_only: true
+  - document_id: DOC_AI_B_DPIA
+    activate_when:
+      all:
+      - lane_b_active == true
+      - B01 == true
+      any:
+      - B06 == true
+      - B12 > 0
+    blank_operational_instrument_only: true
+  - document_id: DOC_AI_B_IP
+    activate_when:
+      all:
+      - lane_b_active == true
+      - B01 == true
+      - B02 is not empty
+  - document_id: DOC_AI_B_SOP
+    activate_when:
+      all:
+      - lane_b_active == true
+      - B01 == true
+      any:
+      - B05 == true
+      - B06 == true
+    blank_operational_instrument_only: true
+  - document_id: DOC_AI_B_PBK
+    activate_when:
+      all:
+      - lane_b_active == true
+      - B01 == true
+    inherit_only: true
+  overlay_exports:
+    fintech.ai_underwriting:
+    - A01
+    - A07
+    - A12
+    - A13
+    - A16
+    - A17
+    - A18
+    - A19
+    - A20
+    - A21
+    - A24
+    - A26
+    fintech.agentic_payments:
+    - A03
+    - A04
+    - A05
+    - A06
+    - A15
+    employment.ai_decisioning:
+    - A07
+    - A12
+    - A13
+    - A17
+    - A18
+    - A19
+    - A24
+    biometric.processing:
+    - A14
+    - A17
+    - A18
+    - A19
+    - A24
+    - A25
+    children.minors:
+    - A10
+    - A11
+    - A17
+    - A18
+    - A19
+    - A24
+    privacy.cross_border:
+    - A17
+    - A18
+    - A19
+    - A21
+    - A22
+    - A24
+    - A25
+    - A26
+  playbooks:
+    DOC_AI_A_PBK: INHERIT_ONLY_NO_INDEPENDENT_QR_ROWS
+    DOC_AI_B_PBK: INHERIT_ONLY_NO_INDEPENDENT_QR_ROWS
+  operational_instruments:
+    completed_scanner_responses: false
+    completed_dpia_findings: false
+    completed_hitl_records: false
+    assembler_output: CUSTOMIZED_BLANK_FRAMEWORKS_AND_SETTINGS_ONLY
+  validation:
+    unique_ids: true
+    unique_keys: true
+    all_threat_ids_exist: true
+    expected_record_count: 46
+    expected_lane_a_count: 28
+    expected_lane_b_count: 18
+    expected_atomic_value_count: 82
+  parts:
+  - id: AI_QR_REGISTRY_LANE_A
+    path: qr/AI_QR_Registry_Lane_A.yml
+    record_count: 28
+    atomic_value_count: 57
+  - id: AI_QR_REGISTRY_LANE_B
+    path: qr/AI_QR_Registry_Lane_B.yml
+    record_count: 18
+    atomic_value_count: 25
+  section_index:
+  - section_id: G08
+    lane: A
+    title: Model stack and integrations
+    field_ids:
+    - A01
+    - A02
+    display_order: 8
+  - section_id: G09
+    lane: A
+    title: Agentic capability and controls
+    field_ids:
+    - A03
+    - A04
+    - A05
+    - A06
+    - A07
+    display_order: 9
+  - section_id: G10
+    lane: A
+    title: Interface and audience
+    field_ids:
+    - A08
+    - A09
+    - A10
+    - A11
+    display_order: 10
+  - section_id: G11
+    lane: A
+    title: Regulated and high-impact use
+    field_ids:
+    - A12
+    - A13
+    - A14
+    - A15
+    display_order: 11
+  - section_id: G12
+    lane: A
+    title: Training and data architecture
+    field_ids:
+    - A16
+    - A17
+    - A18
+    - A19
+    - A20
+    display_order: 12
+  - section_id: G13
+    lane: A
+    title: Subprocessors, transfers and resilience
+    field_ids:
+    - A21
+    - A22
+    - A23
+    - A24
+    - A25
+    - A26
+    display_order: 13
+  - section_id: G14
+    lane: A
+    title: Cookies and SLA metrics
+    field_ids:
+    - A27
+    - A28
+    display_order: 14
+  - section_id: G15
+    lane: B
+    title: Internal-use and workforce gate
+    field_ids:
+    - B01
+    - B02
+    - B03
+    display_order: 15
+  - section_id: G16
+    lane: B
+    title: Tools, deliverables and people decisions
+    field_ids:
+    - B04
+    - B05
+    - B06
+    display_order: 16
+  - section_id: G17
+    lane: B
+    title: Organization and jurisdiction context
+    field_ids:
+    - B07
+    - B08
+    - B09
+    - B10
+    - B11
+    display_order: 17
+  - section_id: G18
+    lane: B
+    title: Governance demand and use-case scale
+    field_ids:
+    - B12
+    - B13
+    display_order: 18
+  - section_id: G19
+    lane: B
+    title: IP, HITL and deployment ownership
+    field_ids:
+    - B14
+    - B15
+    - B16
+    - B17
+    - B18
+    display_order: 19

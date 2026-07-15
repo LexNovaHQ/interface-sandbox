@@ -1,0 +1,125 @@
+registry_section:
+  id: G15
+  parent: AI_QR_REGISTRY_LANE_B
+  version: v1.0
+  lane: B
+  title: Internal-use and workforce gate
+  display_order: 15
+  record_count: 3
+  atomic_value_count: 5
+  rows:
+  - id: B01
+    key: ai.lane_b.internal_workforce_use
+    section: G15
+    lane: B
+    shape: BOOLEAN
+    leaves:
+    - internal_ai_use
+    materiality: CRITICAL
+    required: true
+    effects:
+    - ACTIVATE_DOCUMENT
+    documents:
+    - DOC_AI_B_HND
+    - DOC_AI_B_SCAN
+    - DOC_AI_B_DPIA
+    - DOC_AI_B_IP
+    - DOC_AI_B_SOP
+    - DOC_AI_B_PBK
+    mapping_key: QR.B01
+    upstream:
+      artifacts:
+      - target_feature_profile
+      - exposure_registry_triggered_profile
+      - exposure_registry_controlled_profile
+      selectors:
+      - per-activity lane B
+      - external_internal_action_signal
+      - B-lane exposure rows
+      coverage: PARTIAL_INPUT
+    resolve: COMPLETE
+    ui:
+      label: Internal workforce AI use
+      prompt: Do employees, contractors, or freelancers use AI tools in company work?
+      input: boolean
+      mode: PREFILLED_COMPLETION
+      when:
+        all:
+        - active_scope == true
+    demo: 'Yes'
+    threats:
+    - UNI_LIA_LB1
+    - UNI_FRD_LB1
+  - id: B02
+    key: ai.lane_b.workforce_composition
+    section: G15
+    lane: B
+    shape: OBJECT
+    leaves:
+    - employees_in_scope
+    - contractors_used
+    - freelancers_used
+    materiality: MATERIAL
+    required: true
+    effects:
+    - SELECT_CLAUSE
+    documents:
+    - DOC_AI_B_HND
+    - DOC_AI_B_SCAN
+    - DOC_AI_B_IP
+    - DOC_AI_B_SOP
+    mapping_key: QR.B02
+    upstream:
+      artifacts: []
+      selectors:
+      - No reliable public normalized workforce-composition field
+      coverage: INPUT_REQUIRED
+    resolve: ANSWER
+    ui:
+      label: Workforce composition
+      prompt: 'Identify which workforce groups use AI: employees, contractors, freelancers, interns, or other personnel.'
+      input: object_form
+      mode: REQUIRED_INPUT
+      when:
+        all:
+        - B01 == true
+    demo: 'Employees: Yes | Contractors: Yes | Freelancers: No'
+    threats:
+    - CRT_INF_LB1
+    - RDR_PRV_LB1
+  - id: B03
+    key: ai.lane_b.jurisdiction.eu_workforce_or_operations
+    section: G15
+    lane: B
+    shape: BOOLEAN
+    leaves:
+    - eu_workforce_or_operations
+    materiality: MATERIAL
+    required: true
+    effects:
+    - SELECT_CLAUSE
+    documents:
+    - DOC_AI_B_HND
+    - DOC_AI_B_SCAN
+    - DOC_AI_B_DPIA
+    mapping_key: QR.B03
+    upstream:
+      artifacts:
+      - target_profile
+      - active_run_package_manifest
+      selectors:
+      - jurisdiction/market signals
+      - gdpr/eu-ai-act overlays
+      coverage: PARTIAL_INPUT
+    resolve: COMPLETE
+    ui:
+      label: EU workforce or operations
+      prompt: Does the organization have EU workforce members, EU establishments, or internal operations subject to EU employment or AI rules?
+      input: boolean
+      mode: PREFILLED_COMPLETION
+      when:
+        all:
+        - B01 == true
+    demo: 'No'
+    threats:
+    - JDG_DEC_LB2

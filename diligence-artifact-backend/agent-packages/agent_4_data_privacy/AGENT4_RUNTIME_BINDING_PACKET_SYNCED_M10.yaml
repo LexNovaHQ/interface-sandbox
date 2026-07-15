@@ -13,13 +13,13 @@ allowed_modules:
 read_artifacts:
   - source_discovery_handoff
   - legal_cartography_index
+  - legal_signal_derivation_profile
   - target_feature_profile
   - lossless_family__D1_SECURITY_TRUST
   - lossless_family__D2_SUBPROCESSOR_PRIVACY_CENTER
   - lossless_family__D3_DATA_GOVERNANCE_CONTROLS
   - lossless_family__D4_DOCS_API_DATA_FLOW
   - lossless_family__D5_AI_SAFETY_TRANSPARENCY
-  - m10_selected_legal_support_packet
 
 m10_source_order:
   primary:
@@ -28,14 +28,15 @@ m10_source_order:
     - target_feature_profile
   navigation:
     - legal_cartography_index
-  secondary_support:
-    - m10_selected_legal_support_packet
+  deterministic_legal_signal_support:
+    - legal_signal_derivation_profile
 
 m10_use_rules:
   - D1-D5 are the primary field-derivation source for M10.
   - target_feature_profile supplies the activity and product spine.
   - legal_cartography_index supplies navigation and locator context.
-  - m10_selected_legal_support_packet is secondary support only when D-family material cannot support a M10 field.
+  - legal_signal_derivation_profile supplies DAP.CONTACT and DAP.CM field-signal support only.
+  - M10 must not read m10_selected_legal_support_packet.
   - M10 must not use whole L-family artifacts.
   - M10 must not use target_profile, target_profile_forensics, feature_candidate_inventory, or target_feature_profile_forensics.
   - M10_QR_CONTACT_CONSENT_MANAGER_ADDENDUM.md controls nested QR contact_routes and consent_manager_readiness derivation without expanding the 34 top-level material field lock.
@@ -65,6 +66,8 @@ forbidden_modules:
 forbidden_outputs:
   - source_discovery_handoff
   - legal_cartography_index
+  - legal_signal_derivation_profile
+  - m10_selected_legal_support_packet
   - target_profile
   - target_profile_forensics
   - feature_candidate_inventory
@@ -82,7 +85,7 @@ forbidden_outputs:
   - legal applicability conclusions
   - report prose
 
-backend_permission_profile: agent_4_read_d_primary_selected_l_support_m10_lock
+backend_permission_profile: agent_4_read_d_primary_direct_legal_signal_m10_lock
 validator_profile: agent_4_m10_validator
 backend_output_contract: BACKEND_CANONICAL_OUTPUT_ADAPTER.md
 terminal_receipt_profile: agent_4_manual_receipt_only

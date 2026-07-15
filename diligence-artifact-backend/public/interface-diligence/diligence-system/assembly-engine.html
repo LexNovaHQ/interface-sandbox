@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>Assembly Preview</title>
+  <meta name="robots" content="noindex,nofollow" />
+  <link rel="stylesheet" href="./diligence-system.css?v=locked-report-20260701" />
+  <link rel="stylesheet" href="./interface-header.css?v=20260703" />
+  <link rel="stylesheet" href="./interface-ui-shell.css?v=shell-v1-20260713" />
+  <link rel="stylesheet" href="./interface-assembly-preview.css?v=assembly-preview-v1-20260713" />
+</head>
+<body class="assembly-page">
+  <a class="skip-link" href="#assemblyMain">Skip to Assembly Preview</a>
+  <div class="report-visually-hidden" id="assemblyLiveStatus" role="status" aria-live="polite" aria-atomic="true"></div>
+  <div class="progress-line" style="width:100%" aria-hidden="true"></div>
+  <header class="topbar interface-topbar no-print">
+    <div class="topbar-inner">
+      <a class="wordmark" href="/interface-diligence/diligence-system/" aria-label="The Interface diligence home">
+        <span class="wordmark-title">The Interface</span>
+        <span class="wordmark-subtitle">Law × Technology · AI Governance · Privacy · Systems</span>
+      </a>
+      <nav class="engine-nav" aria-label="Interface engines">
+        <a class="engine-nav-link" href="/interface-diligence/diligence-system/">Diligence</a>
+        <a class="engine-nav-link" id="assemblyQrNav" href="qualified-review.html">Qualified Review</a>
+        <a class="engine-nav-link active" id="assemblyNavLink" href="assembly-engine.html">Assembly Preview</a>
+        <a class="engine-nav-link" id="assemblySignalsNav" href="signals-preview.html">Signals Preview</a>
+        <a class="engine-nav-link" href="https://portfolio-shwetabh.lexnovahq.com/" target="_blank" rel="noopener">Portfolio</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="page-shell assembly-shell">
+    <main id="assemblyMain" tabindex="-1">
+      <header class="assembly-hero">
+        <div>
+          <div class="eyebrow">Assembly Preview</div>
+          <h1>Review-ready drafting handoff</h1>
+          <p class="hero-copy">Preview the document families and readiness conditions that will consume a completed Qualified Review. This page does not generate or assemble documents.</p>
+        </div>
+        <div class="assembly-preview-badge">Preview · Not yet active</div>
+      </header>
+
+      <section class="assembly-boundary" aria-label="Assembly Preview boundary">
+        <div><strong>Requires Qualified Review</strong><span>Only confirmed review outputs may become future assembly inputs.</span></div>
+        <div><strong>No fake generation</strong><span>No drafting, file creation or simulated generation occurs on this page.</span></div>
+        <div><strong>Review-Ready Draft boundary</strong><span>Any future output remains subject to local counsel review before reliance.</span></div>
+      </section>
+
+      <section class="assembly-matter" aria-labelledby="assemblyMatterHeading">
+        <div class="assembly-section-heading">
+          <div><div class="eyebrow">Matter handoff</div><h2 id="assemblyMatterHeading">Qualified Review readiness</h2></div>
+          <div class="assembly-state" id="assemblyOverallState">Checking...</div>
+        </div>
+        <div class="assembly-summary-grid" id="assemblyMatterSummary">Loading matter handoff...</div>
+      </section>
+
+      <section class="assembly-document-families" aria-labelledby="assemblyFamiliesHeading">
+        <div class="assembly-section-heading">
+          <div><div class="eyebrow">Document family selector</div><h2 id="assemblyFamiliesHeading">Select a future draft family</h2></div>
+          <div class="small-muted">Selection is preview-only.</div>
+        </div>
+        <div class="assembly-family-grid" id="assemblyFamilyGrid"></div>
+      </section>
+
+      <section class="assembly-readiness-grid">
+        <section class="assembly-panel" aria-labelledby="assemblyReadyHeading">
+          <div class="eyebrow">Review-ready draft readiness</div>
+          <h2 id="assemblyReadyHeading">Readiness conditions</h2>
+          <div id="assemblyReadiness"></div>
+        </section>
+        <section class="assembly-panel assembly-blocked-panel" aria-labelledby="assemblyBlockedHeading">
+          <div class="eyebrow">Missing inputs / blocked draft state</div>
+          <h2 id="assemblyBlockedHeading">Current blockers</h2>
+          <div id="assemblyBlockedState"></div>
+        </section>
+      </section>
+
+      <section class="assembly-action-panel">
+        <div>
+          <div class="eyebrow">Generation status</div>
+          <h2>Assembly backend not active</h2>
+          <p class="small-muted">The interface exposes readiness only. It cannot generate a document, fabricate a draft receipt or imply that a draft exists.</p>
+        </div>
+        <button class="btn" type="button" disabled aria-disabled="true">Generate Draft — Not Active</button>
+      </section>
+    </main>
+    <div class="footer-note">Assembly Preview. Readiness and document-family navigation only; no document generation is active.</div>
+  </div>
+
+  <script src="./assembly-engine.js?v=assembly-preview-v1-20260713" defer></script>
+</body>
+</html>

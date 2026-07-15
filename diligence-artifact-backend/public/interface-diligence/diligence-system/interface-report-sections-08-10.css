@@ -1,0 +1,143 @@
+/* INTERFACE_REPORT_SECTIONS_08_10_V1
+   Exposure register, review handoff and methodology presentation.
+*/
+:root { --interface-report-sections-08-10-version: "interface_report_sections_08_10.v1"; }
+
+.report-exposure-legend {
+  display: grid;
+  gap: 10px;
+  margin: 22px 0 0;
+}
+
+.report-exposure-legend-item {
+  display: grid;
+  grid-template-columns: minmax(210px, auto) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+  padding: 10px 0;
+  border-top: 1px solid var(--report-rule);
+}
+
+.report-exposure-legend-copy {
+  color: var(--report-muted);
+  font-size: .8rem;
+  line-height: 1.55;
+}
+
+.report-exposure-profile {
+  margin-top: 32px;
+  padding-top: 22px;
+  border-top: 1px solid var(--report-rule-strong);
+}
+
+.report-exposure-profile-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.report-exposure-status-label {
+  color: var(--report-ink);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.45rem;
+  line-height: 1.2;
+}
+
+.report-exposure-status {
+  display: inline-flex;
+  width: fit-content;
+  padding: .26rem .55rem;
+  border: 1px solid var(--report-rule-strong);
+  border-radius: 999px;
+  color: var(--report-muted);
+  background: rgba(255,255,255,.22);
+  font-size: .56rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  font-weight: 900;
+}
+
+.report-exposure-status.is-triggered {
+  color: var(--report-danger);
+  border-color: rgba(143,61,52,.36);
+  background: rgba(143,61,52,.07);
+}
+
+.report-exposure-status.is-controlled_by_visible_control {
+  color: var(--report-success);
+  border-color: rgba(62,107,84,.34);
+  background: rgba(62,107,84,.07);
+}
+
+.report-exposure-status.is-controlled_by_exclusion {
+  color: var(--report-accent);
+  border-color: rgba(128,99,47,.36);
+  background: rgba(128,99,47,.07);
+}
+
+.report-exposure-status.is-controlled_by_public_evidence_limitation {
+  color: var(--report-warning);
+  border-color: rgba(132,101,31,.36);
+  background: rgba(132,101,31,.08);
+}
+
+.report-exposure-card,
+.report-review-item-card {
+  scroll-margin-top: 154px;
+}
+
+.report-document-section[data-report-section-id="08"] .report-pain-category {
+  margin-top: 28px;
+}
+
+.report-document-section[data-report-section-id="08"] .report-subcategory-group {
+  padding-left: 14px;
+  border-left: 2px solid rgba(128,99,47,.18);
+}
+
+.report-document-section[data-report-section-id="09"] .report-callout.is-limitation,
+.report-document-section[data-report-section-id="10"] .report-callout.is-limitation {
+  border-left-width: 4px;
+}
+
+.report-document-section[data-report-section-id="09"] .report-detail-card-header,
+.report-document-section[data-report-section-id="10"] .report-detail-card-header {
+  align-items: center;
+}
+
+.report-document-section[data-report-section-id="10"] .report-layer-flow {
+  margin-top: 18px;
+}
+
+@media (max-width: 760px) {
+  .report-exposure-legend-item {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 7px;
+  }
+
+  .report-exposure-profile-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .report-document-section[data-report-section-id="08"] .report-subcategory-group {
+    padding-left: 0;
+    border-left: 0;
+  }
+}
+
+@media print {
+  .report-exposure-status {
+    color: #222 !important;
+    border-color: #777 !important;
+    background: transparent !important;
+  }
+
+  .report-exposure-card,
+  .report-review-item-card { scroll-margin-top: 0; }
+
+  .report-exposure-profile,
+  .report-pain-category,
+  .report-subcategory-group { break-inside: auto; }
+}

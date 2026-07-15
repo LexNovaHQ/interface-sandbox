@@ -127,15 +127,15 @@ Return exactly one JSON root:
       "repair_directives": [],
       "unresolved_blockers": [],
       "pass_with_limitation_notes": [],
-      "lock_status": "PASS | PASS_WITH_LIMITATION | REPAIR_REQUIRED | CONTROLLED_FAILURE"
+      "lock_status": "PASS | PASS_WITH_LIMITATION | REINVESTIGATION_REQUIRED | CONTROLLED_FAILURE"
     },
-    "lock_status": "PASS | PASS_WITH_LIMITATION | REPAIR_REQUIRED | CONTROLLED_FAILURE"
+    "lock_status": "PASS | PASS_WITH_LIMITATION | REINVESTIGATION_REQUIRED | CONTROLLED_FAILURE"
   }
 }
 ```
 
 `M12G.S4.C1` Compiler may proceed only if `challenge_gate.lock_status` is `PASS` or `PASS_WITH_LIMITATION`.
 
-`M12G.S4.C2` `REPAIR_REQUIRED` routes to the smallest owning module, phase, batch, artifact, or row boundary.
+`M12G.S4.C2` `REINVESTIGATION_REQUIRED` routes to the smallest owning module, phase, batch, artifact, or row boundary.
 
 `M12G.S4.C3` `CONTROLLED_FAILURE` is reserved for systemic, unsafe, unrecoverable, or materially misleading corruption.

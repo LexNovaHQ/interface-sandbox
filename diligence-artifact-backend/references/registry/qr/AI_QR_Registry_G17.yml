@@ -1,0 +1,178 @@
+registry_section:
+  id: G17
+  parent: AI_QR_REGISTRY_LANE_B
+  version: v1.0
+  lane: B
+  title: Organization and jurisdiction context
+  display_order: 17
+  record_count: 5
+  atomic_value_count: 5
+  rows:
+  - id: B07
+    key: ai.lane_b.team_size
+    section: G17
+    lane: B
+    shape: SCALAR
+    leaves:
+    - team_size_band
+    materiality: MATERIAL
+    required: true
+    effects:
+    - SELECT_VARIANT
+    documents:
+    - DOC_AI_B_HND
+    - DOC_AI_B_SCAN
+    - DOC_AI_B_SOP
+    mapping_key: QR.B07
+    upstream:
+      artifacts: []
+      selectors:
+      - No canonical public team-size field used by current pipeline
+      coverage: INPUT_REQUIRED
+    resolve: ANSWER
+    ui:
+      label: Team size
+      prompt: Provide the current team-size band.
+      input: number_or_band
+      mode: REQUIRED_INPUT
+      when:
+        all:
+        - B01 == true
+    demo: 11–20
+    threats: []
+  - id: B08
+    key: ai.lane_b.small_department_privacy_threshold
+    section: G17
+    lane: B
+    shape: BOOLEAN
+    leaves:
+    - departments_below_five_people
+    materiality: MATERIAL
+    required: true
+    effects:
+    - SELECT_VARIANT
+    documents:
+    - DOC_AI_B_SCAN
+    mapping_key: QR.B08
+    upstream:
+      artifacts: []
+      selectors:
+      - Internal departmental composition is not public diligence data
+      coverage: INPUT_REQUIRED
+    resolve: ANSWER
+    ui:
+      label: Small-department privacy threshold
+      prompt: Set the minimum department size below which scanner results must be aggregated to preserve anonymity.
+      input: number
+      mode: REQUIRED_INPUT
+      when:
+        all:
+        - B01 == true
+        - B18 == ANONYMOUS
+    demo: 'Yes'
+    threats: []
+  - id: B09
+    key: ai.lane_b.industry_context
+    section: G17
+    lane: B
+    shape: SCALAR
+    leaves:
+    - industry
+    materiality: MATERIAL
+    required: true
+    effects:
+    - SELECT_VARIANT
+    documents:
+    - DOC_AI_B_HND
+    - DOC_AI_B_SCAN
+    - DOC_AI_B_DPIA
+    - DOC_AI_B_SOP
+    mapping_key: QR.B09
+    upstream:
+      artifacts:
+      - target_profile
+      selectors:
+      - TP.BIZ.004 industry_sector
+      coverage: PREFILLED_EXACT
+    resolve: AUTO_FILL
+    ui:
+      label: Industry context
+      prompt: Confirm the organization’s industry context for the internal governance documents.
+      input: text
+      mode: COLLAPSED_REVIEW
+      when:
+        all:
+        - B01 == true
+    demo: Software / Engineering
+    threats:
+    - CRT_INF_LB1
+    - UNI_LIA_LB1
+  - id: B10
+    key: ai.lane_b.client_nda_restriction
+    section: G17
+    lane: B
+    shape: BOOLEAN
+    leaves:
+    - client_nda_ai_tool_restriction
+    materiality: MATERIAL
+    required: true
+    effects:
+    - SELECT_CLAUSE
+    documents:
+    - DOC_AI_B_HND
+    - DOC_AI_B_SCAN
+    mapping_key: QR.B10
+    upstream:
+      artifacts:
+      - legal_cartography_index
+      selectors:
+      - Current public legal documents generally do not reveal client NDAs
+      coverage: INPUT_REQUIRED
+    resolve: ANSWER
+    ui:
+      label: Client NDA restriction on third-party AI tools
+      prompt: Do client contracts or NDAs restrict the use of third-party AI tools?
+      input: boolean
+      mode: REQUIRED_INPUT
+      when:
+        all:
+        - B01 == true
+    demo: 'Yes'
+    threats:
+    - UNI_LIA_LB1
+    - UNI_FRD_LB1
+  - id: B11
+    key: ai.lane_b.jurisdiction.colorado_scope
+    section: G17
+    lane: B
+    shape: BOOLEAN
+    leaves:
+    - colorado_scope
+    materiality: MATERIAL
+    required: true
+    effects:
+    - SELECT_CLAUSE
+    documents:
+    - DOC_AI_B_DPIA
+    mapping_key: QR.B11
+    upstream:
+      artifacts:
+      - active_run_package_manifest
+      - target_profile
+      selectors:
+      - us-state-privacy overlay and geographic signals
+      coverage: PARTIAL_INPUT
+    resolve: COMPLETE
+    ui:
+      label: Colorado operations or affected persons
+      prompt: Does the organization operate in Colorado or use AI affecting Colorado residents or workers?
+      input: boolean
+      mode: PREFILLED_COMPLETION
+      when:
+        all:
+        - B01 == true
+    demo: 'No'
+    threats:
+    - JDG_DEC_005
+    - JDG_DEC_LB2
+    - TRN_BIO_003

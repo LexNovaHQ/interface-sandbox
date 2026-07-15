@@ -1,0 +1,121 @@
+packet_name: P2C_ACTIVITY_PROFILE_SOURCE_INDEX_PACKET
+version: v3_phase1_v5_runtime_wired_p2d_handoff
+active_phase_id: P2C_ACTIVITY_PROFILE_SOURCE_INDEX
+active_phase_scope: P2C_ACTIVITY_PROFILE_SOURCE_INDEX_ONLY
+public_label: Activity Profile Source Index
+package_status: LEAN_PACKAGE_RUNTIME_WIRED
+runtime_wiring_changed: true
+runtime_job_id: P2C_ACTIVITY_PROFILE_SOURCE_INDEX
+phase1_input_contract: PHASE1_V5_17_ROOT_MULTI_DOMAIN_UNION_PROBE
+
+runtime_boundary:
+  phase_layer: src/phases/02-cartography-index
+  backend_contract: src/phases/02-cartography-index/activity-profile-source-index.contract.js
+  deterministic_builder: src/phases/02-cartography-index/services/activity-profile-deterministic-map.builder.js
+  semantic_validator: src/phases/02-cartography-index/validators/activity-profile-semantic-profile.validator.js
+  compiler: src/phases/02-cartography-index/services/activity-profile-source-index.compiler.js
+  final_validator: src/phases/02-cartography-index/validators/activity-profile-source-index.validator.js
+  orchestrator: src/phases/02-cartography-index/orchestrators/activity-profile-source-index.orchestrator.js
+  artifact_permissions_registered: true
+  pipeline_contract_registered: true
+  central_phase_registered: true
+  pipeline_service_dispatch_registered: true
+  save_order_gates_registered: true
+
+read_artifacts:
+  control_inputs:
+    - source_discovery_handoff
+    - post_phase_1_domain_gate_handoff
+    - source_discovery_matrix_manifest
+    - neutral_evidence_bucket_manifest
+    - adapter_expansion_log
+    - source_family_index
+  phase1_common_root_inputs:
+    - lossless_root__product_service
+    - lossless_root__platform_feature_solution
+    - lossless_root__technical_docs_api
+    - lossless_root__docs_api_data_flow
+    - lossless_root__integrations_ecosystem
+    - lossless_root__pricing_commercial_availability
+    - lossless_root__use_case_customer_industry
+    - lossless_root__support_help_resources
+    - lossless_root__ai_safety_transparency
+
+write_artifacts_in_order:
+  - activity_profile_deterministic_map
+  - activity_profile_semantic_profile
+  - activity_profile_source_index
+
+final_downstream_required_artifact: activity_profile_source_index
+reserved_downstream_owner: ACTIVITY_PROFILE_REVIEW
+runtime_chain:
+  previous_job: P2B_DOMAIN_DERIVATION_SOURCE_INDEX
+  next_job: P2D_DATA_PRIVACY_NAVIGATION_INDEX
+  following_job: P2_INDEX_COMPILER_VALIDATION
+
+candidate_creation_roots:
+  - lossless_root__product_service
+  - lossless_root__platform_feature_solution
+  - lossless_root__technical_docs_api
+  - lossless_root__docs_api_data_flow
+  - lossless_root__integrations_ecosystem
+  - lossless_root__pricing_commercial_availability
+
+context_only_roots:
+  - lossless_root__use_case_customer_industry
+  - lossless_root__support_help_resources
+  - lossless_root__ai_safety_transparency
+
+route_maps:
+  activity_candidate_source_locator_map:
+    action: LOCATE_ONLY
+    downstream_owner: ACTIVITY_PROFILE_REVIEW
+    package_specific_classification_forbidden: true
+  product_capability_locator_map:
+    action: LOCATE_ONLY
+    downstream_owner: ACTIVITY_PROFILE_REVIEW
+    package_specific_classification_forbidden: true
+  feature_mechanics_locator_map:
+    action: LOCATE_ONLY
+    downstream_owner: ACTIVITY_PROFILE_REVIEW
+    package_specific_classification_forbidden: true
+  technical_mechanics_locator_map:
+    action: LOCATE_ONLY
+    downstream_owner: ACTIVITY_PROFILE_REVIEW
+    package_specific_classification_forbidden: true
+  api_interaction_locator_map:
+    action: LOCATE_ONLY
+    downstream_owner: ACTIVITY_PROFILE_REVIEW
+    package_specific_classification_forbidden: true
+  data_object_interaction_locator_map:
+    action: LOCATE_ONLY
+    downstream_owner: ACTIVITY_PROFILE_REVIEW
+    package_specific_classification_forbidden: true
+  integration_action_locator_map:
+    action: LOCATE_ONLY
+    downstream_owner: ACTIVITY_PROFILE_REVIEW
+    package_specific_classification_forbidden: true
+  commercial_availability_locator_map:
+    action: LOCATE_ONLY
+    downstream_owner: ACTIVITY_PROFILE_REVIEW
+    package_specific_classification_forbidden: true
+  customer_use_context_locator_map:
+    action: LOCATE_ONLY
+    downstream_owner: ACTIVITY_PROFILE_REVIEW
+    candidate_creation_forbidden: true
+    package_specific_classification_forbidden: true
+  support_operational_context_locator_map:
+    action: LOCATE_ONLY
+    downstream_owner: ACTIVITY_PROFILE_REVIEW
+    candidate_creation_forbidden: true
+    package_specific_classification_forbidden: true
+  automation_transparency_context_locator_map:
+    action: LOCATE_ONLY
+    downstream_owner: ACTIVITY_PROFILE_REVIEW
+    candidate_creation_forbidden: true
+    package_specific_classification_forbidden: true
+  human_control_context_locator_map:
+    action: LOCATE_ONLY
+    downstream_owner: ACTIVITY_PROFILE_REVIEW
+    candidate_creation_forbidden: true
+    package_specific_classification_forbidden: true

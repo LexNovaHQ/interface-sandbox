@@ -1,0 +1,122 @@
+registry_section:
+  id: G16
+  parent: AI_QR_REGISTRY_LANE_B
+  version: v1.0
+  lane: B
+  title: Tools, deliverables and people decisions
+  display_order: 16
+  record_count: 3
+  atomic_value_count: 3
+  rows:
+  - id: B04
+    key: ai.lane_b.company_provided_tools
+    section: G16
+    lane: B
+    shape: LIST
+    leaves:
+    - approved_enterprise_ai_tools[]
+    materiality: STANDARD
+    required: true
+    effects:
+    - POPULATE
+    documents:
+    - DOC_AI_B_HND
+    - DOC_AI_B_SCAN
+    mapping_key: QR.B04
+    upstream:
+      artifacts:
+      - target_feature_profile
+      - dap_semantic_batch_vend_artifact
+      selectors:
+      - DAP.VEND can seed publicly disclosed enterprise tools
+      coverage: PARTIAL_INPUT
+    resolve: COMPLETE
+    ui:
+      label: Company-provided AI tools
+      prompt: List the AI tools approved, restricted, or prohibited for workforce use.
+      input: multi_value
+      mode: PREFILLED_COMPLETION
+      when:
+        all:
+        - B01 == true
+    demo: ChatGPT Enterprise; GitHub Copilot Business
+    threats:
+    - UNI_LIA_LB1
+    - UNI_FRD_LB1
+    - RDR_PRV_LB1
+  - id: B05
+    key: ai.lane_b.client_facing_ai_deliverables
+    section: G16
+    lane: B
+    shape: BOOLEAN
+    leaves:
+    - client_facing_ai_deliverables
+    materiality: CRITICAL
+    required: true
+    effects:
+    - ACTIVATE_DOCUMENT
+    - SELECT_CLAUSE
+    documents:
+    - DOC_AI_B_HND
+    - DOC_AI_B_SCAN
+    - DOC_AI_B_IP
+    - DOC_AI_B_SOP
+    mapping_key: QR.B05
+    upstream:
+      artifacts:
+      - target_feature_profile
+      selectors:
+      - activity outputs and external/internal action signal
+      coverage: PARTIAL_INPUT
+    resolve: COMPLETE
+    ui:
+      label: Client-facing AI-assisted deliverables
+      prompt: Does the workforce create client-facing or customer-facing deliverables using AI?
+      input: boolean
+      mode: PREFILLED_COMPLETION
+      when:
+        all:
+        - B01 == true
+    demo: 'Yes'
+    threats:
+    - CRT_INF_LB1
+    - JDG_DEC_LB3
+  - id: B06
+    key: ai.lane_b.workforce_decision_use
+    section: G16
+    lane: B
+    shape: BOOLEAN
+    leaves:
+    - people_decision_ai_use
+    materiality: CRITICAL
+    required: true
+    effects:
+    - ACTIVATE_DOCUMENT
+    - SELECT_CLAUSE
+    documents:
+    - DOC_AI_B_HND
+    - DOC_AI_B_SCAN
+    - DOC_AI_B_DPIA
+    mapping_key: QR.B06
+    upstream:
+      artifacts:
+      - target_feature_profile
+      - exposure_registry_triggered_profile
+      - exposure_registry_controlled_profile
+      selectors:
+      - AI behavior JDG + Employment surface + lane B exposure rows
+      coverage: PARTIAL_INPUT
+    resolve: COMPLETE
+    ui:
+      label: AI in hiring, performance or workforce decisions
+      prompt: Is AI used in hiring, performance management, promotion, discipline, termination, or other workforce decisions?
+      input: boolean
+      mode: PREFILLED_COMPLETION
+      when:
+        all:
+        - B01 == true
+    demo: 'No'
+    threats:
+    - JDG_DEC_LB1
+    - JDG_DEC_LB2
+    - JDG_DEC_LB3

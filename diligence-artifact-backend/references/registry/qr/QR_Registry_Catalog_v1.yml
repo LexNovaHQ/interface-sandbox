@@ -1,0 +1,54 @@
+catalog:
+  id: QR_REGISTRY_CATALOG_v1
+  version: v1.0
+  status: LOCKED_FOR_PHASE_13_BUILD
+  schema:
+    id: qr_assembly_registry.v1
+    path: QR_Assembly_Registry_Schema_v1.yml
+  load_contract:
+    universal_first: true
+    primary_domain_second: true
+    capability_overlay_rows_third: true
+    regulatory_overlay_rows_fourth: true
+    execution_payload_separate: true
+    optional_full_review_separate: true
+  active_registries:
+  - registry_id: UNIVERSAL_QR_REGISTRY
+    scope: UNIVERSAL
+    path: ../Universal_QR_Registry.yml
+    load_order: 1
+    activation: ALWAYS_WHEN_PHASE_13_RUNS
+    record_count: 19
+    atomic_value_count: 44
+    row_mode: INLINE
+  - registry_id: AI_QR_REGISTRY
+    scope: AI_GOVERNANCE
+    path: ../AI_QR_Registry.yml
+    load_order: 2
+    activation:
+      any:
+      - primary_domain_package == ai-governance
+      - capability_overlays contains ai-native
+    record_count: 46
+    atomic_value_count: 82
+    row_mode: MODULAR
+    parts:
+    - path: AI_QR_Registry_Lane_A.yml
+      record_count: 28
+      atomic_value_count: 57
+    - path: AI_QR_Registry_Lane_B.yml
+      record_count: 18
+      atomic_value_count: 25
+  current_totals:
+    registry_count: 2
+    canonical_record_count: 65
+    atomic_value_count: 126
+    render_section_count: 19
+  integrity:
+    schema_required: true
+    path_resolution_required: true
+    count_reconciliation_required: true
+    duplicate_field_detection_required: true
+    threat_reference_validation_required: true
+    document_reference_validation_required: true
+    unknown_registry_is_blocking: true

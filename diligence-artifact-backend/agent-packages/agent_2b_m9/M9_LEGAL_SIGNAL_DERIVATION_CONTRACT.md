@@ -1,0 +1,188 @@
+# Legal Cartography and Index — Legal Signal Derivation Compatibility Contract
+
+This file belongs to the **Legal Cartography and Index** phase.
+
+The compatibility filename retains the old internal identifier because existing package manifests and downstream contracts still reference it.
+
+It governs the compatibility artifact:
+
+```text
+legal_signal_derivation_profile
+```
+
+This artifact is preserved only to avoid downstream breakage during the 2A/3A cutover. It is not the active Target Profile legal-signal locator authority after 2A is active.
+
+## Source Boundary
+
+The compatibility profile may read only:
+
+```text
+legal_cartography_deterministic_map
+legal_cartography_semantic_profile
+legal_cartography_index
+legal_doc_inventory
+legal_doc_extraction_index
+legal_doc_lossless_validation_manifest
+legal_doc_{DOC_TYPE}
+lossless_root__company_identity
+lossless_root__contact_notice
+lossless_root__privacy_data_processing
+lossless_root__security_trust_compliance
+lossless_root__data_governance_controls
+lossless_root__ai_safety_transparency
+lossless_root__technical_docs_api
+lossless_root__docs_api_data_flow
+lossless_root__regulatory_licensing_status
+lossless_root__grievance_complaints
+```
+
+It must not browse, crawl, fetch new URLs, infer private documents, use old family input contracts, use legacy family adapters, or read Target Profile Review, Activity Profile Review, Data Provenance Profile, Exposure Profile, Operator Challenge, Compiler, Renderer, or Qualified Review artifacts.
+
+## Authority Boundary
+
+2A owns Target Profile Source Index and target-profile legal signal locators.
+
+2E / M9 owns full legal/governance cartography.
+
+`legal_signal_derivation_profile` is compatibility-only. It must not override `target_profile_source_index`, 2A target legal signal locators, or 3A derivation authority.
+
+The field derivation registry field ID is the row authority for this compatibility profile. Reviewer question IDs, reviewer prompts, and UI copy are not derivation authority.
+
+## Required Output Groups
+
+```text
+legal_notice_contact_signal_map
+jurisdiction_dispute_signal_map
+privacy_grievance_contact_signal_map
+consent_manager_signal_map
+```
+
+## Required Field Rows
+
+```text
+LGC.NOT.010 legal_notice_email
+LGC.NOT.011 legal_notice_contact_route
+LGC.NOT.012 legal_notice_contact_evidence_basis
+LGC.NOT.013 legal_notice_contact_limitation
+
+TP.JUR.003 governing_law_country
+TP.JUR.004 governing_law_state
+TP.JUR.005 courts_venue
+TP.JUR.007 jurisdiction_evidence_basis
+TP.JUR.008 jurisdiction_uncertainty
+
+DAP.CONTACT.001 privacy_contact_email
+DAP.CONTACT.002 grievance_contact_email
+DAP.CONTACT.003 officer_contact
+DAP.CONTACT.004 evidence_basis
+DAP.CONTACT.005 limitation
+
+DAP.CM.001 applicability_signal
+DAP.CM.002 public_flow_visible
+DAP.CM.003 consent_artifact_route
+DAP.CM.004 withdrawal_revocation_grievance_route
+DAP.CM.005 third_party_route_signal
+DAP.CM.006 evidence_basis
+DAP.CM.007 limitation
+```
+
+Total required field rows: `21`.
+
+## Allowed Statuses
+
+Use only:
+
+```text
+DERIVED
+DERIVED_WITH_LIMITATION
+LOCATOR_FOUND_VALUE_NOT_VISIBLE
+SOURCE_NOT_PUBLIC
+SOURCE_CONFLICT
+NOT_APPLICABLE_CONTEXTUAL
+NOT_DERIVED_AFTER_EXHAUSTIVE_SCAN
+```
+
+Do not emit loose failure terms such as unknown, not found, not derived, unclear, N/A, or blank status.
+
+## Required Row Fields
+
+Each field row must include:
+
+```text
+field_id
+field_key
+field_family
+derivation_status
+value
+evidence_basis
+locator_basis
+scanned_sources
+failure_reason
+limitation
+confidence
+downstream_consumers
+```
+
+## Evidence Gates
+
+```text
+DERIVED requires evidence_basis.
+DERIVED_WITH_LIMITATION requires evidence_basis and limitation.
+LOCATOR_FOUND_VALUE_NOT_VISIBLE requires locator_basis.
+SOURCE_CONFLICT requires at least two evidence rows.
+NOT_DERIVED_AFTER_EXHAUSTIVE_SCAN requires scanned_sources and failure_reason.
+```
+
+If a locator exists, this profile must not use `NOT_DERIVED_AFTER_EXHAUSTIVE_SCAN`.
+
+## Regulatory / Grievance Boundary
+
+The Phase 1 v5 regulatory/licensing and grievance/complaints roots may support locator rows only.
+
+This profile must not determine:
+
+```text
+license_validity
+license_requirement
+applicable_regulator
+regulatory_compliance_status
+RBI_applicability
+SEBI_applicability
+FCA_authorisation_status
+grievance_sufficiency
+grievance_compliance_status
+ombudsman_requirement
+statutory_complaint_obligation
+```
+
+## Forbidden Output Content
+
+This profile must not emit:
+
+```text
+question_id
+reviewer_question
+question_rows
+question_index
+qualified_review_legal_signals
+m7_deterministic_legal_signal_overlay
+m10_selected_legal_support_packet
+target_profile
+data_provenance_profile
+renderer_payload
+full_clause_text
+old_family_input_contract
+legacy_family_adapter
+legal_advice
+compliance_conclusion
+enforceability_assessment
+risk_conclusion
+```
+
+The old support artifact names above are retained only as forbidden compatibility artifact names.
+
+## Downstream Boundary
+
+Target Profile Review, Data Provenance Profile, and Qualified Review integration is controlled by their own phase contracts.
+
+This compatibility profile may expose downstream consumer metadata, but it must not include reviewer question text, UI prompt text, legal advice, compliance conclusions, enforceability conclusions, or regulatory/grievance sufficiency conclusions.

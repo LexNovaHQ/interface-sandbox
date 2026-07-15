@@ -1,0 +1,69 @@
+qr_bridge_registry_schema:
+  schema_id: QR_BRIDGE_REGISTRY_SCHEMA_v2
+  version: 2.1.0
+  purpose: Strict Phase 12-to-QR-to-document bridge contract.
+  required_field_keys:
+  - qr_field_id
+  - canonical_key
+  - label
+  - registry_scope
+  - lane
+  - section_id
+  - shape
+  - atomic_fields
+  - atomic_value_count
+  - required_for_assembly
+  - fillability
+  - coverage_status
+  - phase12_bridge
+  - resolution
+  - demo_fallback
+  - document_bindings
+  - document_binding_count
+  - document_consequence_required
+  fillability_enum:
+  - FULL
+  - PARTIAL
+  - NONE
+  - DEFAULT_ONLY
+  phase12_binding_types:
+  - PHASE12_FIELD_ID
+  - PHASE12_FIELD_FAMILY
+  - PHASE12_STRUCTURED_FIELD
+  document_actions:
+  - POPULATE
+  - SELECT_CLAUSE
+  - ACTIVATE_OR_SUPPRESS_DOCUMENT
+  market_based_demo_contract:
+    required_for_every_field: true
+    visible_label: '{MARKET BASED}'
+    used_only_when_phase12_value_or_component_is_unresolved: true
+    not_evidence: true
+    reviewer_confirmation_or_edit_required: true
+    blank_prefill_forbidden: true
+  validation_rules:
+  - EVERY_FIELD_HAS_DOCUMENT_BINDING
+  - FULL_OR_PARTIAL_FIELD_HAS_PHASE12_BINDING
+  - NONE_OR_DEFAULT_ONLY_FIELD_HAS_NO_PHASE12_BINDING
+  - EVERY_DOCUMENT_BINDING_HAS_PLACEHOLDER_OR_ACTION_TOKEN
+  - EVERY_ATOMIC_FIELD_HAS_NONEMPTY_MARKET_BASED_DEMO_VALUE
+  - PHASE12_BINDINGS_REFERENCE_REPORT_ARTIFACTS_NOT_RAW_UPSTREAM_ARTIFACTS
+  - FINAL_DOCUMENT_VALUE_COMES_FROM_REVIEWER_CONFIRMED_QR_VALUE
+  lane_rendering:
+    universal_always_loaded: true
+    lane_a_independently_activatable: true
+    lane_b_independently_activatable: true
+    both_lanes_may_render: true
+    operator_lane_selection_forbidden: true
+  review_ready_boundary:
+    lex_nova_role: LEGAL_ARCHITECT
+    review_ready_draft_only: true
+    local_counsel_review_required: true
+    not_legal_advice: true
+  document_template_validation_rules:
+  - EVERY_REGISTERED_DOCUMENT_ID_RESOLVES_TO_ONE_DOCX_TEMPLATE
+  - EVERY_VALUE_PLACEHOLDER_EXISTS_IN_BOUND_TEMPLATE
+  - NO_UNREGISTERED_QR_PLACEHOLDER_EXISTS_IN_ANY_TEMPLATE
+  - DIRECT_IDENTITY_AND_CONTACT_PLACEHOLDERS_REPLACE_LEGACY_GENERIC_MARKERS_WHERE_UNAMBIGUOUS
+  - EXECUTION_SPECIFIC_AND_LOCAL_COUNSEL_PLACEHOLDERS_ARE_NOT_PROMOTED_TO_QR_FIELDS
+  - ASSEMBLY_CONTROL_SCHEDULE_IS_REMOVED_FROM_FINAL_REVIEW_READY_DRAFT

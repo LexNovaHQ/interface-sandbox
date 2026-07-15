@@ -1,0 +1,63 @@
+registry_binding_manifest:
+  schema_version: THREAT_REGISTRY_BINDINGS_v1
+  status: LOCKED
+  purpose: >
+    Machine-readable package-key to threat-registry binding authority for Phase 10.
+    Package keys remain taxonomy authorities; this manifest owns executable registry
+    filenames, declared row parity, and the Phase 10 status-inclusion policy.
+
+  authority_model:
+    package_keys:
+      role: TAXONOMY_VOCABULARY_AUTHORITY
+      executable_registry_binding_forbidden: true
+    binding_manifest:
+      role: SOLE_EXECUTABLE_THREAT_REGISTRY_BINDING_AUTHORITY
+      competing_binding_authority_forbidden: true
+    field_derivation_registry:
+      role: DOMAIN_AGNOSTIC_DERIVATION_MECHANICS_AUTHORITY
+
+  status_policy:
+    mode: INCLUDE_ALL_DECLARED_ROWS
+    row_filter: NONE
+    status_field_role: METADATA_ONLY
+    rule: >
+      Every declared registry row is part of the routable Phase 10 inventory regardless
+      of Status. Active, Upcoming, Pending, Watch, and combined status labels remain
+      material row metadata and must not be used to exclude a row from routing.
+
+  execution_identity_contract:
+    version: PHASE10_EXECUTION_IDENTITY_v2
+    global_identity_field: registry_row_key
+    format: "<package_id>::<Threat_ID>"
+    canonical_threat_id_preserved: true
+    cross_package_canonical_id_collision_allowed: true
+    duplicate_registry_row_key_forbidden: true
+    silent_namespacing_forbidden: true
+
+  packages:
+    ai-governance:
+      package_id: ai-governance
+      package_key_file: AI_Registry_Key.yml
+      package_key_version: v4.0
+      threat_registry_file: AI_THREAT_REGISTRY.yaml
+      registry_format: yaml
+      declared_row_count: 98
+      declared_status_counts:
+        Active: 73
+        Upcoming: 14
+        Pending: 8
+        Watch: 2
+        Pending / Watch: 1
+      routable_row_count: 98
+
+    fintech:
+      package_id: fintech
+      package_key_file: FinTech_Registry_Key.yml
+      package_key_version: v1.0
+      threat_registry_file: FinTech_Threat_Registry.yaml
+      registry_format: yaml
+      declared_row_count: 46
+      declared_status_counts:
+        Active: 42
+        Upcoming: 4
+      routable_row_count: 46

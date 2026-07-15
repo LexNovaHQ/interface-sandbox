@@ -1,0 +1,11 @@
+{
+  "domain_id": "ai-native",
+  "adapter_type": "capability_overlay",
+  "schema_version": "PHASE1_DOMAIN_SOURCE_HINTS_v1",
+  "mode": "EXPAND_ONLY",
+  "may_expand_discovery": true,
+  "may_narrow_discovery": false,
+  "may_exclude_sources": false,
+  "hint_paths": ["/ai", "/models", "/model-cards", "/agents", "/llm", "/assistant", "/automation", "/generation", "/prediction", "/ranking", "/classification", "/responsible-ai", "/evals", "/guardrails"],
+  "data_flow_segments": ["speech", "text-to-speech", "speech-to-text", "voice", "audio", "translation", "dubbing", "document", "ocr", "vision", "image", "file", "batch", "transcription"]
+}

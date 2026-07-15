@@ -1,0 +1,211 @@
+registry_section:
+  id: G12
+  parent: AI_QR_REGISTRY_LANE_A
+  version: v1.0
+  lane: A
+  title: Training and data architecture
+  display_order: 12
+  record_count: 5
+  atomic_value_count: 10
+  rows:
+  - id: A16
+    key: ai.lane_a.training.customer_data_posture
+    section: G12
+    lane: A
+    shape: ENUM
+    leaves:
+    - prohibited
+    - opt_in_only
+    - permitted_under_terms
+    materiality: MATERIAL
+    required: true
+    effects:
+    - SELECT_VARIANT
+    documents:
+    - DOC_AI_A_TOS
+    - DOC_AI_A_DPA
+    - DOC_AI_A_PP
+    mapping_key: QR.A16
+    upstream:
+      artifacts:
+      - dap_semantic_batch_auth_artifact
+      - dap_semantic_batch_ctrl_artifact
+      selectors:
+      - DAP.AUTH/CTRL
+      - visible training-use statements and consent routes
+      coverage: PARTIAL_INPUT
+    resolve: COMPLETE
+    ui:
+      label: Customer-data training posture
+      prompt: Confirm whether customer data is excluded from training, used only in de-identified form, or used for fine-tuning.
+      input: select
+      mode: PREFILLED_COMPLETION
+      when:
+        all:
+        - active_scope == true
+    demo: Opt-in only
+    threats:
+    - ORC_PRV_001
+    - RDR_PRV_001
+    - RDR_PRV_002
+    - UNI_INF_004
+  - id: A17
+    key: ai.lane_a.data.personal_data_types
+    section: G12
+    lane: A
+    shape: LIST
+    leaves:
+    - personal_data_categories[]
+    materiality: STANDARD
+    required: true
+    effects:
+    - POPULATE
+    documents:
+    - DOC_AI_A_DPA
+    - DOC_AI_A_PP
+    - DOC_AI_A_TOS
+    mapping_key: QR.A17
+    upstream:
+      artifacts:
+      - dap_semantic_batch_obj_artifact
+      - dap_semantic_batch_flow_artifact
+      selectors:
+      - DAP.OBJ and DAP.FLOW batch fields
+      coverage: PREFILLED_CONFIRM
+    resolve: CONFIRM
+    ui:
+      label: Personal-data types processed
+      prompt: Confirm the personal-data types processed by the service.
+      input: multi_value
+      mode: CONFIRM_OR_CORRECT
+      when:
+        all:
+        - active_scope == true
+    demo: Names; email addresses; IP addresses; user content; usage data
+    threats:
+    - UNI_CNS_IN1
+    - UNI_PRV_002
+    - UNI_PRV_003
+    - UNI_PRV_IN2
+    - UNI_PRV_IN4
+    - UNI_PRV_IN5
+  - id: A18
+    key: ai.lane_a.data.sensitive_categories
+    section: G12
+    lane: A
+    shape: LIST
+    leaves:
+    - sensitive_data_categories[]
+    materiality: MATERIAL
+    required: true
+    effects:
+    - POPULATE
+    - SELECT_CLAUSE
+    documents:
+    - DOC_AI_A_DPA
+    - DOC_AI_A_PP
+    - DOC_AI_A_AUP
+    mapping_key: QR.A18
+    upstream:
+      artifacts:
+      - target_feature_profile
+      - dap_semantic_batch_sens_artifact
+      selectors:
+      - DAP.SENS
+      - PA.SURF Sensitive/Biometric/Financial
+      coverage: PREFILLED_CONFIRM
+    resolve: CONFIRM
+    ui:
+      label: Sensitive-data categories
+      prompt: Confirm every sensitive-data category processed by the service.
+      input: multi_value
+      mode: CONFIRM_OR_CORRECT
+      when:
+        all:
+        - active_scope == true
+    demo: None
+    threats:
+    - TRN_BIO_001
+    - TRN_BIO_002
+    - UNI_PRV_IN1
+    - UNI_PRV_IN2
+  - id: A19
+    key: ai.lane_a.data.subject_categories
+    section: G12
+    lane: A
+    shape: LIST
+    leaves:
+    - data_subject_categories[]
+    materiality: STANDARD
+    required: true
+    effects:
+    - POPULATE
+    documents:
+    - DOC_AI_A_DPA
+    - DOC_AI_A_PP
+    mapping_key: QR.A19
+    upstream:
+      artifacts:
+      - dap_semantic_batch_party_artifact
+      selectors:
+      - DAP.PARTY.001–005
+      coverage: PREFILLED_CONFIRM
+    resolve: CONFIRM
+    ui:
+      label: Data-subject categories
+      prompt: Confirm the categories of people whose data is processed.
+      input: multi_value
+      mode: CONFIRM_OR_CORRECT
+      when:
+        all:
+        - active_scope == true
+    demo: Customer end users; customer administrators
+    threats:
+    - UNI_PRV_IN1
+    - JDG_DEC_009
+  - id: A20
+    key: ai.lane_a.processing_architecture
+    section: G12
+    lane: A
+    shape: ENUM
+    leaves:
+    - stateless
+    - rag
+    - fine_tuning
+    - both
+    materiality: MATERIAL
+    required: true
+    effects:
+    - SELECT_VARIANT
+    documents:
+    - DOC_AI_A_DPA
+    - DOC_AI_A_TOS
+    - DOC_AI_A_PP
+    mapping_key: QR.A20
+    upstream:
+      artifacts:
+      - target_feature_profile
+      - dap_semantic_batch_flow_artifact
+      - dap_semantic_batch_obj_artifact
+      - dap_semantic_batch_ret_artifact
+      selectors:
+      - DAP.FLOW/OBJ/RET
+      - AI behavior RDR
+      - public architecture signals
+      coverage: PARTIAL_INPUT
+    resolve: COMPLETE
+    ui:
+      label: AI processing architecture
+      prompt: Confirm whether the service uses stateless processing, RAG, persistent memory, fine-tuning, or a hybrid architecture.
+      input: select
+      mode: PREFILLED_COMPLETION
+      when:
+        all:
+        - active_scope == true
+    demo: RAG
+    threats:
+    - RDR_INF_001
+    - RDR_INF_003
+    - RDR_PRV_001
+    - RDR_PRV_002
+    - MOV_LIA_002

@@ -1,0 +1,84 @@
+{
+  "schema_version": "co_p12_05_certified_receipt.v1",
+  "status": "PASS",
+  "exit_code": 0,
+  "command": "npm run check:p12:co3 && npm run check:p12:co4 && npm run check:p12:co5 && npm run check",
+  "workflow": "CO P12 05 Atomic Finalize",
+  "run_id": "29222438619",
+  "target_branch": "domain-gate-v0-preflight",
+  "validated_parent_sha": "73b35f05a4273212e6251df69832dc11e02ce3fb",
+  "compiler_runtime_cutover_status": "PRODUCTION_DIRECT_PROFILE_COMPILER_ACTIVE",
+  "renderer_cutover_status": "PRODUCTION_CLEAN_PROFILE_RENDERER_ACTIVE",
+  "phase2g_boundary": "ENDS_AT_PHASE11_OPERATOR_CHALLENGE",
+  "canonical_section_count": 10,
+  "report_facing_artifact_count": 29,
+  "section5_child_profile_count": 11,
+  "section8_child_profile_count": 8,
+  "legacy_normalized_artifacts_emitted": false,
+  "legacy_recursive_compiler_retired": true,
+  "mandatory_material_field_preservation": "ENFORCED",
+  "phase6_behavior_class_forensic_custody": "ENFORCED",
+  "phase7_p2g_legal_permission": "ENFORCED",
+  "phase7_registry_validation_scope": "DAP_OWNERSHIP_ONLY",
+  "custody_rendering": "FORBIDDEN",
+  "local_counsel_review_required": true,
+  "generated_files": {
+    "src/phases/_shared/forensics/profile-forensics.shared.js": {
+      "sha256": "4aad15c9bcf1d108777d542634dd2b74c6c34769966189555705ac4496da11ff",
+      "size_bytes": 23526
+    },
+    "scripts/check-phase6-behavior-class-forensics-sync.mjs": {
+      "sha256": "7d0faf9d1a739765a2f5395de69e6f23c905ee2b741673c612831c415a4e60ba",
+      "size_bytes": 2985
+    },
+    "src/phases/07-data-provenance-profile/dap-registry-derivation-rule-compiler.js": {
+      "sha256": "8c34af5afaed836343362ed19ea0dfef3482af30d13793c8e09a4793705fb1b4",
+      "size_bytes": 16058
+    },
+    "src/phases/12-normalized-compiler/compiler.js": {
+      "sha256": "6dc9ae02b4bcdba2f898d12950d7e9a48a3687fb31fe26739980dd8b1a479e99",
+      "size_bytes": 287
+    },
+    "src/phases/12-normalized-compiler/phase12-compiler.runner.js": {
+      "sha256": "5483970083f50e73d1a2b51b4dcfe0e949129dd552eec7605a9739aa139ec3d2",
+      "size_bytes": 2332
+    },
+    "src/phases/12-normalized-compiler/phase10-downstream-compatibility.js": {
+      "sha256": "df14812cf5a99a7ad7f6ae456894bad0b67a4da82b72bb511aa928bcc3d4f343",
+      "size_bytes": 10229
+    },
+    "src/runtime/services/reporting/report-renderer.service.js": {
+      "sha256": "f3464de3d6134b9fe762e67f3a3c87c29678f5d00a7dc8d5137994e3e977d7ff",
+      "size_bytes": 11888
+    },
+    "src/runtime/services/pipeline.service.js": {
+      "sha256": "1c34d63de33106b9f712d376062a07fb54105d86d2c49784bb7a26f6b1f56389",
+      "size_bytes": 46847
+    },
+    "src/runtime/contracts/pipeline.contract.js": {
+      "sha256": "a1108535dd109acb28c1bf33c13ff93d0f6d754472072c7038bc1f9baa205c1c",
+      "size_bytes": 35954
+    },
+    "src/runtime/contracts/artifact-permissions.contract.js": {
+      "sha256": "2372f9fbae56540443b2dc9f7e87ad79de6b9922994066e18052d8963677d075",
+      "size_bytes": 34800
+    },
+    "src/phases/02-cartography-index/phase-routing.contract.js": {
+      "sha256": "48648590056d8395217866dc62483f0d38df2e746d273890c060bc40747e8f49",
+      "size_bytes": 12997
+    },
+    "src/phases/02-cartography-index/services/phase-route-runtime.reader.js": {
+      "sha256": "1aaa2e0bd908e937002b9e4771539cafda43a8761c1e5b44132f2effd8529d41",
+      "size_bytes": 19000
+    },
+    "public/interface-diligence/diligence-system/report.js": {
+      "sha256": "e90644e612d98238edb402bdbf85b085a685befb762c81c700513436254b4df1",
+      "size_bytes": 49931
+    },
+    "scripts/check-co-p12-05.mjs": {
+      "sha256": "e01fec0e75e459167aee8979cb9dcec4712bc40f77c10f073a40923f6131bade",
+      "size_bytes": 11336
+    }
+  },
+  "certified_at": "2026-07-13T03:47:54.104Z"
+}

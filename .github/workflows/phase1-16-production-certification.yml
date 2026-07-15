@@ -1,0 +1,65 @@
+name: Phase 1-16 Production Certification
+
+on:
+  push:
+    branches:
+      - domain-gate-v0-preflight
+    paths:
+      - "diligence-artifact-backend/**"
+      - ".github/workflows/phase1-16-production-certification.yml"
+  pull_request:
+    branches:
+      - domain-gate-v0-preflight
+    paths:
+      - "diligence-artifact-backend/**"
+      - ".github/workflows/phase1-16-production-certification.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phase1-16-production-certification-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  certify-phase1-16:
+    name: Certify Phase 1-16 source runtime
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: diligence-artifact-backend/package-lock.json
+
+      - name: Install locked dependencies
+        working-directory: diligence-artifact-backend
+        run: npm ci
+
+      - name: Run universal Phase 1-16 production gate
+        working-directory: diligence-artifact-backend
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run check:critical 2>&1 | tee phase1-16-production-gate.log
+
+      - name: Write source certification receipt
+        working-directory: diligence-artifact-backend
+        run: node scripts/write-phase1-16-production-certification.mjs phase1-16-production-certification.json
+
+      - name: Upload certification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase1-16-production-certification-${{ github.sha }}
+          path: |
+            diligence-artifact-backend/phase1-16-production-gate.log
+            diligence-artifact-backend/phase1-16-production-certification.json
+          if-no-files-found: warn
+          retention-days: 30

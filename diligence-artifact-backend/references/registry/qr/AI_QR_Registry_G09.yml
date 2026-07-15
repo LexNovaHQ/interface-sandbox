@@ -1,0 +1,208 @@
+registry_section:
+  id: G09
+  parent: AI_QR_REGISTRY_LANE_A
+  version: v1.0
+  lane: A
+  title: Agentic capability and controls
+  display_order: 9
+  record_count: 5
+  atomic_value_count: 12
+  rows:
+  - id: A03
+    key: ai.lane_a.agentic.enabled
+    section: G09
+    lane: A
+    shape: BOOLEAN
+    leaves:
+    - autonomous_agent_enabled
+    materiality: CRITICAL
+    required: true
+    effects:
+    - ACTIVATE_DOCUMENT
+    - SELECT_CLAUSE
+    documents:
+    - DOC_AI_A_TOS
+    - DOC_AI_A_AGT
+    - DOC_AI_A_AUP
+    mapping_key: QR.A03
+    upstream:
+      artifacts:
+      - target_feature_profile
+      selectors:
+      - PA.MECH.008
+      - PA.MECH.009
+      - PA.MECH.011
+      - AI behavior DOE
+      coverage: PREFILLED_CONFIRM
+    resolve: CONFIRM
+    ui:
+      label: Autonomous-agent capability
+      prompt: Can the AI independently execute external actions without approval for every action?
+      input: boolean
+      mode: CONFIRM_OR_CORRECT
+      when:
+        all:
+        - active_scope == true
+    demo: 'Yes'
+    threats:
+    - DOE_FIN_001
+    - DOE_HAL_001
+    - DOE_LIA_007
+    - UNI_CNS_007
+  - id: A04
+    key: ai.lane_a.agentic.control_profile
+    section: G09
+    lane: A
+    shape: OBJECT
+    leaves:
+    - permission_scope
+    - session_spend_cap
+    - period_spend_cap
+    - retry_limit
+    - rate_limit
+    - failure_kill_threshold
+    - loop_threshold
+    - graceful_shutdown_timeout
+    materiality: STANDARD
+    required: true
+    effects:
+    - POPULATE
+    documents:
+    - DOC_AI_A_AGT
+    mapping_key: QR.A04
+    upstream:
+      artifacts: []
+      selectors:
+      - Numerical/private configuration is not reliably public
+      coverage: DEFAULT_OVERRIDE
+    resolve: OVERRIDE_IF_NEEDED
+    ui:
+      label: Agent control profile
+      prompt: Review or override the default agent limits, retry controls, loop threshold, permission scope, and kill-switch settings.
+      input: agent_control_object
+      mode: OPTIONAL_OVERRIDE
+      when:
+        all:
+        - A03 == true
+    demo: Tier 1 Read | $50/session | $500/day | 3 retries | 60 calls/min | 3 failures | 5 loops | 30 seconds
+    threats:
+    - DOE_FIN_001
+    - DOE_HAL_001
+    - DOE_LIA_002
+    - DOE_LIA_003
+    - DOE_PRV_001
+  - id: A05
+    key: ai.lane_a.orchestration_architecture
+    section: G09
+    lane: A
+    shape: BOOLEAN
+    leaves:
+    - multi_agent_or_orchestration
+    materiality: MATERIAL
+    required: true
+    effects:
+    - SELECT_CLAUSE
+    documents:
+    - DOC_AI_A_AGT
+    - DOC_AI_A_TOS
+    mapping_key: QR.A05
+    upstream:
+      artifacts:
+      - target_feature_profile
+      selectors:
+      - AI behavior ORC
+      - overlay classifications
+      - mechanics proof
+      coverage: PREFILLED_CONFIRM
+    resolve: CONFIRM
+    ui:
+      label: Multi-agent or model-orchestration architecture
+      prompt: Does the service route work across multiple models, agents, or providers?
+      input: boolean
+      mode: CONFIRM_OR_CORRECT
+      when:
+        all:
+        - lane_a_active == true
+    demo: 'Yes'
+    threats:
+    - ORC_LIA_001
+    - ORC_PRV_002
+    - ORC_PRV_003
+  - id: A06
+    key: ai.lane_a.agentic.financial_system_access
+    section: G09
+    lane: A
+    shape: BOOLEAN
+    leaves:
+    - payment_system_interaction
+    materiality: MATERIAL
+    required: true
+    effects:
+    - SET_CLAUSE_FLAG
+    documents:
+    - DOC_AI_A_AGT
+    - DOC_AI_A_AUP
+    - DOC_AI_A_TOS
+    mapping_key: QR.A06
+    upstream:
+      artifacts:
+      - target_feature_profile
+      selectors:
+      - PA.MECH.007
+      - PA.SURF Financial
+      - external action signal
+      coverage: PREFILLED_CONFIRM
+    resolve: CONFIRM
+    ui:
+      label: Agent interaction with payment or financial systems
+      prompt: Can an AI agent access, initiate, approve, or affect payments, credit, trading, or other financial systems?
+      input: boolean
+      mode: CONFIRM_OR_CORRECT
+      when:
+        all:
+        - A03 == true
+    demo: 'Yes'
+    threats:
+    - DOE_FIN_001
+    - OPT_TRD_003
+    - OPT_TRD_004
+  - id: A07
+    key: ai.lane_a.agentic.high_stakes_use
+    section: G09
+    lane: A
+    shape: BOOLEAN
+    leaves:
+    - agent_high_stakes_decision_use
+    materiality: MATERIAL
+    required: true
+    effects:
+    - SET_CLAUSE_FLAG
+    documents:
+    - DOC_AI_A_AGT
+    - DOC_AI_A_TOS
+    - DOC_AI_A_AUP
+    mapping_key: QR.A07
+    upstream:
+      artifacts:
+      - target_feature_profile
+      - domain_control_obligation_profile
+      selectors:
+      - AI behavior JDG
+      - Employment/Financial surfaces
+      - domain-control rows
+      coverage: PREFILLED_CONFIRM
+    resolve: CONFIRM
+    ui:
+      label: Agent use in high-stakes decisions
+      prompt: Can an AI agent make or materially influence legal, medical, employment, credit, insurance, education, or similarly high-stakes decisions?
+      input: boolean
+      mode: CONFIRM_OR_CORRECT
+      when:
+        all:
+        - A03 == true
+    demo: 'No'
+    threats:
+    - JDG_DEC_001
+    - JDG_DEC_003
+    - JDG_DEC_006
+    - JDG_HRM_001

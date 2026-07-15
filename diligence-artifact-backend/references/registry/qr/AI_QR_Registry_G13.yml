@@ -1,0 +1,254 @@
+registry_section:
+  id: G13
+  parent: AI_QR_REGISTRY_LANE_A
+  version: v1.0
+  lane: A
+  title: Subprocessors, transfers and resilience
+  display_order: 13
+  record_count: 6
+  atomic_value_count: 13
+  rows:
+  - id: A21
+    key: ai.lane_a.subprocessor_register
+    section: G13
+    lane: A
+    shape: REPEATABLE_OBJECT
+    leaves:
+    - name
+    - provider_type
+    - processing_activity
+    - processing_location
+    - dpf_certified
+    materiality: STANDARD
+    required: true
+    effects:
+    - POPULATE
+    documents:
+    - DOC_AI_A_DPA
+    - DOC_AI_A_PP
+    - DOC_AI_A_TOS
+    mapping_key: QR.A21
+    upstream:
+      artifacts:
+      - dap_semantic_batch_vend_artifact
+      - dap_semantic_batch_loc_artifact
+      selectors:
+      - DAP.VEND.001–006
+      - DAP.LOC
+      - external-party chain
+      coverage: PARTIAL_INPUT
+    resolve: COMPLETE
+    ui:
+      label: Subprocessor register
+      prompt: Complete the subprocessor register with each provider’s role, processing activity, location, and relevant transfer certification.
+      input: repeatable_table
+      mode: PREFILLED_COMPLETION
+      when:
+        any:
+        - A01 is not empty
+        - A02 is not empty
+    demo: OpenAI | AI model | Inference | United States | Yes
+    threats:
+    - ORC_PRV_002
+    - ORC_PRV_003
+    - UNI_PRV_001
+    - UNI_PRV_002
+  - id: A22
+    key: ai.lane_a.subprocessor_list_url
+    section: G13
+    lane: A
+    shape: SCALAR
+    leaves:
+    - subprocessor_list_url
+    materiality: STANDARD
+    required: true
+    effects:
+    - POPULATE
+    documents:
+    - DOC_AI_A_DPA
+    - DOC_AI_A_PP
+    mapping_key: QR.A22
+    upstream:
+      artifacts:
+      - dap_semantic_batch_vend_artifact
+      - legal_cartography_index
+      selectors:
+      - DAP.VEND evidence route
+      - public subprocessor/privacy center locator
+      coverage: PARTIAL_INPUT
+    resolve: COMPLETE
+    ui:
+      label: Live subprocessor-list URL
+      prompt: Provide the live URL where customers can review the current subprocessor list.
+      input: url
+      mode: PREFILLED_COMPLETION
+      when:
+        all:
+        - A21 is not empty
+    demo: https://demo.example/subprocessors
+    threats:
+    - ORC_PRV_002
+    - UNI_PRV_002
+  - id: A23
+    key: ai.lane_a.resilience_summary
+    section: G13
+    lane: A
+    shape: LONG_TEXT
+    leaves:
+    - dr_bcp_summary
+    materiality: STANDARD
+    required: true
+    effects:
+    - POPULATE
+    documents:
+    - DOC_AI_A_DPA
+    - DOC_AI_A_SLA
+    mapping_key: QR.A23
+    upstream:
+      artifacts:
+      - dap_semantic_batch_sec_artifact
+      - dap_semantic_batch_ready_artifact
+      selectors:
+      - DAP.SEC and readiness fields
+      - visible security/trust disclosures
+      coverage: PARTIAL_INPUT
+    resolve: COMPLETE
+    ui:
+      label: Disaster recovery / business continuity summary
+      prompt: Provide the disaster-recovery and business-continuity summary used in customer documents.
+      input: textarea
+      mode: PREFILLED_COMPLETION
+      when:
+        all:
+        - lane_a_active == true
+    demo: Daily encrypted backups; multi-region recovery; annual recovery testing
+    threats:
+    - UNI_INF_IN1
+    - UNI_PRV_003
+    - UNI_PRV_IN4
+    - SHD_LIA_001
+    - SHD_LIA_002
+    - SHD_LIA_003
+  - id: A24
+    key: ai.lane_a.jurisdiction.eu_uk_swiss_scope
+    section: G13
+    lane: A
+    shape: BOOLEAN
+    leaves:
+    - eu_uk_swiss_data_scope
+    materiality: CRITICAL
+    required: true
+    effects:
+    - ACTIVATE_DOCUMENT
+    - SELECT_CLAUSE
+    documents:
+    - DOC_AI_A_DPA
+    - DOC_AI_A_TOS
+    - DOC_AI_A_PP
+    - DOC_AI_A_AGT
+    mapping_key: QR.A24
+    upstream:
+      artifacts:
+      - active_run_package_manifest
+      - dap_semantic_batch_loc_artifact
+      - dap_semantic_batch_dom_artifact
+      - dap_semantic_batch_party_artifact
+      selectors:
+      - gdpr/eu-ai-act overlays
+      - DAP.LOC/DOM/PARTY
+      coverage: PREFILLED_CONFIRM
+    resolve: CONFIRM
+    ui:
+      label: EU/UK/Swiss personal-data scope
+      prompt: Will the service process personal data subject to EU, UK, or Swiss data-protection law?
+      input: boolean
+      mode: CONFIRM_OR_CORRECT
+      when:
+        all:
+        - lane_a_active == true
+    demo: 'Yes'
+    threats:
+    - JDG_DEC_006
+    - JDG_DEC_008
+    - UNI_PRV_001
+  - id: A25
+    key: ai.lane_a.jurisdiction.california_scope
+    section: G13
+    lane: A
+    shape: BOOLEAN
+    leaves:
+    - california_data_scope
+    materiality: MATERIAL
+    required: true
+    effects:
+    - SELECT_CLAUSE
+    documents:
+    - DOC_AI_A_DPA
+    - DOC_AI_A_PP
+    - DOC_AI_A_TOS
+    mapping_key: QR.A25
+    upstream:
+      artifacts:
+      - active_run_package_manifest
+      - domain_control_obligation_profile
+      - dap_semantic_batch_party_artifact
+      - dap_semantic_batch_loc_artifact
+      selectors:
+      - us-state-privacy overlay
+      - DAP.PARTY/LOC
+      - public market signals
+      coverage: PREFILLED_CONFIRM
+    resolve: CONFIRM
+    ui:
+      label: California personal-information scope
+      prompt: Will the service process California personal information in a service-provider or contractor relationship?
+      input: boolean
+      mode: CONFIRM_OR_CORRECT
+      when:
+        all:
+        - lane_a_active == true
+    demo: 'Yes'
+    threats:
+    - ORC_PRV_003
+    - CRT_INF_003
+  - id: A26
+    key: ai.lane_a.privacy_role_configuration
+    section: G13
+    lane: A
+    shape: OBJECT
+    leaves:
+    - dpo_appointed
+    - dpo_contact
+    - eu_uk_representative_appointed
+    - representative_contact
+    materiality: MATERIAL
+    required: true
+    effects:
+    - POPULATE
+    - SELECT_CLAUSE
+    documents:
+    - DOC_AI_A_PP
+    - DOC_AI_A_DPA
+    mapping_key: QR.A26
+    upstream:
+      artifacts:
+      - legal_signal_derivation_profile
+      - dap_semantic_batch_role_artifact
+      - dap_semantic_batch_contact_cm_artifact
+      selectors:
+      - privacy contact signals
+      - DAP.CONTACT_CM
+      coverage: PARTIAL_INPUT
+    resolve: COMPLETE
+    ui:
+      label: Privacy-role configuration
+      prompt: Confirm the controller, processor, service-provider, contractor, and business roles used in the document set.
+      input: object_form
+      mode: PREFILLED_COMPLETION
+      when:
+        all:
+        - active_scope == true
+    demo: 'DPO: No | EU representative: No'
+    threats:
+    - ORC_PRV_003
+    - UNI_PRV_002
