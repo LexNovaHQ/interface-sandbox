@@ -1,0 +1,99 @@
+name: Apply Cloud Run Worker Memory Fix
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/apply-cloud-run-worker-memory.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 110
+    steps:
+      - name: Checkout repair branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Apply capacity repair and regression gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          deploy = Path('.github/workflows/artifact-backend-deploy.yml')
+          deploy_text = deploy.read_text(encoding='utf-8')
+          old = '''            --no-invoker-iam-check \\
+            --timeout=1800s \\
+            --env-vars-file /tmp/interface-artifact-backend-env.yaml \\
+'''
+          new = '''            --no-invoker-iam-check \\
+            --timeout=1800s \\
+            --memory=2Gi \\
+            --concurrency=1 \\
+            --env-vars-file /tmp/interface-artifact-backend-env.yaml \\
+'''
+          if old in deploy_text:
+              deploy.write_text(deploy_text.replace(old, new, 1), encoding='utf-8')
+          elif new not in deploy_text:
+              raise SystemExit('Expected Cloud Run deploy command anchor not found')
+
+          check = Path('diligence-artifact-backend/scripts/check-cloud-run-capacity.mjs')
+          check.write_text('''import assert from "node:assert/strict";\nimport fs from "node:fs";\nimport path from "node:path";\nimport { fileURLToPath } from "node:url";\n\nconst scriptsDir = path.dirname(fileURLToPath(import.meta.url));\nconst workflowPath = path.resolve(scriptsDir, "../..", ".github/workflows/artifact-backend-deploy.yml");\nconst workflow = fs.readFileSync(workflowPath, "utf8");\n\nassert.match(workflow, /--timeout=1800s\\s*\\\\/, "Cloud Run worker request timeout must remain 1800 seconds");\nassert.match(workflow, /--memory=2Gi\\s*\\\\/, "Cloud Run worker must retain the 2 GiB memory floor required by M9 live execution");\nassert.match(workflow, /--concurrency=1\\s*\\\\/, "Cloud Run worker containers must process one request at a time to isolate memory-heavy phase execution");\n\nconsole.log(JSON.stringify({\n  check: "cloud run worker capacity",\n  status: "PASS",\n  memory: "2Gi",\n  concurrency: 1,\n  timeout_seconds: 1800,\n  incident_guard: "M9_WORKER_OOM_503"\n}, null, 2));\n''', encoding='utf-8')
+
+          package = Path('diligence-artifact-backend/package.json')
+          payload = json.loads(package.read_text(encoding='utf-8'))
+          scripts = payload['scripts']
+          if 'check:cloud-run-capacity' not in scripts:
+              rebuilt = {}
+              for key, value in scripts.items():
+                  rebuilt[key] = value
+                  if key == 'check:runtime-startup':
+                      rebuilt['check:cloud-run-capacity'] = 'node scripts/check-cloud-run-capacity.mjs'
+              payload['scripts'] = rebuilt
+              package.write_text(json.dumps(payload, indent=2) + '\n', encoding='utf-8')
+
+          manifest = Path('diligence-artifact-backend/scripts/production-gate.manifest.mjs')
+          manifest_text = manifest.read_text(encoding='utf-8')
+          anchor = '  gate("runtime-startup", "Production entrypoint startup and health", "check:runtime-startup", "STRUCTURAL_RUNTIME_SAFETY", CRITICAL_ONLY),\n'
+          addition = anchor + '  gate("cloud-run-capacity", "Cloud Run worker memory and request isolation", "check:cloud-run-capacity", "STRUCTURAL_RUNTIME_SAFETY", CRITICAL_ONLY),\n'
+          if 'gate("cloud-run-capacity"' not in manifest_text:
+              if anchor not in manifest_text:
+                  raise SystemExit('Production gate runtime-startup anchor not found')
+              manifest.write_text(manifest_text.replace(anchor, addition, 1), encoding='utf-8')
+          PY
+
+          git rm .github/workflows/apply-cloud-run-worker-memory.yml
+
+      - name: Install locked dependencies
+        working-directory: diligence-artifact-backend
+        run: npm ci
+
+      - name: Run focused Cloud Run capacity contract
+        working-directory: diligence-artifact-backend
+        run: npm run check:cloud-run-capacity
+
+      - name: Run full critical production gate
+        working-directory: diligence-artifact-backend
+        run: npm run check:critical
+
+      - name: Commit repair to PR branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/workflows/artifact-backend-deploy.yml \
+            diligence-artifact-backend/package.json \
+            diligence-artifact-backend/scripts/check-cloud-run-capacity.mjs \
+            diligence-artifact-backend/scripts/production-gate.manifest.mjs
+          git commit -m 'Raise Cloud Run worker memory for M9 execution'
+          git push origin HEAD:${{ github.head_ref }}
