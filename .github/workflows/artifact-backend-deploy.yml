@@ -220,6 +220,8 @@ jobs:
             --service-account "$GCP_ARTIFACT_RUNTIME_SERVICE_ACCOUNT" \
             --no-invoker-iam-check \
             --timeout=1800s \
+            --memory=2Gi \
+            --concurrency=1 \
             --env-vars-file /tmp/interface-artifact-backend-env.yaml \
             --quiet
 
