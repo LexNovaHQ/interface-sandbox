@@ -1,5 +1,6 @@
 name: Diagnose Runtime Startup Failure
 # Temporary Linux boot reproduction for the failed Cloud Run revision.
+# Same-repository PR trigger for the exact production entrypoint.
 
 on:
   pull_request:
