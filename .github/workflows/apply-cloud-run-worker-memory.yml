@@ -97,3 +97,5 @@ jobs:
             diligence-artifact-backend/scripts/production-gate.manifest.mjs
           git commit -m 'Raise Cloud Run worker memory for M9 execution'
           git push origin HEAD:${{ github.head_ref }}
+
+# synchronize-trigger
