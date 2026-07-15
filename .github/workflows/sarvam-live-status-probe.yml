@@ -1,0 +1,80 @@
+name: Sarvam Live Status Probe
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/sarvam-live-status-probe.yml"
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Read latest Sarvam runs
+        env:
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          GCP_ARTIFACT_RUNTIME_SERVICE_ACCOUNT: ${{ secrets.GCP_ARTIFACT_RUNTIME_SERVICE_ACCOUNT }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TOKEN=$(gcloud auth print-access-token --impersonate-service-account="$GCP_ARTIFACT_RUNTIME_SERVICE_ACCOUNT")
+          cat > /tmp/query.json <<'JSON'
+          {
+            "structuredQuery": {
+              "from": [{"collectionId": "runs"}],
+              "where": {
+                "fieldFilter": {
+                  "field": {"fieldPath": "target"},
+                  "op": "EQUAL",
+                  "value": {"stringValue": "Sarvam AI"}
+                }
+              },
+              "limit": 20
+            }
+          }
+          JSON
+          curl --fail --silent --show-error \
+            -H "Authorization: Bearer $TOKEN" \
+            -H 'Content-Type: application/json' \
+            --data @/tmp/query.json \
+            "https://firestore.googleapis.com/v1/projects/$GCP_PROJECT_ID/databases/(default)/documents:runQuery" \
+            > /tmp/firestore.json
+
+          jq '[.[] | select(.document) | .document.fields | {
+            run_id: (.run_id.stringValue // ""),
+            target: (.target.stringValue // ""),
+            root_url: (.root_url.stringValue // ""),
+            created_at: (.created_at.stringValue // ""),
+            updated_at: (.updated_at.stringValue // ""),
+            status: (.status.stringValue // ""),
+            current_phase: (.current_phase.stringValue // ""),
+            central_phase: (.central_phase.stringValue // ""),
+            central_phase_label: (.central_phase_label.stringValue // ""),
+            runner_state: (.runner_state.stringValue // ""),
+            runner_last_error: (.runner_last_error.stringValue // ""),
+            artifact_count: ((.artifact_count.integerValue // "0") | tonumber)
+          }] | sort_by(.created_at) | reverse | .[0:5]' /tmp/firestore.json | tee /tmp/sarvam-status.json
+
+          test "$(jq length /tmp/sarvam-status.json)" -gt 0
+          {
+            echo '## Latest Sarvam production runs'
+            echo '```json'
+            cat /tmp/sarvam-status.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
