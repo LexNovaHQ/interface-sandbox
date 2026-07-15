@@ -1,134 +1,46 @@
 (() => {
-  const LANES = {
-    "ai-product-data": { label: "AI Product & Data Legal Exposure", short: "AI Product & Data", active: true, state: "Active demo registry" },
-    "saas-privacy-security": { label: "SaaS Privacy & Security", short: "SaaS Privacy & Security", active: false, state: "Not activated in demo" },
-    "fintech-platforms": { label: "FinTech Platforms", short: "FinTech Platforms", active: false, state: "Not activated in demo" },
-    "healthtech-digital-care": { label: "HealthTech & Digital Care", short: "HealthTech", active: false, state: "Not activated in demo" },
-    "employment-hr-tech": { label: "Employment / HR Tech", short: "HR Tech", active: false, state: "Not activated in demo" },
-    "adtech-martech-consumer-data": { label: "AdTech, MarTech & Consumer Data", short: "AdTech / MarTech", active: false, state: "Not activated in demo" },
-    "digital-platforms-marketplaces": { label: "Digital Platforms & Marketplaces", short: "Digital Platforms", active: false, state: "Not activated in demo" },
-    "banking-finance-technology": { label: "Banking / Finance Technology", short: "Finance Tech", active: false, state: "Not activated in demo" }
-  };
-
-  injectRegistrySelector();
-
-  function injectRegistrySelector() {
-    const form = document.getElementById("runForm");
-    if (!form || document.getElementById("registryLane")) return;
-
-    const block = document.createElement("div");
-    block.className = "registry-selector-block";
-    block.innerHTML = `<label class="label" for="registryLane">Active Vertical Registry</label><div class="registry-select-wrap"><select class="input registry-select" id="registryLane" name="registryLane" autocomplete="off"><option value="ai-product-data" selected>AI Product & Data Legal Exposure — active demo</option><option value="saas-privacy-security">SaaS Privacy & Security — not activated in demo</option><option value="fintech-platforms">FinTech Platforms — not activated in demo</option><option value="healthtech-digital-care">HealthTech & Digital Care — not activated in demo</option><option value="employment-hr-tech">Employment / HR Tech — not activated in demo</option><option value="adtech-martech-consumer-data">AdTech, MarTech & Consumer Data — not activated in demo</option><option value="digital-platforms-marketplaces">Digital Platforms & Marketplaces — not activated in demo</option><option value="banking-finance-technology">Banking / Finance Technology — not activated in demo</option></select></div><div class="registry-lane-state active" id="registryLaneState">Active demo registry</div><p class="registry-lane-description" id="registryLaneDescription">This demo uses the AI Product & Data exposure registry. Other TMT registry lanes use the same diligence architecture but are not activated in this demo environment.</p>`;
-    form.prepend(block);
-
-    const live = document.getElementById("runLiveBadge");
-    if (live && !document.getElementById("activeRegistryBadge")) {
-      const badge = document.createElement("span");
-      badge.id = "activeRegistryBadge";
-      badge.className = "registry-live-badge active";
-      live.insertAdjacentElement("afterend", badge);
-    }
-
-    const sideStack = document.querySelector(".gate-side-stack");
-    if (sideStack && !document.querySelector(".gate-registry-card")) {
-      const card = document.createElement("article");
-      card.className = "card gate-card gate-registry-card";
-      card.innerHTML = `<div class="eyebrow">Registry Architecture</div><h2>Vertical registry engine</h2><p class="small-muted">The report architecture stays stable. The active registry swaps in the exposure taxonomy, public triggers, visible-control rules, and remediation routes for the selected domain.</p><div class="registry-mini-list"><span>Target profile</span><span>Activity profile</span><span>Data / asset provenance</span><span>Legal document stack</span><span>Exposure registry</span><span>Review-ready route</span></div>`;
-      sideStack.querySelector(".gate-resume-card")?.insertAdjacentElement("afterend", card);
-    }
-
-    form.addEventListener("submit", guardInactiveRegistry, true);
-    document.getElementById("registryLane")?.addEventListener("change", syncRegistryLane);
-    window.getActiveRegistryLane = getActiveRegistryLane;
-    syncRegistryLane();
-  }
-
-  function getActiveRegistryLane() {
-    const value = document.getElementById("registryLane")?.value || "ai-product-data";
-    return { id: value, ...(LANES[value] || LANES["ai-product-data"]) };
-  }
-
-  function syncRegistryLane() {
-    const lane = getActiveRegistryLane();
-    const state = document.getElementById("registryLaneState");
-    const description = document.getElementById("registryLaneDescription");
-    const badge = document.getElementById("activeRegistryBadge");
-    const runButton = document.getElementById("runButton");
-    if (state) {
-      state.textContent = lane.state;
-      state.className = `registry-lane-state ${lane.active ? "active" : "inactive"}`;
-    }
-    if (description) {
-      description.textContent = lane.active
-        ? "This demo uses the AI Product & Data exposure registry. Other TMT registry lanes use the same diligence architecture but are not activated in this demo environment."
-        : `${lane.label} uses the same vertical diligence architecture, but this registry lane is not activated in the current demo environment.`;
-    }
-    if (badge) {
-      badge.textContent = `Registry: ${lane.short} — ${lane.active ? "Active" : "Not activated"}`;
-      badge.className = `registry-live-badge ${lane.active ? "active" : "inactive"}`;
-    }
-    if (runButton && !document.getElementById("runIdValue")?.textContent?.startsWith("LN-")) {
-      runButton.disabled = !lane.active;
-      runButton.textContent = lane.active ? "Start Diligence Run" : "Registry Not Activated in Demo";
-    }
-  }
-
-  function guardInactiveRegistry(event) {
-    const lane = getActiveRegistryLane();
-    if (lane.active) return;
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    const status = document.getElementById("statusMessage");
-    if (status) {
-      status.textContent = `${lane.label} is not activated in this demo. Select AI Product & Data to run the live registry.`;
-      status.style.color = "var(--danger)";
-    }
-    syncRegistryLane();
-  }
-})();
-
-(() => {
   const POLL_MS = 10000;
   const RUN_ID_PATTERN = /^LN-\d{8}-\d{6}-[A-Z0-9-]+-\d{6}$/i;
   const FALLBACK_PHASE_LABELS = {
-    CREATED: "Source + Legal",
-    AGENT_1A_URL_MANIFEST: "Source + Legal",
-    AGENT_1B_EXTRACT: "Source + Legal",
-    M6_BUCKET_INDEX: "Source + Legal",
-    P2_SOURCE_INVENTORY_CARTOGRAPHY: "Source + Legal",
-    P2_LOCATOR_SPINE: "Source + Legal",
-    P2_PROFILE_ROUTE_MATRIX: "Source + Legal",
-    P2_SEMANTIC_NAVIGATION_OVERLAY: "Source + Legal",
-    M9: "Source + Legal",
-    P2A_TARGET_PROFILE_SOURCE_INDEX: "Source + Legal",
-    P2B_DOMAIN_DERIVATION_SOURCE_INDEX: "Source + Legal",
-    P2C_ACTIVITY_PROFILE_SOURCE_INDEX: "Source + Legal",
-    P2D_DATA_PRIVACY_NAVIGATION_INDEX: "Source + Legal",
-    P2E_DOMAIN_CONTROL_OBLIGATION_NAVIGATION_INDEX: "Source + Legal",
-    P2G_PHASE_ROUTER: "Source + Legal",
-    P2_INDEX_COMPILER_VALIDATION: "Source + Legal",
-    M7_TARGET_PROFILE: "Target + Feature",
-    P3_DOMAIN_DERIVATION_LAYER: "Target + Feature",
-    M7_TARGET_PROFILE_FORENSICS: "Target + Feature",
-    M8_FEATURE_CANDIDATE_INVENTORY: "Target + Feature",
-    M8_TARGET_FEATURE_PROFILE: "Target + Feature",
-    M8_TARGET_FEATURE_PROFILE_FORENSICS: "Target + Feature",
-    DATA_PROVENANCE_PROFILE_LAYER4: "Data Provenance",
-    DATA_PROVENANCE_PROFILE_LAYER5: "Data Provenance",
-    DOMAIN_CONTROL_OBLIGATION_CANDIDATE_INVENTORY: "Data Provenance",
-    DOMAIN_CONTROL_OBLIGATION_PROFILE: "Data Provenance",
-    DATA_PROVENANCE_PROFILE_FORENSICS: "Data Provenance",
-    M11: "Exposure Registry",
-    M12: "Challenge Gate",
-    NORMALIZED_COMPILER: "Validation",
-    NORMALIZED_REPORT_RENDERER: "Validation",
-    RENDERER: "Validation",
-    QUALIFIED_REVIEW: "Validation",
-    QUALIFIED_REVIEW_SUBMISSION: "Validation",
-    DILIGENCE_QA_COMPLETE: "Validation",
-    ASSEMBLY_ENGINE: "Validation",
+    CREATED: "Phase 1 — Source Discovery",
+    AGENT_1A_URL_MANIFEST: "Phase 1 — Source Discovery",
+    AGENT_1B_EXTRACT: "Phase 1 — Source Discovery",
+    M6_BUCKET_INDEX: "Phase 1 — Source Discovery",
+    P2_SOURCE_INVENTORY_CARTOGRAPHY: "Phase 2 — Cartography and Index",
+    P2_LOCATOR_SPINE: "Phase 2 — Cartography and Index",
+    P2_PROFILE_ROUTE_MATRIX: "Phase 2 — Cartography and Index",
+    P2_SEMANTIC_NAVIGATION_OVERLAY: "Phase 2 — Cartography and Index",
+    M9: "Phase 2 — Cartography and Index",
+    P2A_TARGET_PROFILE_SOURCE_INDEX: "Phase 2 — Cartography and Index",
+    P2B_DOMAIN_DERIVATION_SOURCE_INDEX: "Phase 2 — Cartography and Index",
+    P2C_ACTIVITY_PROFILE_SOURCE_INDEX: "Phase 2 — Cartography and Index",
+    P2D_DATA_PRIVACY_NAVIGATION_INDEX: "Phase 2 — Cartography and Index",
+    P2E_DOMAIN_CONTROL_OBLIGATION_NAVIGATION_INDEX: "Phase 2 — Cartography and Index",
+    P2G_PHASE_ROUTER: "Phase 2 — Cartography and Index",
+    P2_INDEX_COMPILER_VALIDATION: "Phase 2 — Cartography and Index",
+    M7_TARGET_PROFILE: "Phase 3 — Target Profile Review",
+    P3_DOMAIN_DERIVATION_LAYER: "Phase 3 — Target Profile Review",
+    M7_TARGET_PROFILE_FORENSICS: "Phase 4 — Target Profile Forensics",
+    M8_FEATURE_CANDIDATE_INVENTORY: "Phase 5 — Activity Profile Review",
+    M8_TARGET_FEATURE_PROFILE: "Phase 5 — Activity Profile Review",
+    M8_TARGET_FEATURE_PROFILE_FORENSICS: "Phase 6 — Activity Profile Forensics",
+    DATA_PROVENANCE_PROFILE_LAYER4: "Phase 7 — Data Provenance Profile",
+    DATA_PROVENANCE_PROFILE_LAYER5: "Phase 7 — Data Provenance Profile",
+    DOMAIN_CONTROL_OBLIGATION_CANDIDATE_INVENTORY: "Phase 8 — Domain Control Obligation Profile",
+    DOMAIN_CONTROL_OBLIGATION_PROFILE: "Phase 8 — Domain Control Obligation Profile",
+    DATA_PROVENANCE_PROFILE_FORENSICS: "Phase 9 — Data Provenance Forensics",
+    M11: "Phase 10 — Exposure Profile",
+    M12: "Phase 11 — Operator Challenge",
+    NORMALIZED_COMPILER: "Phase 12 — Compiler",
+    NORMALIZED_REPORT_RENDERER: "Phase 12 — Compiler",
+    RENDERER: "Phase 12 — Compiler",
+    QUALIFIED_REVIEW: "Phase 13 — Qualified Review",
+    QUALIFIED_REVIEW_SUBMISSION: "Phase 14 — Qualified Review Submission",
+    DILIGENCE_QA_COMPLETE: "Phase 15 — Diligence-QA Complete",
+    ASSEMBLY_ENGINE: "Phase 16 — Assembly Engine",
     COMPLETE: "Review-Ready Output"
   };
+
   let runId = "";
   let timer = null;
 
@@ -177,7 +89,7 @@
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ auto_continue: true })
     });
-    message("Continuation requested. Watching matter status...");
+    message("Continuation requested. Watching the exact execution phase...");
     await poll();
     if (!timer) timer = setInterval(poll, POLL_MS);
   }
@@ -187,7 +99,8 @@
     try {
       const payload = await request(`/public/diligence-system/jobs/${encodeURIComponent(runId)}`);
       const run = payload.run || payload;
-      render(run, payload.artifacts || []);
+      render(run, payload.artifacts || [], payload.domain_selection || {});
+
       if (isComplete(run)) {
         stop();
         setLinks(runId, true);
@@ -199,7 +112,7 @@
         message(`Matter stopped: ${run.status || run.runner_state || "FAILED"}. ${run.runner_last_error || ""}`, true);
       } else {
         setLinks(runId, false);
-        message(`Watching ${runId}. Current diligence stage: ${publicPhaseLabel(run)}.`);
+        message(`Watching ${runId}. Current phase: ${publicPhaseLabel(run)}.`);
       }
     } catch (error) {
       stop();
@@ -215,19 +128,26 @@
     return json;
   }
 
-  function render(run, artifacts) {
+  function render(run, artifacts, domainSelection) {
     const count = Array.isArray(artifacts) ? artifacts.length : Number(run.artifact_count || 0);
     if (nodes.runId) nodes.runId.textContent = run.run_id || runId || "-";
     if (nodes.statusValue) nodes.statusValue.textContent = [run.status, run.runner_state].filter(Boolean).join(" / ") || "-";
     if (nodes.phase) nodes.phase.textContent = publicPhaseLabel(run);
     if (nodes.artifacts) nodes.artifacts.textContent = String(count || 0);
     window.updateDiligenceGateRunMonitor?.(run, count);
+    window.updateDiligenceDerivedDomain?.(domainSelection);
   }
 
   function publicPhaseLabel(run = {}) {
     const phase = run.current_phase || "";
-    const normalized = window.publicDiligencePhaseFor?.(phase, run.status || "", run.runner_state || "");
-    return normalized?.label || FALLBACK_PHASE_LABELS[phase] || "Workflow Check";
+    const normalized = window.publicDiligencePhaseFor?.(
+      phase,
+      run.status || "",
+      run.runner_state || "",
+      run.central_phase || "",
+      run.central_phase_label || ""
+    );
+    return normalized?.label || FALLBACK_PHASE_LABELS[phase] || run.central_phase_label || "Workflow Check";
   }
 
   function setLinks(id, complete) {
@@ -288,7 +208,9 @@
   }
 
   function isStopped(run) {
-    return run.runner_state === "FAILED" || run.status === "CRITICAL_FAILURE" || run.status === "CONTROLLED_FAILURE";
+    return run.runner_state === "FAILED"
+      || run.status === "CRITICAL_FAILURE"
+      || run.status === "CONTROLLED_FAILURE";
   }
 
   function message(text, error = false) {
