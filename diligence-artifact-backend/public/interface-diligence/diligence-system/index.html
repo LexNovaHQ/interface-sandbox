@@ -15,6 +15,7 @@
   <link rel="stylesheet" href="./interface-ui-shell.css?v=shell-v1-20260713" />
   <link rel="stylesheet" href="./interface-state-system.css?v=state-v1-20260713" />
   <link rel="stylesheet" href="./interface-landing-polish.css?v=console-v2-20260715" />
+  <link rel="stylesheet" href="./interface-phase-console-v3.css?v=phase-authority-v3-20260715" />
 </head>
 <body class="diligence-gate-page diligence-console-page">
   <div class="progress-line" id="progressLine" aria-hidden="true"></div>
@@ -53,8 +54,8 @@
 
       <section class="console-proof-strip" aria-label="Diligence system proof points">
         <div><span>01</span><strong>Public-source intake</strong><p>URL mapping, extraction and approved document capture.</p></div>
-        <div><span>02</span><strong>Controlled legal architecture</strong><p>Cartography, profiles, provenance, exposure and challenge gates.</p></div>
-        <div><span>03</span><strong>Review-ready route</strong><p>Compiler, Qualified Review, Diligence-QA and assembly.</p></div>
+        <div><span>02</span><strong>Deterministic domain routing</strong><p>Phase 3 derives the sector, primary package and AI overlay automatically.</p></div>
+        <div><span>03</span><strong>Review-ready route</strong><p>Sixteen visible phases through Qualified Review, Diligence-QA and assembly.</p></div>
       </section>
 
       <section class="gate-workbench console-grid" aria-label="Diligence execution console">
@@ -92,7 +93,7 @@
             <h2>One controlled matter record.</h2>
             <div class="console-method-grid">
               <div><strong>Evidence first</strong><p>Public and approved sources remain attached to the same matter record.</p></div>
-              <div><strong>Rules before output</strong><p>Deterministic routing controls where semantic review may operate.</p></div>
+              <div><strong>Derive, do not guess</strong><p>Phase 3 selects the sector and package from evidence; the intake form does not choose a registry.</p></div>
               <div><strong>Review before reliance</strong><p>Qualified Review and Diligence-QA precede downstream assembly.</p></div>
             </div>
           </article>
@@ -115,11 +116,32 @@
             <div class="meta-grid gate-meta-grid console-meta-grid">
               <div class="meta-tile"><div class="k">Matter / Run ID</div><div class="v" id="runIdValue">-</div></div>
               <div class="meta-tile"><div class="k">Status</div><div class="v" id="statusValue">Idle</div></div>
-              <div class="meta-tile"><div class="k">Current stage</div><div class="v" id="phaseValue">-</div></div>
+              <div class="meta-tile"><div class="k">Current phase</div><div class="v" id="phaseValue">-</div></div>
               <div class="meta-tile"><div class="k">Artifacts</div><div class="v" id="artifactValue">0</div></div>
             </div>
 
-            <div class="workflow-status" id="workflowStatus" aria-label="Diligence workflow stages"></div>
+            <section class="derived-domain-panel pending" id="derivedDomainPanel" aria-label="Automatically derived sector and registry packages">
+              <div class="derived-domain-head">
+                <div>
+                  <div class="eyebrow">Automatic Domain Derivation</div>
+                  <h3>Sector and package authority</h3>
+                </div>
+                <span id="domainDerivationState">Pending Phase 3</span>
+              </div>
+              <div class="derived-domain-grid">
+                <div><span>Sector / domain</span><strong id="derivedSectorValue">Pending Phase 3</strong></div>
+                <div><span>Primary package</span><strong id="primaryPackageValue">Pending Phase 3</strong></div>
+                <div><span>AI overlay</span><strong id="aiOverlayValue">Pending Phase 3</strong></div>
+                <div><span>Mounted registry packages</span><strong id="mountedRegistryValue">Pending Phase 3</strong></div>
+              </div>
+              <p>Read-only execution identity. Phase 3 derives this from evidence; there is no manual registry selector on intake.</p>
+            </section>
+
+            <div class="workflow-status-head">
+              <div><div class="eyebrow">Execution Trace</div><h3>Sixteen diligence phases</h3></div>
+              <span>Exact current job shown in-line</span>
+            </div>
+            <div class="workflow-status" id="workflowStatus" aria-label="Sixteen diligence workflow phases"></div>
 
             <div class="notice gate-inline-notice" id="terminalNotice">The matter status will update as the diligence workflow progresses. Keep this page open until the report opens automatically.</div>
             <p class="log-line" id="statusMessage">Idle. Enter a public URL or resume an existing matter/run ID.</p>
@@ -162,8 +184,8 @@
   </div>
 
   <script src="./interface-state-system.js?v=state-v1-20260713"></script>
-  <script src="./diligence-system.js?v=console-v2-20260715"></script>
+  <script src="./diligence-system.js?v=phase-authority-v3-20260715"></script>
   <script src="./diligence-upload.js"></script>
-  <script src="./public-run-console.js?v=console-v2-20260715"></script>
+  <script src="./public-run-console.js?v=phase-authority-v3-20260715"></script>
 </body>
 </html>

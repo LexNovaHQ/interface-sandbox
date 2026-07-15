@@ -1,0 +1,180 @@
+/* INTERFACE_PHASE_CONSOLE_V3
+   Production authority:
+   - full sixteen-phase execution trace;
+   - exact current internal job;
+   - Phase 3-derived sector/package state;
+   - no manual registry selector on intake.
+*/
+
+:root {
+  --interface-phase-console-version: "interface_phase_console.v3";
+}
+
+.diligence-console-page .registry-selector-block,
+.diligence-console-page .gate-registry-card,
+.diligence-console-page .registry-live-badge {
+  display: none !important;
+}
+
+.diligence-console-page .derived-domain-panel {
+  margin-top: 24px;
+  padding: 18px;
+  border: 1px solid rgba(229,229,229,.10);
+  border-left: 3px solid rgba(229,229,229,.18);
+  background: rgba(255,255,255,.018);
+}
+
+.diligence-console-page .derived-domain-panel.resolved {
+  border-left-color: var(--console-gold);
+  background: linear-gradient(90deg, rgba(197,160,89,.06), rgba(255,255,255,.012));
+}
+
+.diligence-console-page .derived-domain-head,
+.diligence-console-page .workflow-status-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.diligence-console-page .derived-domain-head h3,
+.diligence-console-page .workflow-status-head h3 {
+  margin: .25rem 0 0;
+  color: var(--console-ink);
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 1.35rem;
+  font-weight: 500;
+}
+
+.diligence-console-page .derived-domain-head > span,
+.diligence-console-page .workflow-status-head > span {
+  color: rgba(229,229,229,.42);
+  font-size: .58rem;
+  font-weight: 800;
+  letter-spacing: .10em;
+  text-align: right;
+  text-transform: uppercase;
+}
+
+.diligence-console-page .derived-domain-panel.resolved .derived-domain-head > span {
+  color: var(--console-gold);
+}
+
+.diligence-console-page .derived-domain-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 16px;
+  border-top: 1px solid rgba(197,160,89,.18);
+  border-left: 1px solid rgba(197,160,89,.18);
+}
+
+.diligence-console-page .derived-domain-grid > div {
+  min-height: 78px;
+  padding: 13px;
+  border-right: 1px solid rgba(197,160,89,.18);
+  border-bottom: 1px solid rgba(197,160,89,.18);
+}
+
+.diligence-console-page .derived-domain-grid span {
+  display: block;
+  color: rgba(229,229,229,.38);
+  font-size: .56rem;
+  font-weight: 800;
+  letter-spacing: .10em;
+  text-transform: uppercase;
+}
+
+.diligence-console-page .derived-domain-grid strong {
+  display: block;
+  margin-top: .42rem;
+  color: rgba(229,229,229,.78);
+  font-size: .72rem;
+  line-height: 1.45;
+}
+
+.diligence-console-page .derived-domain-panel.pending .derived-domain-grid strong {
+  color: rgba(229,229,229,.34);
+  font-weight: 600;
+}
+
+.diligence-console-page .derived-domain-panel > p {
+  margin: 13px 0 0;
+  color: rgba(229,229,229,.42);
+  font-size: .65rem;
+  line-height: 1.5;
+}
+
+.diligence-console-page .workflow-status-head {
+  margin-top: 28px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--console-line);
+}
+
+.diligence-console-page .workflow-status {
+  max-height: 760px;
+  margin-top: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: rgba(197,160,89,.42) rgba(255,255,255,.025);
+  scrollbar-width: thin;
+}
+
+.diligence-console-page .workflow-stage {
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  padding: 12px 2px;
+}
+
+.diligence-console-page .workflow-stage-title {
+  font-size: .68rem;
+}
+
+.diligence-console-page .workflow-stage-sub {
+  font-size: .63rem;
+}
+
+.diligence-console-page .workflow-stage-job {
+  margin-top: .42rem;
+  color: var(--console-gold);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .57rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.diligence-console-page .workflow-stage.pending .workflow-stage-state {
+  color: rgba(229,229,229,.25);
+}
+
+.diligence-console-page .workflow-stage.reinvestigating {
+  background: linear-gradient(90deg, rgba(197,160,89,.08), transparent 72%);
+}
+
+.diligence-console-page .workflow-stage.reinvestigating .workflow-stage-index {
+  border-color: var(--console-gold);
+  color: var(--console-gold);
+}
+
+.diligence-console-page .workflow-stage.reinvestigating .workflow-stage-title,
+.diligence-console-page .workflow-stage.reinvestigating .workflow-stage-state {
+  color: var(--console-gold);
+}
+
+@media (max-width: 720px) {
+  .diligence-console-page .derived-domain-head,
+  .diligence-console-page .workflow-status-head {
+    flex-direction: column;
+  }
+
+  .diligence-console-page .derived-domain-head > span,
+  .diligence-console-page .workflow-status-head > span {
+    text-align: left;
+  }
+
+  .diligence-console-page .derived-domain-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .diligence-console-page .workflow-status {
+    max-height: none;
+  }
+}

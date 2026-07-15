@@ -24,22 +24,71 @@ It must not be copied as a rebrand and must not overwrite Interface Sandbox prod
 
 ## Landing execution-console rule
 
-The Diligence landing page uses a single execution-console layout. The former global left phase rail and mobile funnel are retired from this page.
+The Diligence landing page uses a single execution-console layout. The former global left rail and mobile funnel remain retired.
 
-The landing page must show only these six public workflow stages:
+The live matter card must show the **sixteen central diligence phases separately**:
 
-1. `Source + Legal` — central Phases 1–2
-2. `Target + Feature` — central Phases 3–6
-3. `Data Provenance` — central Phases 7–9
-4. `Exposure Registry` — central Phase 10
-5. `Challenge Gate` — central Phase 11
-6. `Validation` — central Phases 12–16, including Compiler, Qualified Review, Qualified Review Submission, Diligence-QA Complete, and Assembly Engine
+1. `Source Discovery`
+2. `Cartography and Index`
+3. `Target Profile Review`
+4. `Target Profile Forensics`
+5. `Activity Profile Review`
+6. `Activity Profile Forensics`
+7. `Data Provenance Profile`
+8. `Domain Control Obligation Profile`
+9. `Data Provenance Forensics`
+10. `Exposure Profile`
+11. `Operator Challenge`
+12. `Compiler`
+13. `Qualified Review`
+14. `Qualified Review Submission`
+15. `Diligence-QA Complete`
+16. `Assembly Engine`
 
-Internal job IDs remain available in operator diagnostics and runtime responses. They must not become the public landing-page information architecture.
+No public UI may merge these phases into broad stage buckets such as `Source + Legal`, `Target + Feature`, `Data Provenance`, `Exposure Registry`, `Challenge Gate`, or `Validation`.
 
-`REINVESTIGATION_REQUIRED` is not a terminal public stop. Only a genuine critical or controlled failure may stop the run.
+The active phase row must show the exact internal job ID. Internal job IDs remain implementation details, but they are required in the live execution trace for operational diagnosis.
 
-The executable authority for this rule is `scripts/check-interface-ui-universal.mjs`. A returned rail, stale public phase map, missing Phase 12–16 stage, or reinvestigation-as-terminal behavior is a production-gate failure.
+Before a run starts, every phase must display `Not started`. The UI must not label Phase 1 `Ready` merely because the intake page is idle.
+
+## Sector, domain and registry authority
+
+The New Matter intake collects the target source. It must not ask the user to choose an internal registry.
+
+The following are forbidden on intake:
+
+- `Active Vertical Registry`
+- manual sector/domain package selection
+- demo-only registry lanes
+- disabling runs because a manually selected registry is not activated
+
+Phase 3 is the selection authority. The UI must display a read-only projection after Phase 3 containing:
+
+- derived sector/domain;
+- primary domain package;
+- AI overlay status; and
+- mounted registry package(s).
+
+The projection must come from `active_run_package_manifest` and, where available, `active_threat_registry_manifest`. It may not create a second selection authority.
+
+Manual override, if introduced later, belongs only in authenticated Operator Diagnostics and requires an explicit governing change order.
+
+## Failure and reinvestigation rule
+
+`REINVESTIGATION_REQUIRED` is not a terminal public stop. It remains the current phase with a `Reinvestigating` state.
+
+Only a genuine `CRITICAL_FAILURE`, `CONTROLLED_FAILURE`, or failed runner state may stop the run.
+
+The executable authority for the landing rules is `scripts/check-interface-ui-universal.mjs`. Any of the following is a production-gate failure:
+
+- merged public phase buckets;
+- missing central phases;
+- missing exact current job;
+- false idle `Ready`;
+- a returned manual registry selector;
+- missing Phase 3 domain/package projection;
+- reinvestigation treated as terminal; or
+- restoration of the retired global left rail or mobile funnel.
 
 ## Phase 12 renderer rule
 
