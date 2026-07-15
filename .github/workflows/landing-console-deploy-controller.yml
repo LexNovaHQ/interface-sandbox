@@ -1,4 +1,5 @@
 name: Deploy Landing Console and Verify
+# one-use trigger: deploy Phase 1 sparse-root shard persistence repair
 
 on:
   pull_request:
