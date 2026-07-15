@@ -1,5 +1,6 @@
 name: Dispatch and Verify Production Deploy
 # Temporary same-repository PR controller for the approved main deployment workflow.
+# Trigger fixed-main production deployment after PR #105.
 
 on:
   pull_request:
