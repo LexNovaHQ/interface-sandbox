@@ -1,12 +1,7 @@
-name: Dispatch Artifact Deploy Once
-# One-use controller for dispatching and verifying the approved production deploy workflow.
+name: Diagnose Artifact Deploy Failure
+# Temporary diagnostic workflow for failed production deploy run 29407624819.
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - ".github/workflows/dispatch-artifact-deploy-once.yml"
   pull_request:
     branches:
       - main
@@ -14,75 +9,28 @@ on:
       - ".github/workflows/dispatch-artifact-deploy-once.yml"
 
 permissions:
-  actions: write
+  actions: read
   contents: read
 
 jobs:
-  dispatch-and-verify:
+  diagnose:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
     steps:
-      - name: Dispatch and verify Artifact Backend Deploy
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-            const workflow_id = 'artifact-backend-deploy.yml';
-            const startedAt = Date.now();
+      - name: Fetch and print failed deploy job tail
+        env:
+          GH_TOKEN: ${{ github.token }}
+          JOB_ID: "87327285092"
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --show-error --silent --location \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/jobs/${JOB_ID}/logs" \
+            --output /tmp/deploy-job.log
 
-            core.info(`Dispatching ${workflow_id} on main from controller ${context.sha}.`);
-
-            await github.rest.actions.createWorkflowDispatch({
-              owner,
-              repo,
-              workflow_id,
-              ref: 'main',
-              inputs: { mode: 'deploy' }
-            });
-
-            let run = null;
-            for (let attempt = 0; attempt < 60; attempt += 1) {
-              await new Promise(resolve => setTimeout(resolve, 10000));
-              const response = await github.rest.actions.listWorkflowRuns({
-                owner,
-                repo,
-                workflow_id,
-                branch: 'main',
-                event: 'workflow_dispatch',
-                per_page: 20
-              });
-              run = response.data.workflow_runs.find(candidate =>
-                Date.parse(candidate.created_at) >= startedAt - 15000
-              ) || null;
-              if (run) break;
-            }
-
-            if (!run) {
-              throw new Error('Dispatched Artifact Backend Deploy run was not found.');
-            }
-
-            core.info(`Tracking Artifact Backend Deploy run ${run.id}: ${run.html_url}`);
-
-            for (let attempt = 0; attempt < 180 && run.status !== 'completed'; attempt += 1) {
-              await new Promise(resolve => setTimeout(resolve, 10000));
-              const response = await github.rest.actions.getWorkflowRun({
-                owner,
-                repo,
-                run_id: run.id
-              });
-              run = response.data;
-            }
-
-            if (run.status !== 'completed') {
-              throw new Error(`Artifact Backend Deploy run ${run.id} did not complete within the polling window.`);
-            }
-
-            core.info(`Artifact Backend Deploy run ${run.id} completed with ${run.conclusion}.`);
-            core.info(`Source branch: ${run.head_branch}`);
-            core.info(`Source commit: ${run.head_sha}`);
-            core.info(`Canonical backend authority: 261d5dff92e1856ae9d23c8086b441e89dc63fbb`);
-
-            if (run.conclusion !== 'success') {
-              core.setFailed(`Artifact Backend Deploy run ${run.id} concluded with ${run.conclusion}.`);
-            }
+          echo "===== DEPLOY JOB LOG TAIL ====="
+          tail -n 180 /tmp/deploy-job.log
+          echo "===== ERROR MATCHES ====="
+          grep -nEi "error|failed|failure|denied|permission|invalid|build|revision|container" /tmp/deploy-job.log | tail -n 120 || true
