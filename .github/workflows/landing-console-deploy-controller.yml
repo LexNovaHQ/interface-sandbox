@@ -1,4 +1,4 @@
-name: Deploy Landing Console and Verify
+name: Resume Sarvam Live Run
 
 on:
   pull_request:
@@ -8,58 +8,149 @@ on:
       - ".github/workflows/landing-console-deploy-controller.yml"
 
 permissions:
-  actions: write
   contents: read
 
 jobs:
-  deploy-and-verify:
+  resume-and-monitor:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 180
+    env:
+      BASE_URL: https://sandbox.lexnovahq.com
+      RUN_ID: LN-20260715-124344-SARVAM-AI-677919
     steps:
-      - name: Dispatch and verify Artifact Backend Deploy
-        uses: actions/github-script@v7
+      - name: Resume repaired run and monitor
+        id: live
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p live-run
+          : > live-run/history.ndjson
+          echo "$RUN_ID" > live-run/run_id.txt
+
+          request() {
+            curl --silent --show-error --location \
+              --connect-timeout 20 --max-time 180 \
+              --retry 3 --retry-delay 3 --retry-all-errors \
+              "$@"
+          }
+
+          echo "Reading existing Sarvam matter..."
+          request --fail "$BASE_URL/public/diligence-system/jobs/$RUN_ID" > live-run/status-before-resume.json
+          jq . live-run/status-before-resume.json
+
+          echo "Resuming after deployed Phase 1 guard repair..."
+          advance_code=$(request -o live-run/advance-latest.json -w '%{http_code}' \
+            -X POST "$BASE_URL/public/diligence-system/jobs/$RUN_ID/advance" \
+            -H 'content-type: application/json' \
+            --data '{"auto_continue":true}')
+          cat live-run/advance-latest.json | jq .
+          case "$advance_code" in
+            200|202) ;;
+            *) echo "Resume failed with HTTP $advance_code" >&2; exit 10 ;;
+          esac
+
+          safe_advance() {
+            local reason="$1"
+            echo "Advance request: $reason"
+            local code
+            code=$(request -o live-run/advance-latest.json -w '%{http_code}' \
+              -X POST "$BASE_URL/public/diligence-system/jobs/$RUN_ID/advance" \
+              -H 'content-type: application/json' \
+              --data '{"auto_continue":true}')
+            cat live-run/advance-latest.json | jq .
+            case "$code" in
+              200|202) ;;
+              *) echo "Advance failed with HTTP $code" >&2; return 1 ;;
+            esac
+          }
+
+          last_key=""
+          idle_polls=0
+          for poll in $(seq 1 350); do
+            now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+            request --fail "$BASE_URL/public/diligence-system/jobs/$RUN_ID" > live-run/status-latest.json
+            jq -c --arg observed_at "$now" '{observed_at:$observed_at,run:.run,artifacts:.artifacts}' live-run/status-latest.json >> live-run/history.ndjson
+
+            status=$(jq -r '.run.status // .status // ""' live-run/status-latest.json)
+            phase=$(jq -r '.run.current_phase // .current_phase // ""' live-run/status-latest.json)
+            central=$(jq -r '.run.central_phase // .central_phase // ""' live-run/status-latest.json)
+            central_label=$(jq -r '.run.central_phase_label // .central_phase_label // ""' live-run/status-latest.json)
+            runner=$(jq -r '.run.runner_state // .runner_state // ""' live-run/status-latest.json)
+            error=$(jq -r '.run.runner_last_error // .runner_last_error // ""' live-run/status-latest.json)
+            artifacts=$(jq -r '(.artifacts // []) | length' live-run/status-latest.json)
+            key="$status|$phase|$central|$runner|$error|$artifacts"
+
+            if [[ "$key" != "$last_key" || $((poll % 10)) -eq 0 ]]; then
+              printf '%s poll=%s status=%s phase=%s central=%s label=%s runner=%s artifacts=%s error=%s\n' \
+                "$now" "$poll" "$status" "$phase" "$central" "$central_label" "$runner" "$artifacts" "$error"
+              last_key="$key"
+            fi
+
+            if [[ "$status" == "COMPLETE" || "$phase" == "COMPLETE" ]]; then
+              echo "LIVE_RUN_COMPLETE" > live-run/outcome.txt
+              exit 0
+            fi
+
+            if [[ "$status" == "AWAITING_QUALIFIED_REVIEW" || "$phase" == "AWAITING_QUALIFIED_REVIEW" ]]; then
+              echo "SUBSTANTIVE_BOUNDARY_AWAITING_QUALIFIED_REVIEW" > live-run/outcome.txt
+              exit 0
+            fi
+
+            if [[ "$status" == "AWAITING_ASSEMBLY" || "$phase" == "AWAITING_ASSEMBLY" ]]; then
+              echo "SUBSTANTIVE_BOUNDARY_AWAITING_ASSEMBLY_AUTHORIZATION" > live-run/outcome.txt
+              exit 0
+            fi
+
+            if [[ "$runner" == "FAILED" || "$status" == "CRITICAL_FAILURE" || "$status" == "CONTROLLED_FAILURE" || "$status" == "TECHNICAL_RETRY_REQUIRED" ]]; then
+              if [[ "$poll" -le 2 && "$phase" == "AGENT_1B_EXTRACT" ]]; then
+                echo "Waiting for resumed worker to replace the pre-repair failure state."
+              else
+                echo "LIVE_RUN_FAILED:$status:$phase:$central:$runner:$error" > live-run/outcome.txt
+                jq . live-run/status-latest.json
+                exit 30
+              fi
+            fi
+
+            if [[ "$runner" == "IDLE" && "$phase" != "" && "$phase" != "CREATED" ]]; then
+              idle_polls=$((idle_polls + 1))
+            else
+              idle_polls=0
+            fi
+
+            if [[ "$idle_polls" -ge 2 ]]; then
+              safe_advance "safe continuation after two idle polls at $phase"
+              idle_polls=0
+            fi
+
+            sleep 30
+          done
+
+          echo "LIVE_RUN_MONITOR_TIMEOUT" > live-run/outcome.txt
+          jq . live-run/status-latest.json
+          exit 40
+
+      - name: Publish live-run summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## Sarvam resumed production run'
+            echo
+            echo "- Run ID: \`$RUN_ID\`"
+            if [[ -f live-run/outcome.txt ]]; then echo "- Outcome: \`$(cat live-run/outcome.txt)\`"; fi
+            if [[ -f live-run/status-latest.json ]]; then
+              echo '- Final observed state:'
+              echo '```json'
+              jq '{run, artifact_count: ((.artifacts // []) | length), artifact_names: ((.artifacts // []) | map(.artifact_name))}' live-run/status-latest.json
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload live-run evidence
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          script: |
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-            const workflow_id = 'artifact-backend-deploy.yml';
-            const startedAt = Date.now();
-
-            await github.rest.actions.createWorkflowDispatch({
-              owner,
-              repo,
-              workflow_id,
-              ref: 'main',
-              inputs: { mode: 'deploy' }
-            });
-
-            let run = null;
-            for (let attempt = 0; attempt < 60; attempt += 1) {
-              await new Promise(resolve => setTimeout(resolve, 10000));
-              const response = await github.rest.actions.listWorkflowRuns({
-                owner,
-                repo,
-                workflow_id,
-                branch: 'main',
-                event: 'workflow_dispatch',
-                per_page: 20
-              });
-              run = response.data.workflow_runs.find(candidate =>
-                Date.parse(candidate.created_at) >= startedAt - 15000
-              ) || null;
-              if (run) break;
-            }
-
-            if (!run) throw new Error('Dispatched Artifact Backend Deploy run was not found.');
-            core.info(`Tracking deployment run ${run.id}: ${run.html_url}`);
-
-            for (let attempt = 0; attempt < 180 && run.status !== 'completed'; attempt += 1) {
-              await new Promise(resolve => setTimeout(resolve, 10000));
-              const response = await github.rest.actions.getWorkflowRun({ owner, repo, run_id: run.id });
-              run = response.data;
-            }
-
-            if (run.status !== 'completed') throw new Error(`Deployment run ${run.id} did not complete within the polling window.`);
-            core.info(`Deployment run ${run.id} completed with ${run.conclusion}.`);
-            core.info(`Source commit: ${run.head_sha}`);
-            if (run.conclusion !== 'success') core.setFailed(`Artifact Backend Deploy run ${run.id} concluded with ${run.conclusion}.`);
+          name: sarvam-resume-${{ github.run_id }}
+          path: live-run/
+          if-no-files-found: warn
+          retention-days: 14
