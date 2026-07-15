@@ -18,9 +18,26 @@ The following curated public identity surfaces are locked unless an explicit lat
 
 ## Visual source rule
 
-`portfolio-shwetav` is a visual-quality reference only. It may inform polish, hierarchy, rail treatment, cards, spacing, print/report grammar, and premium editorial feel.
+`portfolio-shwetav` is a visual-quality reference only. It may inform polish, hierarchy, cards, spacing, proof-strip grammar, print/report grammar, and premium editorial feel.
 
 It must not be copied as a rebrand and must not overwrite Interface Sandbox product identity.
+
+## Landing execution-console rule
+
+The Diligence landing page uses a single execution-console layout. The former global left phase rail and mobile funnel are retired from this page.
+
+The landing page must show only these six public workflow stages:
+
+1. `Source + Legal` — central Phases 1–2
+2. `Target + Feature` — central Phases 3–6
+3. `Data Provenance` — central Phases 7–9
+4. `Exposure Registry` — central Phase 10
+5. `Challenge Gate` — central Phase 11
+6. `Validation` — central Phases 12–16, including Compiler, Qualified Review, Qualified Review Submission, Diligence-QA Complete, and Assembly Engine
+
+Internal job IDs remain available in operator diagnostics and runtime responses. They must not become the public landing-page information architecture.
+
+`REINVESTIGATION_REQUIRED` is not a terminal public stop. Only a genuine critical or controlled failure may stop the run.
 
 ## Phase 12 renderer rule
 
