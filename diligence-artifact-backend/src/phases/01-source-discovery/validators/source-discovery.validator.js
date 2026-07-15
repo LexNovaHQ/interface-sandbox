@@ -1,6 +1,8 @@
 import { SOURCE_DISCOVERY_CONTRACT } from "../source-discovery.contract.js";
 import { COMMON_ROOT_CODES, RETIRED_COMMON_ROOT_CODES, ROOT_TRAVERSAL_POLICY } from "../services/source-discovery-taxonomy.service.js";
 
+const LEGACY_FAMILY_ARTIFACT_PREFIX = "lossless_family__";
+
 export function assertSourceDiscoveryBoundary({ job_id, output } = {}) {
   if (!SOURCE_DISCOVERY_CONTRACT.jobs[job_id]) throw new Error(`SOURCE_DISCOVERY_BOUNDARY_INVALID_JOB:${job_id || "missing"}`);
   if (!output || typeof output !== "object" || Array.isArray(output)) throw new Error(`SOURCE_DISCOVERY_BOUNDARY_INVALID_OUTPUT:${job_id}`);
@@ -41,6 +43,7 @@ export function assertSourceDiscoveryBoundary({ job_id, output } = {}) {
 }
 
 export function assertNoSourceDiscoveryModelUsage({ job_id, model_metadata } = {}) { if (model_metadata) throw new Error(`SOURCE_DISCOVERY_MODEL_USAGE_FORBIDDEN:${job_id || "missing"}`); return { ok: true, model_usage: "NONE" }; }
+export function isLegacyFamilyArtifactName(name = "") { return String(name).startsWith(LEGACY_FAMILY_ARTIFACT_PREFIX); }
 function assertLockedRootMatrix(manifest = {}, matrix = {}) {
   const matrixRoots = matrix.common_core_roots || [];
   const ids = matrixRoots.map((root) => root.id);
@@ -124,4 +127,4 @@ function assertHandoffRows(rows = [], context, options = {}) {
   }
 }
 function assertNoPhase1LockOrNarrowing(flags = {}, context) { if (flags.primary_domain_locked !== false) throw new Error(`SOURCE_DISCOVERY_DOMAIN_LOCK_FORBIDDEN:${context}`); if (flags.source_discovery_narrowed !== false) throw new Error(`SOURCE_DISCOVERY_NARROWING_FORBIDDEN:${context}`); if (flags.sources_excluded_by_domain !== false) throw new Error(`SOURCE_DISCOVERY_DOMAIN_EXCLUSION_FORBIDDEN:${context}`); if (flags.domain_specific_prompt_routing_used !== false) throw new Error(`SOURCE_DISCOVERY_DOMAIN_PROMPT_ROUTING_FORBIDDEN:${context}`); if (flags.dynamic_routing_used !== false) throw new Error(`SOURCE_DISCOVERY_DYNAMIC_ROUTING_FORBIDDEN:${context}`); }
-function assertNoLegacyFamilyArtifacts(output, jobId) { for (const name of Object.keys(output || {})) if (name.startsWith("lossless_root__")) throw new Error(`SOURCE_DISCOVERY_LEGACY_FAMILY_ARTIFACT_FORBIDDEN:${jobId}:${name}`); }
+function assertNoLegacyFamilyArtifacts(output, jobId) { for (const name of Object.keys(output || {})) if (isLegacyFamilyArtifactName(name)) throw new Error(`SOURCE_DISCOVERY_LEGACY_FAMILY_ARTIFACT_FORBIDDEN:${jobId}:${name}`); }
