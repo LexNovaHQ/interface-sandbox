@@ -1,0 +1,58 @@
+name: Reconcile main history into canonical Domain Gate tree once
+
+on:
+  push:
+    branches:
+      - release/domain-gate-v0-main-cutover
+    paths:
+      - .github/workflows/reconcile-main-history-once.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: reconcile-main-history-once
+  cancel-in-progress: false
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout release branch
+        uses: actions/checkout@v4
+        with:
+          ref: release/domain-gate-v0-main-cutover
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Reconcile main ancestry while preserving canonical tree
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          CANONICAL_SHA="261d5dff92e1856ae9d23c8086b441e89dc63fbb"
+          RELEASE_BRANCH="release/domain-gate-v0-main-cutover"
+          WORKFLOW_PATH=".github/workflows/reconcile-main-history-once.yml"
+
+          test "$(git branch --show-current)" = "$RELEASE_BRANCH"
+          git fetch origin main "$RELEASE_BRANCH"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git merge --strategy=ours --no-ff origin/main \
+            -m "Reconcile main history into certified Domain Gate v0 tree"
+
+          git rm "$WORKFLOW_PATH"
+
+          # After removing the one-use workflow, the staged tree must be
+          # byte-for-byte identical to the certified canonical tree.
+          git diff --cached --quiet "$CANONICAL_SHA" --
+
+          git commit -m "Remove one-use main reconciliation workflow"
+
+          test "$(git rev-parse HEAD^{tree})" = "$(git rev-parse "$CANONICAL_SHA^{tree}")"
+          git merge-base --is-ancestor origin/main HEAD
+          git merge-base --is-ancestor "$CANONICAL_SHA" HEAD
+
+          git push origin "HEAD:refs/heads/$RELEASE_BRANCH"
