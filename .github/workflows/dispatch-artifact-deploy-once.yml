@@ -1,5 +1,6 @@
 name: Diagnose Artifact Deploy Failure
 # Temporary diagnostic workflow for failed production deploy run 29407624819.
+# Triggered through same-repository PR for exact terminal error extraction.
 
 on:
   pull_request:
