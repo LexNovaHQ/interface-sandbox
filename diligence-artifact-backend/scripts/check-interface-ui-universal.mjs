@@ -9,6 +9,9 @@ const read=file=>fs.readFileSync(path.join(root,file),"utf8");
 const pages={
   landing:read(base+"index.html"),report:read(base+"report.html"),annexure:read(base+"technical-annexure.html"),qr:read(base+"qualified-review.html"),assembly:read(base+"assembly-engine.html"),signals:read(base+"signals-preview.html"),sector:read(base+"operator-sector-packages.html")
 };
+const landingJs=read(base+"diligence-system.js");
+const landingConsoleJs=read(base+"public-run-console.js");
+const landingCss=read(base+"interface-landing-polish.css");
 const bridge=read(base+"report-p12-payload-adapter.js");
 const runtime=read(base+"report-document-runtime.js");
 const stateCss=read(base+"interface-state-system.css");
@@ -29,6 +32,29 @@ for(const [name,page] of Object.entries(pages)){
 has(pages.landing,"<title>Interface Diligence Engine</title>");
 has(pages.landing,'<div class="eyebrow">Diligence Intake</div>');
 has(pages.landing,"<h1>Start a legal diligence run.</h1>");
+has(pages.landing,'id="workflowStatus"',"landing: six-stage workflow status missing");
+has(pages.landing,"Public footprint in","landing: portfolio-inspired editorial thesis missing");
+has(pages.landing,"Review-ready diligence out.","landing: editorial outcome line missing");
+lacks(pages.landing,'class="rail-wrap',"landing: retired left rail returned");
+lacks(pages.landing,'id="phaseRail"',"landing: retired phase rail mount returned");
+lacks(pages.landing,"mobile-funnel","landing: retired mobile funnel returned");
+
+for(const label of ["Source + Legal","Target + Feature","Data Provenance","Exposure Registry","Challenge Gate","Validation"]){
+  has(landingJs,label,`landing: public workflow stage missing: ${label}`);
+}
+for(const phase of ["NORMALIZED_REPORT_RENDERER","QUALIFIED_REVIEW","QUALIFIED_REVIEW_SUBMISSION","DILIGENCE_QA_COMPLETE","ASSEMBLY_ENGINE"]){
+  has(landingJs,phase,`landing: Phase 12-16 mapping missing: ${phase}`);
+  has(landingConsoleJs,phase,`resume console: Phase 12-16 fallback missing: ${phase}`);
+}
+has(landingJs,"PUBLIC_STAGES","landing: six-stage public map missing");
+has(landingJs,'id: "VALIDATION"',"landing: validation stage missing");
+lacks(landingJs,"RAIL_PHASES","landing: stale rail phase array returned");
+lacks(landingJs,"phaseRail","landing: stale rail DOM authority returned");
+lacks(landingConsoleJs,'run.status === "REINVESTIGATION_REQUIRED"',"resume console: reinvestigation incorrectly terminal");
+has(landingCss,"INTERFACE_LANDING_CONSOLE_V2","landing: current editorial console stylesheet missing");
+has(landingCss,".workflow-status","landing: workflow status styling missing");
+has(landingCss,"The former phase rail and mobile funnel are intentionally retired","landing: rail retirement marker missing");
+
 has(pages.report,"report-p12-payload-adapter.js");
 has(pages.annexure,"Public Technical Annexure");
 has(pages.qr,"<title>Qualified Review</title>");
@@ -56,14 +82,14 @@ for(const token of ["interface_state_system.v1","report_not_ready","controlled_f
 for(const token of ["domain_package_catalog_v0","passive_manifest","AI_Registry_Key.yml","FinTech_Registry_Key.yml","Diligence_Field_Derivation_Registry.yml","source-hint","dynamic_routing_enabled:false"])has(sectorJs,token);
 
 for(const file of [
-  base+"interface-state-system.js",base+"operator-sector-packages.js",base+"assembly-engine.js",base+"signals-preview.js",base+"technical-annexure.js",base+"qualified-review-system/qualified-review.js",base+"report-p12-payload-adapter.js",base+"report-document-runtime.js",
+  base+"diligence-system.js",base+"public-run-console.js",base+"interface-state-system.js",base+"operator-sector-packages.js",base+"assembly-engine.js",base+"signals-preview.js",base+"technical-annexure.js",base+"qualified-review-system/qualified-review.js",base+"report-p12-payload-adapter.js",base+"report-document-runtime.js",
   "scripts/check-interface-ui-universal.mjs","scripts/check-interface-report-ui-contract.mjs","scripts/check-interface-annex-qr-contract.mjs","scripts/check-interface-assembly-signals-contract.mjs"
 ]){
   const result=spawnSync(process.execPath,["--check",path.join(root,file)],{encoding:"utf8"});
   assert.equal(result.status,0,`${file} syntax failed: ${result.stderr||result.stdout}`);
 }
 assert.equal(pkg.scripts["check:interface-ui"],"node scripts/check-interface-ui-universal.mjs && node scripts/check-interface-report-ui-contract.mjs && node scripts/check-interface-annex-qr-contract.mjs && node scripts/check-interface-assembly-signals-contract.mjs && node scripts/check-interface-report-visual-regression.mjs");
-console.log(JSON.stringify({check:"interface-ui",status:"PASS",pages:Object.keys(pages),shared_shell:true,p12_adapter_current:true,qualified_review_section_attestation:true,stale_renderer_rejected:true,lex_nova_rebrand_leakage:false,download_json_public_action:false,sector_admin:true,controlled_states:true},null,2));
+console.log(JSON.stringify({check:"interface-ui",status:"PASS",pages:Object.keys(pages),shared_shell:true,landing_console_v2:true,landing_global_rail:false,landing_public_stage_count:6,phase12_16_visible:true,reinvestigation_terminal:false,p12_adapter_current:true,qualified_review_section_attestation:true,stale_renderer_rejected:true,lex_nova_rebrand_leakage:false,download_json_public_action:false,sector_admin:true,controlled_states:true},null,2));
 
 function has(source,token,message){assert.ok(source.includes(token),message||`missing ${token}`)}
 function lacks(source,token,message){assert.equal(source.includes(token),false,message||`forbidden ${token}`)}
