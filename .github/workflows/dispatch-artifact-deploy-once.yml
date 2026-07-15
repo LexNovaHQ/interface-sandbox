@@ -1,5 +1,6 @@
 name: Extract Runtime Startup Exception
 # Temporary read-only extractor for failed Linux startup job 87330348912.
+# Same-repository PR trigger for final exception lines.
 
 on:
   pull_request:
