@@ -1,42 +1,128 @@
-const RAIL_PHASES = [
-  { id: "CREATED", label: "Intake Opened", sub: "matter intake", phases: ["CREATED"], why: "The matter has been opened and the workflow is preparing source collection." },
-  { id: "AGENT_1A_URL_MANIFEST", label: "Public URL Mapping", sub: "source map", phases: ["AGENT_1A_URL_MANIFEST"], why: "Maps the visible public URLs that may support the diligence review." },
-  { id: "AGENT_1B_EXTRACT", label: "Source Extraction", sub: "source capture", phases: ["AGENT_1B_EXTRACT"], why: "Extracts approved public source material for the report record." },
-  { id: "M6_BUCKET_INDEX", label: "Source Routing", sub: "evidence lanes", phases: ["M6_BUCKET_INDEX"], why: "Routes collected sources into target, product, legal, and data review lanes." },
-  { id: "M9", label: "Legal Document Stack Review", sub: "legal/governance stack", phases: ["M9"], why: "Maps visible legal and governance documents for downstream review." },
-  { id: "M7_TARGET_PROFILE", label: "Target Profile Review", sub: "entity profile", phases: ["M7_TARGET_PROFILE"], why: "Builds the target profile from approved public source material." },
-  { id: "M7_TARGET_PROFILE_FORENSICS", label: "Target Profile Forensics", sub: "traceability check", phases: ["M7_TARGET_PROFILE_FORENSICS"], why: "Checks the target profile record for source traceability." },
-  { id: "M8_TARGET_FEATURE_PROFILE", label: "Product Activity Profile", sub: "feature/activity review", phases: ["M8_TARGET_FEATURE_PROFILE"], why: "Builds the product activity profile and visible feature map." },
-  { id: "M8_TARGET_FEATURE_PROFILE_FORENSICS", label: "Product Activity Forensics", sub: "traceability check", phases: ["M8_TARGET_FEATURE_PROFILE_FORENSICS"], why: "Checks the product activity profile for source traceability." },
-  { id: "M10", label: "Data Provenance Review", sub: "data/control posture", phases: ["M10"], why: "Maps visible data provenance, control signals, and proof gaps." },
-  { id: "M10_FORENSICS", label: "Data Provenance Forensics", sub: "traceability check", phases: ["M10_FORENSICS"], why: "Checks the data provenance record for source traceability." },
-  { id: "M11", label: "Exposure Review", sub: "triggered + controlled", phases: ["M11"], why: "Evaluates visible exposure signals and controlled positions." },
-  { id: "M12", label: "Quality Challenge", sub: "quality gate", phases: ["M12"], why: "Challenges the exposure profile before final report preparation." },
-  { id: "NORMALIZED_COMPILER", label: "Report Compilation", sub: "compiled handoff", phases: ["NORMALIZED_COMPILER"], why: "Compiles the locked review artifacts into the report handoff." },
-  { id: "RENDERER", label: "Report Rendering", sub: "public report", phases: ["RENDERER"], why: "Builds the public report page from the compiled handoff." },
-  { id: "COMPLETE", label: "Report Ready", sub: "ready for review", phases: ["COMPLETE"], why: "The diligence report is ready. Qualified Review is the next step." }
+const PUBLIC_STAGES = [
+  {
+    id: "SOURCE_LEGAL",
+    label: "Source + Legal",
+    sub: "Phases 1–2 · discovery, cartography and legal signals",
+    phases: [
+      "CREATED",
+      "AGENT_1A_URL_MANIFEST",
+      "AGENT_1B_EXTRACT",
+      "M6_BUCKET_INDEX",
+      "P2_SOURCE_INVENTORY_CARTOGRAPHY",
+      "P2_LOCATOR_SPINE",
+      "P2_PROFILE_ROUTE_MATRIX",
+      "P2_SEMANTIC_NAVIGATION_OVERLAY",
+      "M9",
+      "P2A_TARGET_PROFILE_SOURCE_INDEX",
+      "P2B_DOMAIN_DERIVATION_SOURCE_INDEX",
+      "P2C_ACTIVITY_PROFILE_SOURCE_INDEX",
+      "P2D_DATA_PRIVACY_NAVIGATION_INDEX",
+      "P2E_DOMAIN_CONTROL_OBLIGATION_NAVIGATION_INDEX",
+      "P2G_PHASE_ROUTER",
+      "P2_INDEX_COMPILER_VALIDATION"
+    ],
+    why: "Collects approved sources, builds the navigation indexes and derives the legal signal layer."
+  },
+  {
+    id: "TARGET_FEATURE",
+    label: "Target + Feature",
+    sub: "Phases 3–6 · target, domain and activity profiles",
+    phases: [
+      "M7_TARGET_PROFILE",
+      "P3_DOMAIN_DERIVATION_LAYER",
+      "M7_TARGET_PROFILE_FORENSICS",
+      "M8_FEATURE_CANDIDATE_INVENTORY",
+      "M8_TARGET_FEATURE_PROFILE",
+      "M8_TARGET_FEATURE_PROFILE_FORENSICS"
+    ],
+    why: "Builds and tests the target, domain and product-activity profiles."
+  },
+  {
+    id: "DATA_PROVENANCE",
+    label: "Data Provenance",
+    sub: "Phases 7–9 · data, controls, obligations and forensics",
+    phases: [
+      "DATA_PROVENANCE_PROFILE_LAYER4",
+      "DATA_PROVENANCE_PROFILE_LAYER5",
+      "DOMAIN_CONTROL_OBLIGATION_CANDIDATE_INVENTORY",
+      "DOMAIN_CONTROL_OBLIGATION_PROFILE",
+      "DATA_PROVENANCE_PROFILE_FORENSICS"
+    ],
+    why: "Maps data provenance, domain-control obligations and forensic traceability."
+  },
+  {
+    id: "EXPOSURE_REGISTRY",
+    label: "Exposure Registry",
+    sub: "Phase 10 · triggered and controlled exposure",
+    phases: ["M11"],
+    why: "Routes the active registry and evaluates triggered exposure against visible controls."
+  },
+  {
+    id: "CHALLENGE_GATE",
+    label: "Challenge Gate",
+    sub: "Phase 11 · adversarial operator challenge",
+    phases: ["M12"],
+    why: "Challenges the exposure record and routes targeted reinvestigation without false blocking."
+  },
+  {
+    id: "VALIDATION",
+    label: "Validation",
+    sub: "Phases 12–16 · compiler, Qualified Review, submission, Diligence-QA and assembly",
+    phases: [
+      "NORMALIZED_COMPILER",
+      "NORMALIZED_REPORT_RENDERER",
+      "RENDERER",
+      "QUALIFIED_REVIEW",
+      "QUALIFIED_REVIEW_SUBMISSION",
+      "DILIGENCE_QA_COMPLETE",
+      "ASSEMBLY_ENGINE",
+      "COMPLETE"
+    ],
+    why: "Compiles the report and carries the matter through Qualified Review, Diligence-QA and Review-Ready assembly."
+  }
 ];
 
 const PHASE_TEXT = {
-  CREATED: "The diligence matter has been opened. Preparing source collection.",
-  AGENT_1A_URL_MANIFEST: "Public URL mapping is identifying the visible source map.",
-  AGENT_1B_EXTRACT: "Source extraction is capturing approved public source material.",
-  M6_BUCKET_INDEX: "Source routing is organizing collected material into review lanes.",
-  M9: "Legal document stack review is mapping visible legal and governance materials.",
+  CREATED: "The matter is open and ready for public-source collection.",
+  AGENT_1A_URL_MANIFEST: "Public URL mapping is identifying the visible source footprint.",
+  AGENT_1B_EXTRACT: "Source extraction is capturing approved public material.",
+  M6_BUCKET_INDEX: "Source discovery is routing evidence into controlled review lanes.",
+  P2_SOURCE_INVENTORY_CARTOGRAPHY: "Cartography is building the source inventory.",
+  P2_LOCATOR_SPINE: "Cartography is resolving evidence locators.",
+  P2_PROFILE_ROUTE_MATRIX: "The profile route matrix is assigning downstream navigation.",
+  P2_SEMANTIC_NAVIGATION_OVERLAY: "Semantic navigation support is being applied to the deterministic index.",
+  M9: "Legal cartography is mapping visible legal and governance materials.",
+  P2A_TARGET_PROFILE_SOURCE_INDEX: "The target-profile source index is being compiled.",
+  P2B_DOMAIN_DERIVATION_SOURCE_INDEX: "The domain-derivation source index is being compiled.",
+  P2C_ACTIVITY_PROFILE_SOURCE_INDEX: "The activity-profile source index is being compiled.",
+  P2D_DATA_PRIVACY_NAVIGATION_INDEX: "The data and privacy navigation index is being compiled.",
+  P2E_DOMAIN_CONTROL_OBLIGATION_NAVIGATION_INDEX: "The domain-control obligation index is being compiled.",
+  P2G_PHASE_ROUTER: "The central phase router is assembling the route plan.",
+  P2_INDEX_COMPILER_VALIDATION: "The cartography and routing layer is being validated.",
   M7_TARGET_PROFILE: "Target profile review is building the entity profile.",
-  M7_TARGET_PROFILE_FORENSICS: "Target profile forensics is checking source traceability.",
-  M8_TARGET_FEATURE_PROFILE: "Product activity profile is mapping visible product features and activity.",
-  M8_TARGET_FEATURE_PROFILE_FORENSICS: "Product activity forensics is checking source traceability.",
-  M10: "Data provenance review is mapping visible data and control signals.",
-  M10_FORENSICS: "Data provenance forensics is checking source traceability.",
-  M11: "Exposure review is evaluating visible exposure and control positions.",
-  M12: "Quality challenge is checking the review record before report preparation.",
-  NORMALIZED_COMPILER: "Report compilation is assembling the locked diligence handoff.",
-  RENDERER: "Report rendering is preparing the public report page.",
-  COMPLETE: "The diligence report is ready."
+  P3_DOMAIN_DERIVATION_LAYER: "Model-led domain derivation is resolving the primary domain and overlays.",
+  M7_TARGET_PROFILE_FORENSICS: "Target-profile forensics is testing source traceability.",
+  M8_FEATURE_CANDIDATE_INVENTORY: "The activity candidate inventory is being assembled.",
+  M8_TARGET_FEATURE_PROFILE: "Activity profile review is mapping visible product behaviour and features.",
+  M8_TARGET_FEATURE_PROFILE_FORENSICS: "Activity-profile forensics is testing source traceability.",
+  DATA_PROVENANCE_PROFILE_LAYER4: "Data provenance batches are resolving the data and control posture.",
+  DATA_PROVENANCE_PROFILE_LAYER5: "The data provenance profile is being validated and compiled.",
+  DOMAIN_CONTROL_OBLIGATION_CANDIDATE_INVENTORY: "Domain-control obligation candidates are being inventoried.",
+  DOMAIN_CONTROL_OBLIGATION_PROFILE: "The domain-control obligation profile is being resolved.",
+  DATA_PROVENANCE_PROFILE_FORENSICS: "Data provenance forensics is testing the final traceability record.",
+  M11: "The active exposure registry is evaluating triggered and controlled positions.",
+  M12: "The operator challenge is testing the exposure record and reinvestigation routes.",
+  NORMALIZED_COMPILER: "The compiler is assembling the locked diligence handoff.",
+  NORMALIZED_REPORT_RENDERER: "The report renderer is preparing the structured diligence report.",
+  RENDERER: "The report renderer is preparing the structured diligence report.",
+  QUALIFIED_REVIEW: "Qualified Review is resolving reviewer-controlled fields and limitations.",
+  QUALIFIED_REVIEW_SUBMISSION: "The reviewed matter is being submitted into the immutable final-value ledger.",
+  DILIGENCE_QA_COMPLETE: "Diligence-QA is validating the reviewed matter before assembly.",
+  ASSEMBLY_ENGINE: "The Assembly Engine is preparing Review-Ready outputs.",
+  COMPLETE: "The diligence workflow is complete."
 };
 
-const TERMINAL_FAILURES = new Set(["REINVESTIGATION_REQUIRED", "CONTROLLED_FAILURE"]);
+const TERMINAL_FAILURES = new Set(["CRITICAL_FAILURE", "CONTROLLED_FAILURE"]);
 const POLL_MS = 10000;
 const RUN_ID_PATTERN = /^LN-\d{8}-\d{6}-[A-Z0-9-]+-\d{6}$/i;
 let pollTimer = null;
@@ -58,9 +144,7 @@ const els = {
   activePhaseText: document.getElementById("activePhaseText"),
   terminalNotice: document.getElementById("terminalNotice"),
   openReportButton: document.getElementById("openReportButton"),
-  phaseRail: document.getElementById("phaseRail"),
-  mobileFunnel: document.getElementById("mobileFunnel"),
-  mobileFunnelLabel: document.getElementById("mobileFunnelLabel"),
+  workflowStatus: document.getElementById("workflowStatus"),
   progressLine: document.getElementById("progressLine"),
   runLiveBadge: document.getElementById("runLiveBadge"),
   runProgress: document.getElementById("runProgress"),
@@ -70,9 +154,9 @@ const els = {
   lastCheckedValue: document.getElementById("lastCheckedValue")
 };
 
-renderRail({ current_phase: "CREATED", status: "IDLE", runner_state: "IDLE" });
+renderWorkflowStatus({ current_phase: "CREATED", status: "IDLE", runner_state: "IDLE" });
 updateRunMonitor({ current_phase: "", status: "IDLE", runner_state: "IDLE" }, 0);
-els.form.addEventListener("submit", startRun);
+els.form?.addEventListener("submit", startRun);
 attachRunFromUrl();
 window.publicDiligencePhaseFor = publicPhaseFor;
 window.updateDiligenceGateRunMonitor = updateRunMonitor;
@@ -80,8 +164,8 @@ window.setDiligenceGateMonitorAttention = setMonitorAttention;
 
 async function startRun(event) {
   event.preventDefault();
-  const targetUrl = els.targetUrl.value.trim();
-  const target = els.targetLabel.value.trim();
+  const targetUrl = els.targetUrl?.value.trim() || "";
+  const target = els.targetLabel?.value.trim() || "";
   if (!targetUrl) return setMessage("Enter a public target URL first.", true);
 
   stopPolling();
@@ -106,13 +190,13 @@ async function startRun(event) {
       body: JSON.stringify({ auto_continue: true })
     });
 
-    setMessage("Workflow queued. Watching the live diligence rail...");
+    setMessage("Workflow queued. Watching the live diligence status...");
     await pollOnce();
     pollTimer = setInterval(pollOnce, POLL_MS);
   } catch (error) {
     setMessage(error.message || String(error), true);
     setMonitorAttention(error.message || String(error));
-    renderRail({ current_phase: "CREATED", status: "CONTROLLED_FAILURE", runner_state: "FAILED" });
+    renderWorkflowStatus({ current_phase: "CREATED", status: "CONTROLLED_FAILURE", runner_state: "FAILED" });
     setBusy(false);
     stopRunClock();
   }
@@ -132,9 +216,7 @@ async function attachRunFromUrl() {
 
   try {
     await pollOnce({ fromAttach: true });
-    if (currentRunId && !pollTimer) {
-      pollTimer = setInterval(pollOnce, POLL_MS);
-    }
+    if (currentRunId && !pollTimer) pollTimer = setInterval(pollOnce, POLL_MS);
   } catch (error) {
     stopPolling();
     setBusy(false);
@@ -169,8 +251,8 @@ async function pollOnce(_options = {}) {
       setMessage(`Run stopped: ${run.status || run.runner_state || "FAILED"}.${detail}`, true);
       return;
     }
-    const publicPhase = publicPhaseFor(run.current_phase || "", run.status || "", run.runner_state || "");
-    setMessage(`Watching run ${currentRunId}. Current diligence phase: ${publicPhase.label}.`);
+    const publicStage = publicPhaseFor(run.current_phase || "", run.status || "", run.runner_state || "");
+    setMessage(`Watching run ${currentRunId}. Current diligence stage: ${publicStage.label}.`);
   } catch (error) {
     stopPolling();
     setBusy(false);
@@ -198,21 +280,21 @@ function updateState(payload = {}) {
   const phase = run.current_phase || "CREATED";
   const status = run.status || "RUNNING";
   const runner = run.runner_state || "";
-  const publicPhase = publicPhaseFor(phase, status, runner);
+  const publicStage = publicPhaseFor(phase, status, runner);
 
   if (run.run_id && !currentRunId) currentRunId = run.run_id;
   if (run.root_url && els.targetUrl && !els.targetUrl.value.trim()) els.targetUrl.value = run.root_url;
   if (run.target && els.targetLabel && !els.targetLabel.value.trim()) els.targetLabel.value = run.target;
 
-  els.runIdValue.textContent = run.run_id || currentRunId || "-";
-  els.statusValue.textContent = [status, runner].filter(Boolean).join(" / ") || "-";
-  els.phaseValue.textContent = publicPhase.label;
-  els.artifactValue.textContent = String(artifactCount || 0);
-  els.activePhaseTitle.textContent = publicPhase.label;
-  els.activePhaseText.textContent = publicPhase.description;
-  els.terminalNotice.innerHTML = badgeHtml(status, runner, run.runner_last_error || "");
+  if (els.runIdValue) els.runIdValue.textContent = run.run_id || currentRunId || "-";
+  if (els.statusValue) els.statusValue.textContent = [status, runner].filter(Boolean).join(" / ") || "-";
+  if (els.phaseValue) els.phaseValue.textContent = publicStage.label;
+  if (els.artifactValue) els.artifactValue.textContent = String(artifactCount || 0);
+  if (els.activePhaseTitle) els.activePhaseTitle.textContent = publicStage.label;
+  if (els.activePhaseText) els.activePhaseText.textContent = publicStage.description;
+  if (els.terminalNotice) els.terminalNotice.innerHTML = badgeHtml(status, runner, run.runner_last_error || "");
   updateRunMonitor(run, artifactCount);
-  renderRail(run);
+  renderWorkflowStatus(run);
 }
 
 function runIdFromLocation() {
@@ -228,11 +310,7 @@ function sanitizeRunId(value) {
   const raw = String(value || "").trim();
   if (!raw) return "";
   let decoded = raw;
-  try {
-    decoded = decodeURIComponent(raw);
-  } catch {
-    decoded = raw;
-  }
+  try { decoded = decodeURIComponent(raw); } catch { decoded = raw; }
   const normalized = decoded.trim().toUpperCase();
   return RUN_ID_PATTERN.test(normalized) ? normalized : "";
 }
@@ -245,21 +323,21 @@ function updateBrowserRunId(runId) {
   window.history.replaceState({}, "", url.toString());
 }
 
-function phaseInfoFor(phase, status, runner) {
+function stageInfoFor(phase, status, runner) {
   const index = activeIndex({ current_phase: phase, status, runner_state: runner });
-  return RAIL_PHASES[index] || RAIL_PHASES[0];
+  return PUBLIC_STAGES[index] || PUBLIC_STAGES[0];
 }
 
 function publicPhaseFor(phase, status, runner) {
   if (status === "IDLE" && !phase) {
     return { label: "Intake", description: "Waiting for a public target URL or existing matter/run ID.", progressLabel: "Waiting for intake." };
   }
-  const info = phaseInfoFor(phase, status, runner);
+  const info = stageInfoFor(phase, status, runner);
   if (isComplete({ current_phase: phase, status, runner_state: runner })) {
-    return { label: "Report Ready", description: "The diligence report is ready. Opening the report automatically.", progressLabel: "Report ready." };
+    return { label: "Review-Ready Output", description: "The diligence workflow is complete. Opening the structured report.", progressLabel: "Review-ready output complete." };
   }
   if (isFailed({ current_phase: phase, status, runner_state: runner })) {
-    return { label: info.label, description: `${info.label} needs attention. Review the status before continuing.`, progressLabel: "Run needs attention." };
+    return { label: info.label, description: `${info.label} needs attention. Review the critical failure before continuing.`, progressLabel: "Run needs attention." };
   }
   return {
     label: info.label,
@@ -268,38 +346,62 @@ function publicPhaseFor(phase, status, runner) {
   };
 }
 
-function renderRail(run = {}) {
+function renderWorkflowStatus(run = {}) {
+  if (!els.workflowStatus) return;
   const active = activeIndex(run);
   const failed = isFailed(run);
-  const limited = String(run.status || "").includes("LIMITATION");
-  els.phaseRail.innerHTML = `<div class="rail-chip"><span class="pulse"></span> Diligence Engine rail</div>` + RAIL_PHASES.map((phase, index) => {
-    let state = "pending";
-    if (index < active) state = "complete";
-    if (index === active) state = failed ? "failed" : (limited ? "limited" : "active");
-    if (isComplete(run) && index <= active) state = "complete";
-    return `<div class="rail-stage ${state}"><span class="rail-dot"></span><div><div class="rail-node">${escapeHtml(phase.label)}</div><div class="rail-sub">${escapeHtml(phase.sub)}</div><div class="rail-why">${escapeHtml(phase.why)}</div></div></div>`;
-  }).join("");
-  renderMobile(active);
-  const pct = progressPercent(run);
-  els.progressLine.style.width = `${pct}%`;
-}
+  const limited = String(run.status || "").includes("LIMITATION") || String(run.status || "").includes("WARNING");
+  const idle = run.status === "IDLE" || (!run.current_phase && !run.run_id);
 
-function renderMobile(active) {
-  els.mobileFunnel.innerHTML = RAIL_PHASES.slice(0, -1).map((phase, index) => `<span class="seg ${index < active ? "complete" : index === active ? "active" : ""}"></span>`).join("") + `<span class="lbl" id="mobileFunnelLabel">${escapeHtml((RAIL_PHASES[active] || RAIL_PHASES[0]).label)}</span>`;
+  els.workflowStatus.innerHTML = PUBLIC_STAGES.map((stage, index) => {
+    let state = "pending";
+    let stateLabel = "Pending";
+    if (index < active) {
+      state = "complete";
+      stateLabel = "Done";
+    }
+    if (index === active) {
+      if (idle) {
+        state = "pending";
+        stateLabel = index === 0 ? "Ready" : "Pending";
+      } else if (failed) {
+        state = "failed";
+        stateLabel = "Critical";
+      } else if (limited) {
+        state = "limited";
+        stateLabel = "Limited";
+      } else {
+        state = "active";
+        stateLabel = "Current";
+      }
+    }
+    if (isComplete(run) && index <= active) {
+      state = "complete";
+      stateLabel = "Done";
+    }
+
+    return `<div class="workflow-stage ${state}" data-stage="${escapeHtml(stage.id)}">
+      <span class="workflow-stage-index">${String(index + 1).padStart(2, "0")}</span>
+      <div><div class="workflow-stage-title">${escapeHtml(stage.label)}</div><div class="workflow-stage-sub">${escapeHtml(stage.sub)}</div></div>
+      <span class="workflow-stage-state">${escapeHtml(stateLabel)}</span>
+    </div>`;
+  }).join("");
+
+  if (els.progressLine) els.progressLine.style.width = `${progressPercent(run)}%`;
 }
 
 function activeIndex(run = {}) {
-  if (isComplete(run)) return RAIL_PHASES.findIndex((phase) => phase.id === "COMPLETE");
+  if (isComplete(run)) return PUBLIC_STAGES.length - 1;
   const current = run.current_phase || (run.status === "CREATED" ? "CREATED" : "");
-  const found = RAIL_PHASES.findIndex((phase) => phase.phases.includes(current));
+  const found = PUBLIC_STAGES.findIndex((stage) => stage.phases.includes(current));
   return found >= 0 ? found : 0;
 }
 
 function progressPercent(run = {}) {
   if (!run || run.status === "IDLE") return 0;
   if (isComplete(run)) return 100;
-  const denominator = Math.max(1, RAIL_PHASES.length - 1);
-  return Math.max(0, Math.min(98, Math.round((activeIndex(run) / denominator) * 100)));
+  const denominator = Math.max(1, PUBLIC_STAGES.length);
+  return Math.max(2, Math.min(98, Math.round(((activeIndex(run) + 1) / denominator) * 100)));
 }
 
 function isComplete(run = {}) {
@@ -311,16 +413,19 @@ function isFailed(run = {}) {
 }
 
 function setBusy(value) {
+  if (!els.runButton) return;
   els.runButton.disabled = Boolean(value);
   els.runButton.textContent = value ? "Monitoring..." : "Start Diligence Run";
 }
 
 function setMessage(message, error = false) {
+  if (!els.statusMessage) return;
   els.statusMessage.textContent = message;
   els.statusMessage.style.color = error ? "var(--danger)" : "rgba(229,229,229,.62)";
 }
 
 function resetReportLink() {
+  if (!els.openReportButton) return;
   els.openReportButton.classList.add("hidden");
   els.openReportButton.removeAttribute("href");
 }
@@ -363,7 +468,7 @@ function updateRunMonitor(run = {}, artifactCount = 0) {
   const failed = isFailed(run);
   const complete = isComplete(run);
   const live = !idle && !failed && !complete;
-  const publicPhase = publicPhaseFor(run.current_phase || "", run.status || "", run.runner_state || "");
+  const publicStage = publicPhaseFor(run.current_phase || "", run.status || "", run.runner_state || "");
   const pct = progressPercent(run);
   if (live) startRunClock();
   if (complete || failed) stopRunClock();
@@ -374,9 +479,9 @@ function updateRunMonitor(run = {}, artifactCount = 0) {
   }
   if (els.runProgressFill) els.runProgressFill.style.width = `${pct}%`;
   if (els.runProgressText) {
-    if (complete) els.runProgressText.textContent = "Report ready. Opening the report automatically.";
-    else if (failed) els.runProgressText.textContent = "Run needs attention. Review the status before continuing.";
-    else if (live) els.runProgressText.textContent = `Diligence workflow running: ${publicPhase.label}. Keep this page open.`;
+    if (complete) els.runProgressText.textContent = "Review-ready output complete. Opening the report automatically.";
+    else if (failed) els.runProgressText.textContent = "Run needs attention. Review the critical failure before continuing.";
+    else if (live) els.runProgressText.textContent = `Diligence workflow running: ${publicStage.label}. Keep this page open.`;
     else els.runProgressText.textContent = "Waiting for intake.";
   }
   if (els.lastCheckedValue) {
@@ -424,6 +529,6 @@ function escapeHtml(value) {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
+    .replace(/\"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
