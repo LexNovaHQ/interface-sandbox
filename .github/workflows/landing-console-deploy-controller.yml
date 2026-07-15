@@ -1,4 +1,5 @@
 name: Deploy Landing Console and Verify
+# One-use trigger for the merged landing-console production tree.
 
 on:
   pull_request:
