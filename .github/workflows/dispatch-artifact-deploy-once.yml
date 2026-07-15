@@ -1,8 +1,13 @@
 name: Dispatch Artifact Deploy Once
-# Activated through a standard pull-request merge so GitHub emits the main push event.
+# One-use controller for dispatching and verifying the approved production deploy workflow.
 
 on:
   push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/dispatch-artifact-deploy-once.yml"
+  pull_request:
     branches:
       - main
     paths:
@@ -31,7 +36,7 @@ jobs:
               owner,
               repo,
               issue_number: 96,
-              body: `## Production deploy controller started\n\n- Controller commit: \`${context.sha}\`\n- Target workflow: \`Artifact Backend Deploy\`\n- Target branch: \`main\`\n- Started at: \`${new Date(startedAt).toISOString()}\``
+              body: `## Production deploy controller started\n\n- Controller commit: \`${context.sha}\`\n- Trigger event: \`${context.eventName}\`\n- Target workflow: \`Artifact Backend Deploy\`\n- Target branch: \`main\`\n- Started at: \`${new Date(startedAt).toISOString()}\``
             });
 
             await github.rest.actions.createWorkflowDispatch({
