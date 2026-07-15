@@ -1,0 +1,75 @@
+name: Sarvam Live Status Probe
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/sarvam-status-probe.yml"
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    env:
+      GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: diligence-artifact-backend/package-lock.json
+      - name: Install locked dependencies
+        working-directory: diligence-artifact-backend
+        run: npm ci --silent
+      - name: Read latest Sarvam production state
+        working-directory: diligence-artifact-backend
+        shell: bash
+        run: |
+          mkdir -p probe
+          node --input-type=module <<'NODE' | tee probe/status.json
+          import { initializeApp, applicationDefault } from "firebase-admin/app";
+          import { getFirestore } from "firebase-admin/firestore";
+
+          initializeApp({ credential: applicationDefault(), projectId: process.env.GCP_PROJECT_ID });
+          const db = getFirestore();
+          const snap = await db.collection("runs").where("target", "==", "Sarvam AI").get();
+          const rows = snap.docs.map((doc) => doc.data()).sort((a, b) => String(b.created_at || "").localeCompare(String(a.created_at || "")));
+          const run = rows[0] || null;
+          if (!run) throw new Error("NO_SARVAM_RUN_FOUND");
+          const artifactsSnap = await db.collection("runs").doc(run.run_id).collection("artifacts").get();
+          const artifactNames = artifactsSnap.docs.map((doc) => doc.id).sort();
+          console.log(JSON.stringify({
+            observed_at: new Date().toISOString(),
+            run: {
+              run_id: run.run_id,
+              created_at: run.created_at,
+              updated_at: run.updated_at,
+              status: run.status,
+              current_phase: run.current_phase,
+              central_phase: run.central_phase,
+              central_phase_label: run.central_phase_label,
+              runner_state: run.runner_state,
+              runner_last_error: run.runner_last_error || "",
+              runner_worker_heartbeat_at: run.runner_worker_heartbeat_at || ""
+            },
+            artifact_count: artifactNames.length,
+            shard_artifacts: artifactNames.filter((name) => /^lossless_root__.+__part_\d{3}$/.test(name)),
+            recent_artifacts: artifactNames.slice(-30)
+          }, null, 2));
+          NODE
+      - name: Upload probe evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: sarvam-status-probe-${{ github.run_id }}
+          path: diligence-artifact-backend/probe/status.json
+          retention-days: 3
