@@ -1,0 +1,36 @@
+name: Sarvam Public Status Probe
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/sarvam-public-status-probe.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    env:
+      BASE_URL: https://sandbox.lexnovahq.com
+      RUN_ID: LN-20260715-135924-SARVAM-AI-125557
+    steps:
+      - name: Read public run state
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p probe
+          curl --silent --show-error --fail --location \
+            --connect-timeout 20 --max-time 120 \
+            --retry 3 --retry-delay 3 --retry-all-errors \
+            "$BASE_URL/public/diligence-system/jobs/$RUN_ID" \
+            | tee probe/status.json \
+            | jq '{run, artifact_count: ((.artifacts // []) | length), shard_count: ((.artifacts // []) | map(select(.artifact_name | test("^lossless_root__.+__part_[0-9]{3}$"))) | length), shard_artifacts: ((.artifacts // []) | map(.artifact_name) | map(select(test("^lossless_root__.+__part_[0-9]{3}$"))) | sort), artifact_names: ((.artifacts // []) | map(.artifact_name) | sort)}'
+      - name: Upload public status evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: sarvam-public-status-${{ github.run_id }}
+          path: probe/status.json
+          retention-days: 3
