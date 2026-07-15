@@ -1,6 +1,6 @@
 name: Diagnose Artifact Deploy Failure
 # Temporary diagnostic workflow for failed production deploy run 29407624819.
-# Triggered through same-repository PR for exact terminal error extraction.
+# Narrow extraction pass for the terminal Cloud Run source-deploy error.
 
 on:
   pull_request:
@@ -17,7 +17,7 @@ jobs:
   diagnose:
     runs-on: ubuntu-latest
     steps:
-      - name: Fetch and print failed deploy job tail
+      - name: Fetch exact failed deploy error
         env:
           GH_TOKEN: ${{ github.token }}
           JOB_ID: "87327285092"
@@ -31,7 +31,7 @@ jobs:
             "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/jobs/${JOB_ID}/logs" \
             --output /tmp/deploy-job.log
 
-          echo "===== DEPLOY JOB LOG TAIL ====="
-          tail -n 180 /tmp/deploy-job.log
-          echo "===== ERROR MATCHES ====="
-          grep -nEi "error|failed|failure|denied|permission|invalid|build|revision|container" /tmp/deploy-job.log | tail -n 120 || true
+          echo "===== FINAL 70 LINES ====="
+          tail -n 70 /tmp/deploy-job.log
+          echo "===== EXPLICIT GCLOUD / ERROR LINES ====="
+          grep -nE "gcloud run deploy|ERROR:|Error:|Build failed|Deployment failed|PERMISSION_DENIED|Permission denied|denied|INVALID_ARGUMENT|failed to|Failure|exit code" /tmp/deploy-job.log | tail -n 60 || true
