@@ -1,5 +1,6 @@
 name: Diagnose Cloud Run Revision Failure
 # Temporary read-only diagnostic for the failed production revision.
+# Same-repository PR trigger for Cloud Logging extraction.
 
 on:
   pull_request:
