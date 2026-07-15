@@ -10,6 +10,7 @@ import {
   COMMON_ROOT_CODES
 } from "../src/phases/01-source-discovery/services/source-discovery-taxonomy.service.js";
 import { isLegacyFamilyArtifactName } from "../src/phases/01-source-discovery/validators/source-discovery.validator.js";
+import { AGENT_1B_OPTIONAL_ROOT_ARTIFACT_NAMES, artifactMatchesPermission } from "../src/runtime/contracts/artifact-permissions.contract.js";
 
 const ROOT = process.cwd();
 const read = (file) => fs.readFileSync(path.join(ROOT, file), "utf8");
@@ -44,6 +45,14 @@ for (const file of [contract, urlService, extractionService, handoffService, per
 }
 assert.equal(isLegacyFamilyArtifactName("lossless_family__homepage_landing"), true, "legacy lossless-family artifacts must be rejected");
 assert.equal(isLegacyFamilyArtifactName("lossless_root__homepage_landing"), false, "active lossless-root artifacts must be accepted");
+
+const companyIdentityRootPermission = AGENT_1B_OPTIONAL_ROOT_ARTIFACT_NAMES.find((name) => name === "lossless_root__company_identity");
+assert.ok(companyIdentityRootPermission, "company_identity root permission missing");
+assert.equal(artifactMatchesPermission("lossless_root__company_identity", companyIdentityRootPermission), true, "single company_identity root must match its bounded permission");
+assert.equal(artifactMatchesPermission("lossless_root__company_identity__part_001", companyIdentityRootPermission), true, "company_identity shard must match its bounded root permission");
+assert.equal(artifactMatchesPermission("lossless_root__company_identity__part_01", companyIdentityRootPermission), false, "malformed shard suffix must be rejected");
+assert.equal(artifactMatchesPermission("lossless_root__unknown__part_001", companyIdentityRootPermission), false, "unknown root shard must be rejected");
+assert.ok(pipelineContract.includes('optional_writes: [], dynamic_writes: [...AGENT_1B_OPTIONAL_ROOT_ARTIFACT_NAMES, "legal_doc_{DOC_TYPE}"]'), "Phase 1B must persist both single roots and physical root shards through bounded dynamic writes");
 assert.ok(validator.includes('const LEGACY_FAMILY_ARTIFACT_PREFIX = "lossless_family__"'), "validator must retain an explicit legacy-only deny prefix");
 assert.equal(validator.includes('name.startsWith("lossless_root__")'), false, "validator must never reject the active lossless-root prefix");
 
