@@ -1,3 +1,4 @@
+# One-use deployment trigger: sixteen-phase UI and Phase 3 domain authority
 name: Deploy Landing Console and Verify
 
 on:
