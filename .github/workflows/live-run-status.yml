@@ -22,6 +22,8 @@ jobs:
   status:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      CLOUD_TASKS_QUEUE: ${{ vars.CLOUD_TASKS_QUEUE || 'diligence-reviewer-worker' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -39,6 +41,8 @@ jobs:
       - name: Read matching production runs
         env:
           GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          GCP_REGION: ${{ secrets.GCP_REGION }}
+          GCP_ARTIFACT_CLOUD_RUN_SERVICE: ${{ secrets.GCP_ARTIFACT_CLOUD_RUN_SERVICE }}
           GCP_ARTIFACT_RUNTIME_SERVICE_ACCOUNT: ${{ secrets.GCP_ARTIFACT_RUNTIME_SERVICE_ACCOUNT }}
           TARGET: ${{ inputs.target }}
           MAX_RUNS: ${{ inputs.max_runs }}
@@ -126,11 +130,70 @@ jobs:
           }] | sort_by(.created_at) | reverse | .[0:$max]' /tmp/firestore.json | tee /tmp/live-run-status.json
 
           test "$(jq length /tmp/live-run-status.json)" -gt 0
+
+          QUEUE_DIAGNOSTIC_STATUS="AVAILABLE"
+          if ! gcloud tasks queues describe "$CLOUD_TASKS_QUEUE" \
+            --location "$GCP_REGION" \
+            --project "$GCP_PROJECT_ID" \
+            --format=json > /tmp/cloud-tasks-queue.json 2>/tmp/cloud-tasks-queue-error.txt; then
+            QUEUE_DIAGNOSTIC_STATUS="UNAVAILABLE"
+            printf '{}\n' > /tmp/cloud-tasks-queue.json
+          fi
+
+          if [[ "$QUEUE_DIAGNOSTIC_STATUS" == "AVAILABLE" ]]; then
+            if ! gcloud tasks list \
+              --queue "$CLOUD_TASKS_QUEUE" \
+              --location "$GCP_REGION" \
+              --project "$GCP_PROJECT_ID" \
+              --limit=100 \
+              --format=json > /tmp/cloud-tasks-list.json 2>/tmp/cloud-tasks-list-error.txt; then
+              printf '[]\n' > /tmp/cloud-tasks-list.json
+            fi
+          else
+            printf '[]\n' > /tmp/cloud-tasks-list.json
+          fi
+
+          jq '{state, rateLimits, retryConfig, stats}' /tmp/cloud-tasks-queue.json > /tmp/cloud-tasks-queue-summary.json
+          jq '[.[] | {name, scheduleTime, createTime, dispatchCount, responseCount, firstAttempt, lastAttempt}]' /tmp/cloud-tasks-list.json > /tmp/cloud-tasks-list-summary.json
+
+          LOG_DIAGNOSTIC_STATUS="AVAILABLE"
+          SINCE=$(date -u -d '30 minutes ago' +%Y-%m-%dT%H:%M:%SZ)
+          LOG_FILTER="resource.type=cloud_run_revision AND resource.labels.service_name=$GCP_ARTIFACT_CLOUD_RUN_SERVICE AND timestamp>=\"$SINCE\""
+          if ! gcloud logging read "$LOG_FILTER" \
+            --project "$GCP_PROJECT_ID" \
+            --limit=500 \
+            --order=desc \
+            --format=json > /tmp/cloud-run-logs.json 2>/tmp/cloud-run-logs-error.txt; then
+            LOG_DIAGNOSTIC_STATUS="UNAVAILABLE"
+            printf '[]\n' > /tmp/cloud-run-logs.json
+          fi
+
+          jq '[.[] | select((.textPayload // .jsonPayload.message // .jsonPayload.error // "") | test("SARVAM|LN-20260715|ERROR|FAILED|M9|P2_"; "i")) | {
+            timestamp,
+            severity,
+            revision: .resource.labels.revision_name,
+            text: (.textPayload // .jsonPayload.message // .jsonPayload.error // .jsonPayload)
+          }][0:200]' /tmp/cloud-run-logs.json > /tmp/cloud-run-relevant-logs.json
+
           {
             echo "## Production run status — $TARGET"
-            echo "- Auth mode: $AUTH_MODE"
+            echo "- Firestore auth mode: $AUTH_MODE"
+            echo "- Queue diagnostics: $QUEUE_DIAGNOSTIC_STATUS"
+            echo "- Worker-log diagnostics: $LOG_DIAGNOSTIC_STATUS"
             echo '```json'
             cat /tmp/live-run-status.json
+            echo '```'
+            echo '## Cloud Tasks queue'
+            echo '```json'
+            cat /tmp/cloud-tasks-queue-summary.json
+            echo '```'
+            echo '## Pending tasks'
+            echo '```json'
+            cat /tmp/cloud-tasks-list-summary.json
+            echo '```'
+            echo '## Relevant worker logs'
+            echo '```json'
+            cat /tmp/cloud-run-relevant-logs.json
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -143,5 +206,14 @@ jobs:
             /tmp/live-run-status.json
             /tmp/firestore.json
             /tmp/impersonation-error.txt
+            /tmp/cloud-tasks-queue.json
+            /tmp/cloud-tasks-queue-summary.json
+            /tmp/cloud-tasks-queue-error.txt
+            /tmp/cloud-tasks-list.json
+            /tmp/cloud-tasks-list-summary.json
+            /tmp/cloud-tasks-list-error.txt
+            /tmp/cloud-run-logs.json
+            /tmp/cloud-run-relevant-logs.json
+            /tmp/cloud-run-logs-error.txt
           if-no-files-found: warn
           retention-days: 7
