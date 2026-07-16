@@ -5,7 +5,8 @@ export const PHASE1_FINAL_DEDUPED_MANIFEST_SCHEMA_VERSION = "PHASE1_FINAL_DEDUPE
 /**
  * RB-10 projects the internal canonical-selection ledger back into the frozen
  * public `deduped_url_manifest.manifest_sources` contract. Existing required
- * fields remain present; new selection fields are additive.
+ * fields remain present; new selection fields are additive. RB-18 makes the
+ * material fingerprint decision visible and enforceable in the final manifest.
  */
 export function buildFinalDedupedManifest({ legacyManifest, canonicalSelection } = {}) {
   const legacyRows = legacyManifest?.manifest_sources || [];
@@ -20,8 +21,10 @@ export function buildFinalDedupedManifest({ legacyManifest, canonicalSelection }
     counters.set(root, index);
     const authorized = decision.extraction_authorized === true;
     const legal = decision.source_disposition === "LEGAL_INSTRUMENT";
-    const admissionTier = authorized ? "PRIMARY" : decision.source_disposition === "FETCH_FAILED" ? "REJECTED_NOT_EVIDENCE" : "CONTEXT_ONLY";
-    const extractionDecision = authorized ? "EXTRACT" : decision.source_disposition === "FETCH_FAILED" ? "NO_EXTRACT" : "MANIFEST_ONLY";
+    const rejected = decision.source_disposition === "REJECTED_NOT_EVIDENCE";
+    const failed = decision.source_disposition === "FETCH_FAILED";
+    const admissionTier = authorized ? "PRIMARY" : rejected || failed ? "REJECTED_NOT_EVIDENCE" : "CONTEXT_ONLY";
+    const extractionDecision = authorized ? "EXTRACT" : rejected || failed ? "NO_EXTRACT" : "MANIFEST_ONLY";
     const sourceSignalRoles = unique([
       ...(template?.source_signal_roles || []),
       ...rolesForDecision(decision)
@@ -48,7 +51,7 @@ export function buildFinalDedupedManifest({ legacyManifest, canonicalSelection }
       neutral_buckets: template?.neutral_buckets || neutralBucketsForSource({ common_root: root, source_signal_roles: sourceSignalRoles, route_type: decision.feature_cluster, canonical_url: decision.canonical_url }),
       discovered_by: unique([...(template?.discovered_by || []), "RB09_CANONICAL_SELECTION"]),
       priority_route_found_by: template?.priority_route_found_by || "RB09_CANONICAL_SELECTION",
-      priority_result: authorized ? "CANONICAL_SELECTION_AUTHORISED" : "CANONICAL_SELECTION_NOT_AUTHORISED",
+      priority_result: authorized ? "CANONICAL_SELECTION_AUTHORISED" : rejected ? "NO_MATERIAL_CONTENT_REJECTED" : "CANONICAL_SELECTION_NOT_AUTHORISED",
       admission_tier: admissionTier,
       variant_class: decision.variant_family && decision.variant_family !== "none" ? "CANONICAL_VARIANT_FAMILY" : "NONE",
       variant_cluster_id: decision.feature_cluster,
@@ -61,6 +64,9 @@ export function buildFinalDedupedManifest({ legacyManifest, canonicalSelection }
       ai_overlay: decision.ai_overlay || null,
       source_disposition: decision.source_disposition,
       canonical_owner_candidate_id: decision.canonical_owner_candidate_id || null,
+      fingerprint_fetch_status: decision.fingerprint_fetch_status,
+      fingerprint_extraction_eligible: decision.fingerprint_extraction_eligible === true,
+      content_materiality: decision.content_materiality || null,
       exact_content_hash: decision.exact_content_hash || null,
       extraction_scope: decision.extraction_scope,
       selected_block_hashes: decision.selected_block_hashes || [],
@@ -81,11 +87,12 @@ export function buildFinalDedupedManifest({ legacyManifest, canonicalSelection }
   return {
     ...legacyManifest,
     schema_version: legacyManifest?.schema_version || PHASE1_FINAL_DEDUPED_MANIFEST_SCHEMA_VERSION,
-    producer_version: "PHASE1_UNIVERSAL_DISCOVERY_RB12_v1",
+    producer_version: "PHASE1_UNIVERSAL_DISCOVERY_RB18_MATERIAL_GATE_v1",
     final_manifest_schema_version: PHASE1_FINAL_DEDUPED_MANIFEST_SCHEMA_VERSION,
     status: "FINAL_DEDUPED_EXTRACTION_MANIFEST",
     manifest_stage: "POST_CANONICAL_SELECTION",
     final_extraction_authority: true,
+    material_content_required_for_extraction: true,
     compatibility_projection_mode: "FROZEN_PUBLIC_CONTRACT_ADDITIVE_FIELDS",
     selection_ledger_ref: "source_discovery_matrix_manifest.canonical_selection",
     manifest_sources: rows,
@@ -94,6 +101,7 @@ export function buildFinalDedupedManifest({ legacyManifest, canonicalSelection }
       canonical_decisions_read: canonicalSelection?.decisions?.length || 0,
       final_rows: rows.length,
       extract_rows: rows.filter((row) => row.extraction_decision === "EXTRACT").length,
+      no_material_content_rows: rows.filter((row) => row.source_disposition === "REJECTED_NOT_EVIDENCE").length,
       full_document_rows: rows.filter((row) => row.extraction_scope === "FULL_DOCUMENT").length,
       full_main_content_rows: rows.filter((row) => row.extraction_scope === "FULL_MAIN_CONTENT").length,
       selected_unique_section_rows: rows.filter((row) => row.extraction_scope === "SELECTED_UNIQUE_SECTIONS").length,
@@ -104,7 +112,7 @@ export function buildFinalDedupedManifest({ legacyManifest, canonicalSelection }
 }
 
 export function assertFinalDedupedManifest(manifest, canonicalSelection) {
-  if (manifest?.final_manifest_schema_version !== PHASE1_FINAL_DEDUPED_MANIFEST_SCHEMA_VERSION || manifest.final_extraction_authority !== true) throw new Error("PHASE1_FINAL_DEDUPED_MANIFEST_SCHEMA_INVALID");
+  if (manifest?.final_manifest_schema_version !== PHASE1_FINAL_DEDUPED_MANIFEST_SCHEMA_VERSION || manifest.final_extraction_authority !== true || manifest.material_content_required_for_extraction !== true) throw new Error("PHASE1_FINAL_DEDUPED_MANIFEST_SCHEMA_INVALID");
   const rows = manifest.manifest_sources || [];
   const decisions = canonicalSelection?.decisions || [];
   if (rows.length !== decisions.length) throw new Error(`PHASE1_FINAL_DEDUPED_MANIFEST_ACCOUNTING_MISMATCH:${rows.length}/${decisions.length}`);
@@ -116,7 +124,10 @@ export function assertFinalDedupedManifest(manifest, canonicalSelection) {
     if (row.root_traversal_policy !== ROOT_TRAVERSAL_POLICY[row.common_root]) throw new Error(`PHASE1_FINAL_DEDUPED_MANIFEST_ROOT_POLICY_MISMATCH:${row.manifest_id}`);
     const authorized = row.extraction_authorized_by_canonical_selection === true;
     if ((row.extraction_decision === "EXTRACT") !== authorized) throw new Error(`PHASE1_FINAL_DEDUPED_MANIFEST_AUTHORITY_MISMATCH:${row.manifest_id}`);
+    if (authorized && (row.admission_tier !== "PRIMARY" || row.fingerprint_fetch_status !== "FETCHED" || row.fingerprint_extraction_eligible !== true || row.content_materiality?.status !== "MATERIAL_CONTENT" || !row.exact_content_hash || !row.selected_block_hashes.length)) throw new Error(`PHASE1_FINAL_DEDUPED_MANIFEST_EXTRACT_ROW_WITHOUT_MATERIAL_CONTENT:${row.manifest_id}`);
+    if (row.source_disposition === "REJECTED_NOT_EVIDENCE" && (row.extraction_decision !== "NO_EXTRACT" || row.admission_tier !== "REJECTED_NOT_EVIDENCE" || row.fingerprint_extraction_eligible !== false)) throw new Error(`PHASE1_FINAL_DEDUPED_MANIFEST_NO_MATERIAL_ROW_INVALID:${row.manifest_id}`);
     if (row.legal_doc_candidate && row.extraction_scope !== "FULL_DOCUMENT") throw new Error(`PHASE1_FINAL_DEDUPED_MANIFEST_LEGAL_SCOPE_INVALID:${row.manifest_id}`);
+    if (row.legal_doc_candidate && row.fingerprint_extraction_eligible !== true) throw new Error(`PHASE1_FINAL_DEDUPED_MANIFEST_LEGAL_WITHOUT_MATERIAL_BODY:${row.manifest_id}`);
     if (row.common_root === "docs_api_data_flow" && row.admission_tier === "PRIMARY" && row.api_data_flow_signal?.present !== true) throw new Error(`PHASE1_FINAL_DEDUPED_MANIFEST_DATA_FLOW_SIGNAL_MISSING:${row.manifest_id}`);
     if (row.common_root === "technical_docs_api" && row.admission_tier === "PRIMARY" && !row.technical_route_shape) throw new Error(`PHASE1_FINAL_DEDUPED_MANIFEST_TECHNICAL_SHAPE_MISSING:${row.manifest_id}`);
   }
