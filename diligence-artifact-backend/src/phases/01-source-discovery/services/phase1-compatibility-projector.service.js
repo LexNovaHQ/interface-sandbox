@@ -199,7 +199,7 @@ function compatibilityStamp(artifactType) {
   };
 }
 
-function isValidRootArtifactName(name, root) { return name === `lossless_root__${root}` || new RegExp(`^lossless_root__${escapeRegex(root)}__part_\d{3}$`).test(name); }
+function isValidRootArtifactName(name, root) { return name === `lossless_root__${root}` || new RegExp(`^lossless_root__${escapeRegex(root)}__part_[0-9]{3}$`).test(name); }
 function isValidLegalArtifactName(name) { return /^legal_doc_(?!.*__.*__)[a-z0-9_]+(?:__[a-z0-9_-]+)?$/.test(name) && !FIXED_AGENT_1B_ARTIFACTS.includes(name); }
 function unique(values) { return [...new Set((values || []).filter(Boolean))]; }
 function escapeRegex(value) { return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
