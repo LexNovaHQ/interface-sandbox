@@ -205,7 +205,8 @@ export function assertCanonicalSelection(selection) {
     if (seen.has(decision.canonical_identity)) throw new Error(`PHASE1_CANONICAL_SELECTION_DUPLICATE_DECISION:${decision.canonical_identity}`);
     seen.add(decision.canonical_identity);
     if (decision.extraction_authorized !== EXTRACTABLE_DISPOSITIONS.has(decision.source_disposition)) throw new Error(`PHASE1_CANONICAL_SELECTION_AUTHORITY_DISPOSITION_MISMATCH:${decision.candidate_id}`);
-    if (decision.extraction_authorized && (decision.fingerprint_fetch_status !== "FETCHED" || decision.fingerprint_extraction_eligible !== true || decision.content_materiality?.status !== "MATERIAL_CONTENT" || !decision.exact_content_hash || !decision.selected_block_hashes?.length)) throw new Error(`PHASE1_CANONICAL_SELECTION_AUTHORISED_WITHOUT_MATERIAL_EVIDENCE:${decision.candidate_id}`);
+    const selectedHashesRequired = decision.extraction_scope !== "STRUCTURED_COVERAGE_ONLY";
+    if (decision.extraction_authorized && (decision.fingerprint_fetch_status !== "FETCHED" || decision.fingerprint_extraction_eligible !== true || decision.content_materiality?.status !== "MATERIAL_CONTENT" || !decision.exact_content_hash || (selectedHashesRequired && !decision.selected_block_hashes?.length))) throw new Error(`PHASE1_CANONICAL_SELECTION_AUTHORISED_WITHOUT_MATERIAL_EVIDENCE:${decision.candidate_id}`);
     if (decision.source_disposition === "REJECTED_NOT_EVIDENCE" && decision.extraction_authorized !== false) throw new Error(`PHASE1_CANONICAL_SELECTION_REJECTED_SOURCE_AUTHORISED:${decision.candidate_id}`);
     if (decision.source_disposition === "ALIAS_EXACT_DUPLICATE" && !decision.canonical_owner_candidate_id) throw new Error(`PHASE1_CANONICAL_SELECTION_DUPLICATE_OWNER_MISSING:${decision.candidate_id}`);
     if (decision.source_disposition === "LEGAL_INSTRUMENT" && decision.extraction_scope !== "FULL_DOCUMENT") throw new Error(`PHASE1_CANONICAL_SELECTION_LEGAL_SCOPE_INVALID:${decision.candidate_id}`);
