@@ -2,7 +2,8 @@ import { buildSourceExtractionArtifactSet as buildLegacySourceExtractionArtifact
 import { applySelectedExtractionScope, assertSelectedExtractionResult } from "./selected-extraction.service.js";
 import { createBlockDedupeState, dedupeExtractedSource, serialiseBlockDedupeState, assertBlockDedupeState } from "./post-extraction-block-dedupe.service.js";
 
-export const PHASE1_UNIVERSAL_EXTRACTION_SCHEMA_VERSION = "PHASE1_UNIVERSAL_EXTRACTION_RB12_v1";
+export const PHASE1_UNIVERSAL_EXTRACTION_SCHEMA_VERSION = "PHASE1_UNIVERSAL_EXTRACTION_RB18_MATERIAL_GATE_v1";
+export const NO_RETAINED_MATERIAL_ACTION = "SUPPRESS_NO_RETAINED_MATERIAL_AFTER_SCOPE";
 
 export async function buildUniversalSourceExtractionArtifactSet({ run, deduped_url_manifest } = {}) {
   const output = await buildLegacySourceExtractionArtifactSet({ run, deduped_url_manifest });
@@ -16,6 +17,7 @@ export function applyUniversalExtractionControls({ output, deduped_url_manifest 
   const retainedIndex = [];
   const suppressedIndex = [];
   const savedNames = [];
+  let noRetainedMaterialSuppressed = 0;
 
   for (const [root, entry] of Object.entries(output.source_family_index.root_artifact_manifest || {})) {
     const physicalNames = [...(entry.required_artifacts || [])];
@@ -45,6 +47,22 @@ export function applyUniversalExtractionControls({ output, deduped_url_manifest 
         extraction_scope_forensics: scoped.extraction_scope_forensics,
         extraction_warnings: scoped.extraction_warnings
       };
+
+      if (!String(scopedSource.lossless_text || "").trim()) {
+        noRetainedMaterialSuppressed += 1;
+        suppressedIndex.push({
+          ...withoutLosslessText(scopedSource),
+          extraction_status: NO_RETAINED_MATERIAL_ACTION,
+          source_disposition: "SUPPRESSED_NEAR_DUPLICATE",
+          extraction_decision: "MANIFEST_ONLY",
+          admission_tier: "CONTEXT_ONLY",
+          canonical_owner_candidate_id: manifestRow.canonical_owner_candidate_id || scopedSource.canonical_owner_candidate_id || null,
+          suppression_reason: "DECLARED_EXTRACTION_SCOPE_RETAINED_NO_BODY_OR_UNIQUE_BLOCK",
+          extraction_warnings: unique([...(scopedSource.extraction_warnings || []), "NO_RETAINED_MATERIAL_AFTER_SCOPE_SUPPRESSED_BEFORE_ASSEMBLY"])
+        });
+        continue;
+      }
+
       const deduped = dedupeExtractedSource({ root, source: scopedSource, state: blockState });
       if (deduped.action === "RETAIN") {
         retained.push(deduped.source);
@@ -79,16 +97,24 @@ export function applyUniversalExtractionControls({ output, deduped_url_manifest 
     manifest_only_index: [...(output.source_family_index.manifest_only_index || []), ...suppressedIndex],
     saved_root_artifacts: savedNames.sort(),
     block_dedupe_forensics: blockDedupe,
-    extraction_boundary: "Agent 1B extracted only rows authorised by the final RB-10 manifest, applied the declared extraction scope, preserved full legal instruments, and deduplicated non-legal blocks inside each primary logical root.",
+    post_scope_suppression_forensics: {
+      schema_version: PHASE1_UNIVERSAL_EXTRACTION_SCHEMA_VERSION,
+      rule: "EMPTY_POST_SCOPE_REPRESENTATIONS_ARE_NEVER_ASSEMBLED",
+      suppressed_count: noRetainedMaterialSuppressed,
+      source_ids: suppressedIndex.filter((row) => row.extraction_status === NO_RETAINED_MATERIAL_ACTION).map((row) => row.source_id)
+    },
+    extraction_boundary: "Agent 1B extracted only rows authorised by the final RB-10 manifest, applied the declared extraction scope, suppressed any empty post-scope representation, preserved full legal instruments, and deduplicated non-legal blocks inside each primary logical root.",
     corpus_forensics: {
       ...output.source_family_index.corpus_forensics,
       sources_extracted: retainedIndex.length,
       manifest_only_rows: (output.source_family_index.manifest_only_index || []).length + suppressedIndex.length,
+      no_retained_material_after_scope_suppressed: noRetainedMaterialSuppressed,
       exact_duplicate_sources_suppressed: blockDedupe.totals.exact_duplicate_sources_suppressed,
       block_only_duplicate_sources_suppressed: blockDedupe.totals.block_only_duplicate_sources_suppressed,
       duplicate_blocks_removed: blockDedupe.totals.duplicate_blocks_removed,
       rb11_selected_extraction_active: true,
-      rb12_block_dedupe_active: true
+      rb12_block_dedupe_active: true,
+      rb18_empty_post_scope_assembly_forbidden: true
     }
   };
   return output;
@@ -215,3 +241,4 @@ function partition(items, count) {
   return groups.filter((group) => group.length);
 }
 function withoutLosslessText(row) { const { lossless_text, ...rest } = row; return rest; }
+function unique(values) { return [...new Set((values || []).filter(Boolean))]; }
