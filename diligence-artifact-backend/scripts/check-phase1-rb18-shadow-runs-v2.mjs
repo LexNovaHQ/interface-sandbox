@@ -118,9 +118,7 @@ function buildReport(spec, discovery, extraction, handoff, network, elapsedMs) {
     ...Object.entries(networkSnapshot.lanes).filter(([, lane]) => lane.budget_exhausted).map(([lane]) => `NETWORK_BUDGET_EXHAUSTED:${lane}`)
   ]);
   const extractRows = manifest.manifest_sources.filter((row) => row.extraction_decision === "EXTRACT" && row.admission_tier === "PRIMARY");
-  const noMaterialFingerprints = (fingerprints.fingerprints || []).filter((item) => item.fetch_status === "FETCHED_NO_MATERIAL_CONTENT" || item.extraction_eligible === false && item.content_materiality?.status === "NO_MATERIAL_CONTENT");
-  const noMaterialCandidateIds = new Set(noMaterialFingerprints.map((item) => item.candidate_id));
-  const noMaterialRows = manifest.manifest_sources.filter((row) => noMaterialCandidateIds.has(row.canonical_candidate_id));
+  const noMaterialRows = manifest.manifest_sources.filter((row) => row.fingerprint_fetch_status === "FETCHED_NO_MATERIAL_CONTENT" || row.fingerprint_extraction_eligible === false && row.content_materiality?.status === "NO_MATERIAL_CONTENT");
 
   return {
     schema_version: "PHASE1_RB18_TARGET_SHADOW_REPORT_v3_MATERIAL_CONTENT_GATE",
@@ -151,7 +149,7 @@ function buildReport(spec, discovery, extraction, handoff, network, elapsedMs) {
       rule: "HTTP_SUCCESS_ALONE_NEVER_AUTHORIZES_EXTRACTION",
       material_pages_fingerprinted: fingerprints.counts?.material_content || 0,
       material_pages_authorized: extractRows.length,
-      non_material_pages_fingerprinted: noMaterialFingerprints.length,
+      non_material_pages_fingerprinted: fingerprints.counts?.fetched_no_material_content || 0,
       non_material_pages_rejected: noMaterialRows.filter((row) => row.extraction_decision !== "EXTRACT").length,
       non_material_extraction_leaks: noMaterialRows.filter((row) => row.extraction_decision === "EXTRACT").map((row) => ({ manifest_id: row.manifest_id, canonical_url: row.canonical_url })),
       authorized_rows: extractRows.map((row) => ({ manifest_id: row.manifest_id, canonical_url: row.canonical_url, extraction_scope: row.extraction_scope, fingerprint_fetch_status: row.fingerprint_fetch_status, fingerprint_extraction_eligible: row.fingerprint_extraction_eligible, content_status: row.content_materiality?.status || null })),
@@ -196,6 +194,7 @@ function validateReport(spec, discovery, extraction, handoff, report) {
   const legal = extraction.legal_doc_lossless_validation_manifest;
   const fingerprints = matrix.source_fingerprint_inventory?.fingerprints || [];
   const fingerprintsById = new Map(fingerprints.map((item) => [item.candidate_id, item]));
+  const canonicalById = new Map((matrix.canonical_url_inventory?.canonical_candidates || []).map((item) => [item.candidate_id, item]));
   assert.equal(report.production_mutations_attempted, false);
   assert.equal(report.persistence_invoked, false);
   assert.equal(manifest.final_extraction_authority, true);
@@ -221,8 +220,8 @@ function validateReport(spec, discovery, extraction, handoff, report) {
     if (/translation/i.test(`${row.canonical_url} ${row.route_type} ${row.feature_cluster}`)) assert.notEqual(row.legal_doc_type, "service_level_agreement");
     if (row.legal_doc_candidate) assert.equal(row.extraction_scope, "FULL_DOCUMENT");
     if (row.extraction_decision === "EXTRACT") {
-      const fingerprint = fingerprintsById.get(row.canonical_candidate_id);
-      assert.ok(fingerprint, `extract row missing fingerprint: ${row.manifest_id}`);
+      const fingerprint = materialFingerprintForRow(row, canonicalById, fingerprintsById);
+      assert.ok(fingerprint, `extract row missing material fingerprint trace: ${row.manifest_id}`);
       assert.equal(fingerprint.fetch_status, "FETCHED");
       assert.equal(fingerprint.extraction_eligible, true);
       assert.equal(fingerprint.content_materiality?.status, "MATERIAL_CONTENT");
@@ -251,6 +250,12 @@ function validateReport(spec, discovery, extraction, handoff, report) {
     assert.equal(ppsl.status, "SEPARATE_ENTITY_INCLUDED");
     assert.equal(ppsl.legal_capacity_merge_forbidden, true);
   }
+}
+
+function materialFingerprintForRow(row, canonicalById, fingerprintsById) {
+  const candidate = canonicalById.get(row.canonical_candidate_id);
+  const ids = unique([row.canonical_candidate_id, ...(candidate?.member_candidate_ids || [])]);
+  return ids.map((id) => fingerprintsById.get(id)).find((item) => item?.fetch_status === "FETCHED" && item?.extraction_eligible === true && item?.content_materiality?.status === "MATERIAL_CONTENT") || null;
 }
 
 function failureReport(spec, network, started, error, key) {
