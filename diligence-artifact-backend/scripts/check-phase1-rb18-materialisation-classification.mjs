@@ -4,7 +4,7 @@ import { buildLegalInstrumentClassification, assertLegalInstrumentClassification
 import { buildRootFeatureLaneClustering, assertRootFeatureLaneClustering } from "../src/phases/01-source-discovery/services/root-feature-lane-clustering.service.js";
 import { buildCanonicalSelection, assertCanonicalSelection } from "../src/phases/01-source-discovery/services/canonical-selection.service.js";
 import { buildFinalDedupedManifest, assertFinalDedupedManifest } from "../src/phases/01-source-discovery/services/final-deduped-manifest.service.js";
-import { assertFinalManifestMaterialExtractionBoundary } from "../src/phases/01-source-discovery/services/source-content-materiality.service.js";
+import { assertFinalManifestMaterialExtractionBoundary, assertExtractedSourcesContainMaterialText } from "../src/phases/01-source-discovery/services/source-content-materiality.service.js";
 
 const candidates = [
   candidate("CANON.EMPTY_SHELL", "/app"),
@@ -86,14 +86,68 @@ corruptRow.admission_tier = "PRIMARY";
 corruptRow.extraction_decision = "EXTRACT";
 assert.throws(() => assertFinalManifestMaterialExtractionBoundary(corrupted), /PHASE1_EXTRACTION_BLOCKED_NON_MATERIAL_SOURCE/);
 
+const postDedupeOutput = postDedupePhysicalFixture();
+const postDedupeResult = assertExtractedSourcesContainMaterialText(postDedupeOutput);
+assert.equal(postDedupeResult.physical_root_sources, 1);
+assert.equal(postDedupeResult.suppressed_duplicate_sources, 1);
+const corruptedPhysical = structuredClone(postDedupeOutput);
+corruptedPhysical.lossless_root__product_service.sources[0].lossless_text = "Loading. Please wait.";
+assert.throws(() => assertExtractedSourcesContainMaterialText(corruptedPhysical), /PHASE1_EXTRACTED_SOURCE_NOT_MATERIAL/);
+
 console.log(JSON.stringify({
   check: "phase1 RB18 material-content extraction gate",
   status: "PASS",
   material_pages_authorized: finalManifest.manifest_forensics.extract_rows,
   non_material_pages_rejected: finalManifest.manifest_forensics.no_material_content_rows,
   empty_legal_route_confirmed: legalShellClassification.confirmed_legal_instrument,
+  post_dedupe_physical_source_of_truth_proved: true,
+  suppressed_duplicate_reference_allowed_without_physical_text: true,
   fail_loud_boundary_proved: true
 }, null, 2));
+
+function postDedupePhysicalFixture() {
+  const materialText = "This physically retained product source contains substantive commercial evidence, operational capability, feature behavior, implementation limits, customer context, and enough distinct content to qualify as material evidence after duplicate removal.";
+  return {
+    source_family_index: {
+      discovered_source_index: [
+        { source_id: "product_service.SRC.001", common_root: "product_service" },
+        { source_id: "product_service.SRC.002", common_root: "product_service" }
+      ],
+      manifest_only_index: [{
+        source_id: "product_service.SRC.002",
+        extraction_status: "SUPPRESS_EXACT_DUPLICATE",
+        duplicate_owner_source_id: "product_service.SRC.001"
+      }],
+      root_artifact_manifest: {
+        product_service: {
+          common_root: "product_service",
+          required_artifacts: ["lossless_root__product_service"],
+          source_count: 1,
+          source_ids: ["product_service.SRC.001"]
+        }
+      },
+      block_dedupe_forensics: {
+        roots: {
+          product_service: {
+            source_forensics: [
+              { source_id: "product_service.SRC.001", action: "RETAIN" },
+              { source_id: "product_service.SRC.002", action: "SUPPRESS_EXACT_DUPLICATE", duplicate_owner_source_id: "product_service.SRC.001" }
+            ]
+          }
+        }
+      }
+    },
+    lossless_root__product_service: {
+      common_root: "product_service",
+      sources: [{
+        source_id: "product_service.SRC.001",
+        extraction_scope: "FULL_MAIN_CONTENT",
+        lossless_text: materialText
+      }]
+    },
+    legal_doc_inventory: { documents_found: [] }
+  };
+}
 
 function candidate(id, pathname) {
   const url = `https://example.test${pathname}`;
