@@ -1,12 +1,13 @@
-name: Phase 1 RB00 RB01 Validation
+name: Phase 1 Rebuild Foundation Validation
 
 on:
   pull_request:
     paths:
-      - "diligence-artifact-backend/src/phases/01-source-discovery/contracts/**"
+      - "diligence-artifact-backend/src/phases/01-source-discovery/**"
       - "diligence-artifact-backend/test/fixtures/phase1-universal-baselines/**"
       - "diligence-artifact-backend/scripts/check-phase1-public-contract-freeze.mjs"
       - "diligence-artifact-backend/scripts/check-phase1-universal-baseline-characterization.mjs"
+      - "diligence-artifact-backend/scripts/check-phase1-rb02-rb04.mjs"
       - "diligence-artifact-backend/package.json"
       - ".github/workflows/phase1-rb00-rb01.yml"
   workflow_dispatch:
@@ -41,6 +42,8 @@ jobs:
           code=$?
           cat phase1-baseline-output.log
           exit "$code"
+      - name: Validate RB02 internal model RB03 boundary RB04 discovery
+        run: npm run check:phase1-rb02-rb04
       - name: Upload Phase 1 baseline diagnostics
         if: always()
         uses: actions/upload-artifact@v4
