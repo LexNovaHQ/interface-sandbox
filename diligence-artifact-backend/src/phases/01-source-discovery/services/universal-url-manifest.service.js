@@ -4,6 +4,7 @@ import { resolveEntityBoundary, assertEntityBoundary } from "./entity-boundary.s
 import { buildInternalEvidenceModel, assertInternalEvidenceModel } from "./internal-evidence-model.service.js";
 import { buildCanonicalUrlInventory, reconcileFingerprintCanonicalHints, assertCanonicalUrlInventory } from "./canonical-url.service.js";
 import { buildSourceFingerprintPass, assertSourceFingerprintInventory } from "./source-fingerprint.service.js";
+import { normaliseSourceFingerprintEvidencePass, assertSourceFingerprintEvidenceNormalisation } from "./source-fingerprint-evidence-normalizer.service.js";
 import { buildLegalInstrumentClassification, assertLegalInstrumentClassification } from "./legal-instrument-classifier.service.js";
 import { buildRootFeatureLaneClustering, assertRootFeatureLaneClustering } from "./root-feature-lane-clustering.service.js";
 import { buildCanonicalSelection, assertCanonicalSelection } from "./canonical-selection.service.js";
@@ -37,10 +38,11 @@ export async function augmentSourceUrlManifestOutput({ run, legacyOutput, rootHt
   const initialCanonicalInventory = buildCanonicalUrlInventory({ rawDiscoveryInventory: broadDiscovery, entityBoundary });
   assertCanonicalUrlInventory(initialCanonicalInventory);
 
-  const fingerprintPass = await buildSourceFingerprintPass({
+  const fingerprintPass = normaliseSourceFingerprintEvidencePass(await buildSourceFingerprintPass({
     canonicalInventory: initialCanonicalInventory,
     fetchImpl
-  });
+  }));
+  assertSourceFingerprintEvidenceNormalisation(fingerprintPass);
   assertSourceFingerprintInventory(fingerprintPass.inventory);
 
   const canonicalInventory = reconcileFingerprintCanonicalHints({
@@ -134,6 +136,7 @@ export async function augmentSourceUrlManifestOutput({ run, legacyOutput, rootHt
       rb08_bounded_legal_classifier_active: true,
       rb09_canonical_selection_active: true,
       rb10_final_deduped_manifest_active: true,
+      rb18_empty_http_evidence_reclassification_active: true,
       manifest_selection_unchanged_until_rb09: false,
       final_manifest_controls_agent_1b: true
     },
