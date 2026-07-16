@@ -14,20 +14,24 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: phase1-rb18-shadow-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   shadow:
     runs-on: ubuntu-latest
-    timeout-minutes: 55
+    timeout-minutes: 40
     defaults:
       run:
         working-directory: diligence-artifact-backend
     env:
       NODE_OPTIONS: "--max-old-space-size=2048"
-      SOURCE_FETCH_TIMEOUT_MS: "10000"
-      LN_PHASE1_FINGERPRINT_TIMEOUT_MS: "10000"
+      SOURCE_FETCH_TIMEOUT_MS: "6000"
+      LN_PHASE1_FINGERPRINT_TIMEOUT_MS: "6000"
       LN_PHASE1_FINGERPRINT_CONCURRENCY: "4"
-      LN_PHASE1_SHADOW_MAX_NETWORK_REQUESTS: "260"
-      LN_PHASE1_SHADOW_NETWORK_TIMEOUT_MS: "10000"
+      LN_PHASE1_SHADOW_MAX_NETWORK_REQUESTS: "120"
+      LN_PHASE1_SHADOW_NETWORK_TIMEOUT_MS: "6000"
     steps:
       - name: Checkout
         uses: actions/checkout@v5
