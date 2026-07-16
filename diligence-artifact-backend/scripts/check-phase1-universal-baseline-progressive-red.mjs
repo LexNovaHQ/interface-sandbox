@@ -19,21 +19,28 @@ assert.equal(priorExitCode, 1, `future-green baseline unexpectedly exited ${prio
 assert.equal(payload.status, "FAIL", `future-green baseline did not return FAIL; output=${output}`);
 
 const failureIds = new Set((payload.failures || []).map((item) => item.id));
-const requiredRemainingFailures = [
+for (const id of ["SARVAM_ONE_LOGICAL_PRODUCT_ROOT_BELOW_800_KIB", "PAYTM_ONE_LOGICAL_PRODUCT_ROOT_BELOW_800_KIB"]) {
+  assert.ok(failureIds.has(id), `expected remaining red failure missing: ${id}`);
+}
+
+const repaired = [
+  "LEGAL_TOKEN_BOUNDARY_TRANSLATION_NOT_SLA",
   "SARVAM_EXACT_CONTENT_DEDUPE",
   "SARVAM_FEATURE_METADATA_PROPAGATION",
-  "SARVAM_ONE_LOGICAL_PRODUCT_ROOT_BELOW_800_KIB",
-  "PAYTM_ONE_LOGICAL_PRODUCT_ROOT_BELOW_800_KIB",
+  "SARVAM_VARIANT_SCOPE_CONTROL",
+  "PAYTM_TEMPLATE_VARIANTS_NOT_FULL_EXTRACTED",
   "PAYTM_ENTITY_ID_PROPAGATION",
-  "PAYTM_LEGAL_ENTITY_SEPARATION"
+  "PAYTM_LEGAL_ENTITY_SEPARATION",
+  "PAYTM_SECONDARY_ROOT_REFERENCES",
+  "PAYTM_AI_OVERLAY_RELATIONSHIP_PROPAGATION",
+  "LEGAL_ARTIFACT_ENTITY_PROVENANCE"
 ];
-for (const id of requiredRemainingFailures) assert.ok(failureIds.has(id), `expected remaining red failure missing: ${id}`);
-assert.equal(failureIds.has("LEGAL_TOKEN_BOUNDARY_TRANSLATION_NOT_SLA"), false, "RB-08 regression: translation again false-matches SLA");
+for (const id of repaired) assert.equal(failureIds.has(id), false, `RB09-RB12 regression remains red: ${id}`);
 
 originalLog(JSON.stringify({
   check: "phase1 universal baseline progressive expected-red characterization",
   status: "EXPECTED_RED_CONFIRMED",
-  repaired_failure_ids: ["LEGAL_TOKEN_BOUNDARY_TRANSLATION_NOT_SLA"],
+  repaired_failure_ids: repaired,
   remaining_failure_count: failureIds.size,
   remaining_failure_ids: [...failureIds].sort()
 }, null, 2));
