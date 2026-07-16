@@ -6,8 +6,8 @@ import {
   assertBlockDedupeState
 } from "../src/phases/01-source-discovery/services/post-extraction-block-dedupe.service.js";
 
-const repeatedBlock = "This material evidence block explains the same operational capability, customer workflow, technical availability and commercial scope in sufficient detail for analysis.";
-const distinctBlock = "This second material block provides a distinct limitation, governance control, supported boundary and implementation condition for the same product surface.";
+const repeatedBlock = `Canonical product evidence ${"capability workflow availability scope implementation ".repeat(22)}`.trim();
+const distinctBlock = `Distinct governance evidence ${"limitation control review verification condition exception ".repeat(22)}`.trim();
 const state = createBlockDedupeState();
 const result = dedupeExtractedSource({
   root: "homepage_landing",
