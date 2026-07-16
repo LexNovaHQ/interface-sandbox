@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - "diligence-artifact-backend/src/phases/01-source-discovery/**"
+      - "diligence-artifact-backend/src/runtime/services/storage/drive.service.js"
+      - "diligence-artifact-backend/src/runtime/services/storage/firestore.service.js"
       - "diligence-artifact-backend/test/fixtures/phase1-universal-baselines/**"
       - "diligence-artifact-backend/scripts/check-phase1-*.mjs"
       - "diligence-artifact-backend/package.json"
@@ -45,6 +47,10 @@ jobs:
         run: npm run check:phase1-rb09-rb12
       - name: Validate RB13 logical roots RB14 legal artifacts RB15 compatibility projection
         run: npm run check:phase1-rb13-rb15
+      - name: Validate RB16 idempotent persistence
+        run: node scripts/check-phase1-rb16-idempotent-persistence.mjs
+      - name: Validate RB17 consolidated behavioural gate
+        run: node scripts/check-phase1-behavioural-validators.mjs
       - name: Upload Phase 1 baseline diagnostics
         if: always()
         uses: actions/upload-artifact@v4
