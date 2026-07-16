@@ -34,8 +34,9 @@ const targets = [
 await fs.rm(OUTPUT_DIR, { recursive: true, force: true });
 await fs.mkdir(OUTPUT_DIR, { recursive: true });
 const summary = {
-  schema_version: "PHASE1_RB18_SHADOW_RUNS_v2",
+  schema_version: "PHASE1_RB18_SHADOW_RUNS_v3_MATERIAL_CONTENT_GATE",
   mode: "READ_ONLY_NO_PERSISTENCE",
+  material_content_rule: "ONLY_MATERIAL_PAGES_MAY_RECEIVE_EXTRACTION_AUTHORITY",
   production_matter_created: false,
   production_matter_advanced: false,
   persistence_invoked: false,
@@ -68,7 +69,7 @@ for (const spec of targets) {
     globalThis.fetch = originalFetch;
   }
   await fs.writeFile(path.join(OUTPUT_DIR, `${spec.id}.shadow.json`), `${JSON.stringify(report, null, 2)}\n`);
-  summary.targets.push({ target_id: spec.id, status: report.status, elapsed_ms: report.elapsed_ms, report_file: `${spec.id}.shadow.json`, limitations: report.limitations || [], validation_error: report.validation_error || null, pipeline_error: report.pipeline_error || null });
+  summary.targets.push({ target_id: spec.id, status: report.status, elapsed_ms: report.elapsed_ms, report_file: `${spec.id}.shadow.json`, limitations: report.limitations || [], validation_error: report.validation_error || null, pipeline_error: report.pipeline_error || null, material_pages_authorized: report.material_content_authority?.material_pages_authorized || 0, non_material_pages_rejected: report.material_content_authority?.non_material_pages_rejected || 0 });
   console.log(`[RB-18] finish ${spec.id}: ${report.status}`);
 }
 
@@ -113,12 +114,16 @@ function buildReport(spec, discovery, extraction, handoff, network, elapsedMs) {
   const limitations = unique([
     ...(manifest.scout_failures || []).length ? [`SCOUT_FAILURES:${manifest.scout_failures.length}`] : [],
     fingerprints.counts?.failed ? [`FINGERPRINT_FAILURES:${fingerprints.counts.failed}`] : [],
-    fingerprints.counts?.successful_http_empty_pages_reclassified ? [`EMPTY_HTTP_PAGES_RECLASSIFIED:${fingerprints.counts.successful_http_empty_pages_reclassified}`] : [],
+    fingerprints.counts?.fetched_no_material_content ? [`NO_MATERIAL_CONTENT_PAGES:${fingerprints.counts.fetched_no_material_content}`] : [],
     ...Object.entries(networkSnapshot.lanes).filter(([, lane]) => lane.budget_exhausted).map(([lane]) => `NETWORK_BUDGET_EXHAUSTED:${lane}`)
   ]);
+  const extractRows = manifest.manifest_sources.filter((row) => row.extraction_decision === "EXTRACT" && row.admission_tier === "PRIMARY");
+  const noMaterialFingerprints = (fingerprints.fingerprints || []).filter((item) => item.fetch_status === "FETCHED_NO_MATERIAL_CONTENT" || item.extraction_eligible === false && item.content_materiality?.status === "NO_MATERIAL_CONTENT");
+  const noMaterialCandidateIds = new Set(noMaterialFingerprints.map((item) => item.candidate_id));
+  const noMaterialRows = manifest.manifest_sources.filter((row) => noMaterialCandidateIds.has(row.canonical_candidate_id));
 
   return {
-    schema_version: "PHASE1_RB18_TARGET_SHADOW_REPORT_v2",
+    schema_version: "PHASE1_RB18_TARGET_SHADOW_REPORT_v3_MATERIAL_CONTENT_GATE",
     target_id: spec.id,
     target_url: spec.url,
     mode: "READ_ONLY_NO_PERSISTENCE",
@@ -141,6 +146,16 @@ function buildReport(spec, discovery, extraction, handoff, network, elapsedMs) {
       manifest_only_sources: sourceIndex.manifest_only_index?.length || 0,
       duplicate_blocks_removed: sourceIndex.block_dedupe_forensics?.totals?.duplicate_blocks_removed || 0,
       exact_duplicate_sources_suppressed: sourceIndex.block_dedupe_forensics?.totals?.exact_duplicate_sources_suppressed || 0
+    },
+    material_content_authority: {
+      rule: "HTTP_SUCCESS_ALONE_NEVER_AUTHORIZES_EXTRACTION",
+      material_pages_fingerprinted: fingerprints.counts?.material_content || 0,
+      material_pages_authorized: extractRows.length,
+      non_material_pages_fingerprinted: noMaterialFingerprints.length,
+      non_material_pages_rejected: noMaterialRows.filter((row) => row.extraction_decision !== "EXTRACT").length,
+      non_material_extraction_leaks: noMaterialRows.filter((row) => row.extraction_decision === "EXTRACT").map((row) => ({ manifest_id: row.manifest_id, canonical_url: row.canonical_url })),
+      authorized_rows: extractRows.map((row) => ({ manifest_id: row.manifest_id, canonical_url: row.canonical_url, extraction_scope: row.extraction_scope, fingerprint_fetch_status: row.fingerprint_fetch_status, fingerprint_extraction_eligible: row.fingerprint_extraction_eligible, content_status: row.content_materiality?.status || null })),
+      rejected_rows: noMaterialRows.map((row) => ({ manifest_id: row.manifest_id, canonical_url: row.canonical_url, source_disposition: row.source_disposition, extraction_decision: row.extraction_decision, limitation: row.tier_reason }))
     },
     entity_boundary: {
       primary_entity_id: matrix.target_boundary_manifest?.primary_entity_id || null,
@@ -179,15 +194,20 @@ function validateReport(spec, discovery, extraction, handoff, report) {
   const manifest = discovery.deduped_url_manifest;
   const matrix = discovery.source_discovery_matrix_manifest;
   const legal = extraction.legal_doc_lossless_validation_manifest;
+  const fingerprints = matrix.source_fingerprint_inventory?.fingerprints || [];
+  const fingerprintsById = new Map(fingerprints.map((item) => [item.candidate_id, item]));
   assert.equal(report.production_mutations_attempted, false);
   assert.equal(report.persistence_invoked, false);
   assert.equal(manifest.final_extraction_authority, true);
+  assert.equal(manifest.material_content_required_for_extraction, true);
   assert.ok(report.before_selection.raw_candidates > 0, "no live discovery candidates");
   assert.ok(report.before_selection.fingerprints.fetched > 0, "no live material fingerprint");
   assert.ok(report.after_selection.final_manifest_rows > 0, "empty final manifest");
   assert.ok(report.after_selection.extraction_rows > 0, "no selected extraction rows");
   assert.ok(report.after_selection.retained_sources > 0, "no retained source rows");
   assert.ok(report.root_assembly.populated_roots > 0, "no populated logical roots");
+  assert.equal(report.material_content_authority.non_material_extraction_leaks.length, 0, "non-material page received extraction authority");
+  assert.ok(report.material_content_authority.material_pages_authorized > 0, "no material page authorized");
   assert.ok(String(report.compatibility.handoff_status).startsWith("LOCKED"));
   assert.equal(report.compatibility.domain_gate_allowed, true);
   assert.equal(report.compatibility.downstream_consumer_edit_required, false);
@@ -200,6 +220,23 @@ function validateReport(spec, discovery, extraction, handoff, report) {
   for (const row of manifest.manifest_sources) {
     if (/translation/i.test(`${row.canonical_url} ${row.route_type} ${row.feature_cluster}`)) assert.notEqual(row.legal_doc_type, "service_level_agreement");
     if (row.legal_doc_candidate) assert.equal(row.extraction_scope, "FULL_DOCUMENT");
+    if (row.extraction_decision === "EXTRACT") {
+      const fingerprint = fingerprintsById.get(row.canonical_candidate_id);
+      assert.ok(fingerprint, `extract row missing fingerprint: ${row.manifest_id}`);
+      assert.equal(fingerprint.fetch_status, "FETCHED");
+      assert.equal(fingerprint.extraction_eligible, true);
+      assert.equal(fingerprint.content_materiality?.status, "MATERIAL_CONTENT");
+      assert.equal(row.fingerprint_fetch_status, "FETCHED");
+      assert.equal(row.fingerprint_extraction_eligible, true);
+      assert.equal(row.content_materiality?.status, "MATERIAL_CONTENT");
+      assert.ok(row.exact_content_hash);
+      if (row.extraction_scope !== "STRUCTURED_COVERAGE_ONLY") assert.ok(row.selected_block_hashes?.length > 0);
+    }
+    if (row.fingerprint_fetch_status === "FETCHED_NO_MATERIAL_CONTENT" || row.content_materiality?.status === "NO_MATERIAL_CONTENT") {
+      assert.notEqual(row.extraction_decision, "EXTRACT");
+      assert.equal(row.extraction_authorized_by_canonical_selection, false);
+      assert.equal(row.legal_doc_candidate, false);
+    }
   }
   for (const root of report.root_assembly.roots.filter((item) => item.source_count > 0)) {
     assert.equal(root.source_count_sharding_forbidden, true);
@@ -217,7 +254,7 @@ function validateReport(spec, discovery, extraction, handoff, report) {
 }
 
 function failureReport(spec, network, started, error, key) {
-  return { schema_version: "PHASE1_RB18_TARGET_SHADOW_REPORT_v2", target_id: spec.id, target_url: spec.url, status: "FAIL", [key]: error?.stack || error?.message || String(error), network: network.snapshot(), elapsed_ms: Date.now() - started, production_mutations_attempted: false, persistence_invoked: false };
+  return { schema_version: "PHASE1_RB18_TARGET_SHADOW_REPORT_v3_MATERIAL_CONTENT_GATE", target_id: spec.id, target_url: spec.url, status: "FAIL", [key]: error?.stack || error?.message || String(error), network: network.snapshot(), elapsed_ms: Date.now() - started, production_mutations_attempted: false, persistence_invoked: false };
 }
 function target(id, runId, url, allowedHosts, packages, entitySurfaces) {
   return { id, run_id: runId, url, allowed_hosts: allowedHosts, entity_surfaces: entitySurfaces, preflight: { domain_selection_profile: { provisional_primary_domain_candidates: packages.map((package_id) => ({ package_id })), provisional_capability_overlay_candidates: packages.includes("ai-native") ? [{ package_id: "ai-native" }] : [], provisional_regulatory_overlay_candidates: [{ package_id: "privacy" }] } } };
