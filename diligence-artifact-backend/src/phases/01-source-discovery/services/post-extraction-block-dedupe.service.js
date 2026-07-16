@@ -59,11 +59,18 @@ export function dedupeExtractedSource({ root, source, state } = {}) {
   const blocks = splitMeaningfulBlocks(text);
   const retained = [];
   const duplicateBlocks = [];
+  const hashesRetainedInsideSource = new Set();
   for (const block of blocks) {
     const hash = hashBlock(block);
     const owner = rootState.block_hash_owners.get(hash);
-    if (owner) duplicateBlocks.push({ sha256: hash, owner_source_id: owner });
-    else retained.push({ text: block, sha256: hash });
+    if (owner) {
+      duplicateBlocks.push({ sha256: hash, owner_source_id: owner, duplicate_scope: "PRIOR_SOURCE_IN_ROOT" });
+    } else if (hashesRetainedInsideSource.has(hash)) {
+      duplicateBlocks.push({ sha256: hash, owner_source_id: source.source_id, duplicate_scope: "REPEATED_INSIDE_SOURCE" });
+    } else {
+      retained.push({ text: block, sha256: hash });
+      hashesRetainedInsideSource.add(hash);
+    }
   }
 
   state.totals.duplicate_blocks_removed += duplicateBlocks.length;
@@ -104,6 +111,7 @@ export function dedupeExtractedSource({ root, source, state } = {}) {
       duplicate_block_count: duplicateBlocks.length,
       retained_block_hashes: retained.map((item) => item.sha256),
       duplicate_blocks: duplicateBlocks,
+      repeated_inside_source_blocks_removed: duplicateBlocks.filter((item) => item.duplicate_scope === "REPEATED_INSIDE_SOURCE").length,
       content_changed_by_block_dedupe: duplicateBlocks.length > 0,
       primary_owner_root: root
     }
@@ -136,7 +144,10 @@ export function assertBlockDedupeState(serialised) {
   for (const [root, entry] of Object.entries(serialised.roots || {})) {
     const retainedHashes = new Set();
     for (const source of entry.source_forensics || []) {
+      const localHashes = new Set();
       for (const hash of source.retained_block_hashes || []) {
+        if (localHashes.has(hash)) throw new Error(`PHASE1_BLOCK_DEDUPE_DUPLICATE_HASH_INSIDE_SOURCE:${root}:${source.source_id}:${hash}`);
+        localHashes.add(hash);
         if (retainedHashes.has(hash)) throw new Error(`PHASE1_BLOCK_DEDUPE_DUPLICATE_RETAINED_HASH:${root}:${hash}`);
         retainedHashes.add(hash);
       }
