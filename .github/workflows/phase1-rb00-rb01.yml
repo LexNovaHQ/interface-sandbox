@@ -31,5 +31,7 @@ jobs:
           cache-dependency-path: diligence-artifact-backend/package-lock.json
       - name: Install locked dependencies
         run: npm ci
-      - name: Validate frozen public contract and expected-red baselines
-        run: npm run check:phase1-rb00-rb01
+      - name: Validate frozen public contract
+        run: npm run check:phase1-contract-freeze
+      - name: Confirm current implementation fails locked baselines
+        run: npm run check:phase1-universal-baseline:red
