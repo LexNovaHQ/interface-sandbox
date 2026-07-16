@@ -10,7 +10,8 @@ const checks = [
   { category: "selection_manifest_and_dedupe_integrity", script: "check-phase1-rb09-rb12.mjs" },
   { category: "artifact_assembly_legal_separation_and_compatibility", script: "check-phase1-rb13-rb15.mjs" },
   { category: "persistence_integrity", script: "check-phase1-rb16-idempotent-persistence.mjs" },
-  { category: "live_http_materialisation_integrity", script: "check-phase1-rb18-materialisation-classification.mjs" }
+  { category: "live_http_materialisation_integrity", script: "check-phase1-rb18-materialisation-classification.mjs" },
+  { category: "intra_source_block_ownership_integrity", script: "check-phase1-rb18-intra-source-block-dedupe.mjs" }
 ];
 
 const results = [];
