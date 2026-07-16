@@ -89,7 +89,7 @@ assert.throws(() => assertFinalManifestMaterialExtractionBoundary(corrupted), /P
 const postDedupeOutput = postDedupePhysicalFixture();
 const postDedupeResult = assertExtractedSourcesContainMaterialText(postDedupeOutput);
 assert.equal(postDedupeResult.physical_root_sources, 1);
-assert.equal(postDedupeResult.suppressed_duplicate_sources, 1);
+assert.equal(postDedupeResult.suppressed_nonphysical_sources, 2);
 const corruptedPhysical = structuredClone(postDedupeOutput);
 corruptedPhysical.lossless_root__product_service.sources[0].lossless_text = "Loading. Please wait.";
 assert.throws(() => assertExtractedSourcesContainMaterialText(corruptedPhysical), /PHASE1_EXTRACTED_SOURCE_NOT_MATERIAL/);
@@ -102,6 +102,7 @@ console.log(JSON.stringify({
   empty_legal_route_confirmed: legalShellClassification.confirmed_legal_instrument,
   post_dedupe_physical_source_of_truth_proved: true,
   suppressed_duplicate_reference_allowed_without_physical_text: true,
+  empty_post_scope_source_suppressed_before_assembly: true,
   fail_loud_boundary_proved: true
 }, null, 2));
 
@@ -111,13 +112,22 @@ function postDedupePhysicalFixture() {
     source_family_index: {
       discovered_source_index: [
         { source_id: "product_service.SRC.001", common_root: "product_service" },
-        { source_id: "product_service.SRC.002", common_root: "product_service" }
+        { source_id: "product_service.SRC.002", common_root: "product_service" },
+        { source_id: "product_service.SRC.003", common_root: "product_service" }
       ],
-      manifest_only_index: [{
-        source_id: "product_service.SRC.002",
-        extraction_status: "SUPPRESS_EXACT_DUPLICATE",
-        duplicate_owner_source_id: "product_service.SRC.001"
-      }],
+      manifest_only_index: [
+        {
+          source_id: "product_service.SRC.002",
+          extraction_status: "SUPPRESS_EXACT_DUPLICATE",
+          duplicate_owner_source_id: "product_service.SRC.001"
+        },
+        {
+          source_id: "product_service.SRC.003",
+          extraction_status: "SUPPRESS_NO_RETAINED_MATERIAL_AFTER_SCOPE",
+          canonical_owner_candidate_id: "CANON.OWNER",
+          suppression_reason: "DECLARED_EXTRACTION_SCOPE_RETAINED_NO_BODY_OR_UNIQUE_BLOCK"
+        }
+      ],
       root_artifact_manifest: {
         product_service: {
           common_root: "product_service",
