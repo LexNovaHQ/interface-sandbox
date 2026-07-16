@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import { canonicalizeUrl } from "./canonical-url.service.js";
+import { assessSourceContentMateriality, assertSourceContentMateriality } from "./source-content-materiality.service.js";
 
 export const PHASE1_SOURCE_FINGERPRINT_SCHEMA_VERSION = "PHASE1_SOURCE_FINGERPRINT_INVENTORY_v1";
 
@@ -7,11 +8,15 @@ const CRAWLABLE_ENTITY_STATUSES = new Set(["PRIMARY_TARGET", "CONTROLLED_OPERATI
 const DEFAULT_TIMEOUT_MS = positiveInt(process.env.LN_PHASE1_FINGERPRINT_TIMEOUT_MS, 12000);
 const DEFAULT_CONCURRENCY = positiveInt(process.env.LN_PHASE1_FINGERPRINT_CONCURRENCY, 6);
 const MAX_FINGERPRINT_BYTES = positiveInt(process.env.LN_PHASE1_FINGERPRINT_MAX_BYTES, 1500000);
+const MATERIAL_FETCH_STATUS = "FETCHED";
+const NO_MATERIAL_FETCH_STATUS = "FETCHED_NO_MATERIAL_CONTENT";
 
 /**
  * RB-06 lightweight content pass. Each canonical source candidate is fetched at
  * most once inside this pass. The serialised inventory stores only fingerprints
  * and bounded excerpts; complete analysis text stays in the run-local cache.
+ * A successful HTTP response is not extractable unless the material-content gate
+ * confirms a substantive body after boilerplate removal.
  */
 export async function buildSourceFingerprintPass({ canonicalInventory, fetchImpl = globalThis.fetch, fetchCache = new Map(), timeoutMs = DEFAULT_TIMEOUT_MS, concurrency = DEFAULT_CONCURRENCY } = {}) {
   const candidates = canonicalInventory?.canonical_candidates || [];
@@ -30,18 +35,25 @@ export async function buildSourceFingerprintPass({ canonicalInventory, fetchImpl
 
   await Promise.all(Array.from({ length: Math.max(1, Math.min(concurrency, candidates.length || 1)) }, () => worker()));
   const serialised = fingerprints.filter(Boolean).sort((a, b) => String(a.candidate_id).localeCompare(String(b.candidate_id)));
+  const hasFetchLimitations = serialised.some((item) => item.fetch_status === "FETCH_FAILED");
+  const hasContentLimitations = serialised.some((item) => item.fetch_status === NO_MATERIAL_FETCH_STATUS);
   const inventory = {
     schema_version: PHASE1_SOURCE_FINGERPRINT_SCHEMA_VERSION,
-    status: serialised.some((item) => item.fetch_status === "FETCH_FAILED") ? "COMPLETE_WITH_FETCH_LIMITATIONS" : "COMPLETE",
+    status: hasFetchLimitations ? "COMPLETE_WITH_FETCH_LIMITATIONS" : hasContentLimitations ? "COMPLETE_WITH_CONTENT_LIMITATIONS" : "COMPLETE",
     model_usage: "NONE",
     pass_type: "LIGHTWEIGHT_CONTENT_FINGERPRINT_NOT_FINAL_EXTRACTION",
     fetch_once_per_candidate_inside_pass: true,
+    http_success_is_not_material_evidence: true,
+    material_content_required_for_extraction: true,
     final_extraction_authority: false,
     full_analysis_text_persisted: false,
     counts: {
       canonical_candidates_read: candidates.length,
       fingerprints_created: serialised.length,
-      fetched: serialised.filter((item) => item.fetch_status === "FETCHED").length,
+      fetched: serialised.filter((item) => item.fetch_status === MATERIAL_FETCH_STATUS).length,
+      material_content: serialised.filter((item) => item.extraction_eligible === true).length,
+      fetched_no_material_content: serialised.filter((item) => item.fetch_status === NO_MATERIAL_FETCH_STATUS).length,
+      extraction_eligible: serialised.filter((item) => item.extraction_eligible === true).length,
       skipped_by_entity_boundary: serialised.filter((item) => item.fetch_status === "SKIPPED_ENTITY_BOUNDARY").length,
       failed: serialised.filter((item) => item.fetch_status === "FETCH_FAILED").length,
       exact_content_hashes: new Set(serialised.map((item) => item.exact_content_hash).filter(Boolean)).size,
@@ -55,13 +67,26 @@ export async function buildSourceFingerprintPass({ canonicalInventory, fetchImpl
 export function assertSourceFingerprintInventory(inventory) {
   if (inventory?.schema_version !== PHASE1_SOURCE_FINGERPRINT_SCHEMA_VERSION) throw new Error("PHASE1_SOURCE_FINGERPRINT_SCHEMA_INVALID");
   if (inventory.model_usage !== "NONE" || inventory.final_extraction_authority !== false || inventory.full_analysis_text_persisted !== false) throw new Error("PHASE1_SOURCE_FINGERPRINT_BOUNDARY_INVALID");
+  if (inventory.http_success_is_not_material_evidence !== true || inventory.material_content_required_for_extraction !== true) throw new Error("PHASE1_SOURCE_FINGERPRINT_MATERIALITY_POLICY_MISSING");
   const seen = new Set();
   for (const item of inventory.fingerprints || []) {
     if (!item.candidate_id || !item.canonical_identity || !item.fetch_status) throw new Error("PHASE1_SOURCE_FINGERPRINT_RECORD_INCOMPLETE");
     if (seen.has(item.candidate_id)) throw new Error(`PHASE1_SOURCE_FINGERPRINT_DUPLICATE_CANDIDATE:${item.candidate_id}`);
     seen.add(item.candidate_id);
-    if (item.fetch_status === "FETCHED" && (!item.exact_content_hash || !item.template_signature || !Array.isArray(item.block_hashes))) throw new Error(`PHASE1_SOURCE_FINGERPRINT_FETCHED_RECORD_INCOMPLETE:${item.candidate_id}`);
+
+    if (item.fetch_status === MATERIAL_FETCH_STATUS) {
+      if (item.extraction_eligible !== true || item.content_materiality?.status !== "MATERIAL_CONTENT") throw new Error(`PHASE1_SOURCE_FINGERPRINT_MATERIAL_STATUS_INVALID:${item.candidate_id}`);
+      if (!item.exact_content_hash || !item.template_signature || !Array.isArray(item.block_hashes) || item.block_hashes.length === 0) throw new Error(`PHASE1_SOURCE_FINGERPRINT_FETCHED_RECORD_INCOMPLETE:${item.candidate_id}`);
+      assertSourceContentMateriality(item.content_materiality);
+    } else if (item.fetch_status === NO_MATERIAL_FETCH_STATUS) {
+      if (item.extraction_eligible !== false || item.content_materiality?.status !== "NO_MATERIAL_CONTENT") throw new Error(`PHASE1_SOURCE_FINGERPRINT_NO_MATERIAL_STATUS_INVALID:${item.candidate_id}`);
+      if (item.exact_content_hash !== null || !Array.isArray(item.block_hashes) || item.block_hashes.length !== 0) throw new Error(`PHASE1_SOURCE_FINGERPRINT_NO_MATERIAL_EVIDENCE_LEAK:${item.candidate_id}`);
+      assertSourceContentMateriality(item.content_materiality);
+    } else if (item.extraction_eligible === true) {
+      throw new Error(`PHASE1_SOURCE_FINGERPRINT_NON_FETCHED_MARKED_ELIGIBLE:${item.candidate_id}`);
+    }
   }
+  if ((inventory.counts?.extraction_eligible || 0) !== (inventory.fingerprints || []).filter((item) => item.fetch_status === MATERIAL_FETCH_STATUS && item.extraction_eligible === true).length) throw new Error("PHASE1_SOURCE_FINGERPRINT_ELIGIBILITY_COUNT_MISMATCH");
   return { ok: true, fingerprints: seen.size };
 }
 
@@ -76,6 +101,7 @@ async function fingerprintCandidate({ candidate, fetchImpl, fetchCache, timeoutM
     entity_status: candidate.entity_status,
     canonical_url: candidate.canonical_url,
     fetch_url: candidate.fetch_url,
+    extraction_eligible: false,
     final_extraction_authority: false
   };
 
@@ -96,25 +122,11 @@ async function fingerprintCandidate({ candidate, fetchImpl, fetchCache, timeoutM
   const parsed = parseDocument(fetched.raw_text, fetched.content_type, fetched.final_url || candidate.fetch_url);
   const boundedText = parsed.main_text.slice(0, MAX_FINGERPRINT_BYTES);
   const blocks = splitMeaningfulBlocks(boundedText);
-  const blockHashes = blocks.map((text, index) => ({ block_index: index + 1, sha256: sha256(normalizeForHash(text)), character_count: text.length }));
-  const exactContentHash = boundedText ? sha256(normalizeForHash(boundedText)) : null;
-  const shingles = buildShingleHashes(boundedText);
+  const contentMateriality = assessSourceContentMateriality({ text: boundedText, blocks });
+  assertSourceContentMateriality(contentMateriality);
   const structureSignals = detectStructureSignals(`${parsed.title}\n${parsed.headings.join("\n")}\n${boundedText}`);
-
-  analysisCache.set(candidate.candidate_id, {
-    main_text: boundedText,
-    blocks,
-    normalized_text: normalizeForHash(boundedText),
-    token_set: new Set(tokenize(boundedText)),
-    structure_signals: structureSignals,
-    title: parsed.title,
-    headings: parsed.headings,
-    meta_description: parsed.meta_description
-  });
-
-  return {
+  const common = {
     ...base,
-    fetch_status: "FETCHED",
     http_status: fetched.http_status,
     response_url: fetched.final_url,
     content_type: fetched.content_type,
@@ -126,6 +138,45 @@ async function fingerprintCandidate({ candidate, fetchImpl, fetchCache, timeoutM
     headings: parsed.headings.slice(0, 80),
     document_date: parsed.document_date,
     canonical_link: parsed.canonical_link,
+    template_signature: templateSignature(candidate.canonical_url),
+    boilerplate_removed: parsed.boilerplate_removed,
+    legal_structure_signals: structureSignals,
+    analysis_text_persisted_in_full: false,
+    content_materiality: contentMateriality
+  };
+
+  if (!contentMateriality.extraction_eligible) return {
+    ...common,
+    fetch_status: NO_MATERIAL_FETCH_STATUS,
+    extraction_eligible: false,
+    limitation: "NO_MATERIAL_CONTENT_AFTER_BOILERPLATE_REMOVAL",
+    exact_content_hash: null,
+    block_hashes: [],
+    near_duplicate_signature: { shingle_size: 3, distinct_shingle_count: 0, sampled_hashes: [] },
+    analysis_excerpt: "",
+    warnings: unique([...(parsed.warnings || []), "NO_MATERIAL_CONTENT_NOT_EXTRACTION_ELIGIBLE"])
+  };
+
+  const blockHashes = blocks.map((text, index) => ({ block_index: index + 1, sha256: sha256(normalizeForHash(text)), character_count: text.length }));
+  const exactContentHash = sha256(normalizeForHash(boundedText));
+  const shingles = buildShingleHashes(boundedText);
+
+  analysisCache.set(candidate.candidate_id, {
+    main_text: boundedText,
+    blocks,
+    normalized_text: normalizeForHash(boundedText),
+    token_set: new Set(tokenize(boundedText)),
+    structure_signals: structureSignals,
+    title: parsed.title,
+    headings: parsed.headings,
+    meta_description: parsed.meta_description,
+    content_materiality: contentMateriality
+  });
+
+  return {
+    ...common,
+    fetch_status: MATERIAL_FETCH_STATUS,
+    extraction_eligible: true,
     exact_content_hash: exactContentHash,
     block_hashes: blockHashes,
     near_duplicate_signature: {
@@ -133,11 +184,7 @@ async function fingerprintCandidate({ candidate, fetchImpl, fetchCache, timeoutM
       distinct_shingle_count: shingles.length,
       sampled_hashes: shingles.slice(0, 96)
     },
-    template_signature: templateSignature(candidate.canonical_url),
-    boilerplate_removed: parsed.boilerplate_removed,
-    legal_structure_signals: structureSignals,
     analysis_excerpt: boundedText.slice(0, 4000),
-    analysis_text_persisted_in_full: false,
     warnings: parsed.warnings
   };
 }
@@ -283,3 +330,4 @@ function tokenize(value) { return normalizeForHash(value).split(/[^a-z0-9]+/).fi
 function sha256(value) { return crypto.createHash("sha256").update(String(value || "")).digest("hex"); }
 function stableId(prefix, value) { return `${prefix}.${sha256(value).slice(0, 16)}`; }
 function positiveInt(value, fallback) { const parsed = Number.parseInt(value, 10); return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback; }
+function unique(values) { return [...new Set((values || []).filter(Boolean))]; }
