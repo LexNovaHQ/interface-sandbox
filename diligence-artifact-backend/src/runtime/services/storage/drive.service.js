@@ -4,6 +4,20 @@ import { config } from "../runtime-config.service.js";
 import { getDriveClient } from "./google.service.js";
 
 const FOLDER_MIME = "application/vnd.google-apps.folder";
+const JSON_MIME = "application/json";
+const JSON_PERSISTENCE_SCHEMA = "IDEMPOTENT_JSON_ARTIFACT_v1";
+const VOLATILE_HASH_FIELDS = new Set([
+  "generated_at",
+  "created_at",
+  "updated_at",
+  "persisted_at",
+  "saved_at",
+  "fetched_at",
+  "fingerprinted_at",
+  "checked_at",
+  "started_at",
+  "completed_at"
+]);
 
 async function streamToString(stream) {
   let out = "";
@@ -75,33 +89,66 @@ export async function ensureDriveFolder({ parent_folder_id, name }) {
   };
 }
 
-export async function saveJsonArtifactToDrive({ run_id, artifact_name, version, drive_folder_id, artifact }) {
-  const drive = getDriveClient();
+export async function saveJsonArtifactToDrive({ run_id, artifact_name, version, drive_folder_id, artifact, drive_client = null }) {
+  const drive = drive_client || getDriveClient();
   const filename = `${artifact_name}_v${version}.json`;
-  const payload = { run_id, artifact_name, version, artifact };
+  const semanticHash = semanticJsonArtifactHash({ run_id, artifact_name, artifact });
+  const payload = { run_id, artifact_name, version, semantic_hash: semanticHash, artifact };
   const json = `${JSON.stringify(payload, null, 2)}\n`;
+  const matches = await findJsonArtifactFiles({ drive, drive_folder_id, filename });
+
+  if (matches.length > 1) throw new Error(`DRIVE_JSON_ARTIFACT_DUPLICATE:${drive_folder_id}:${filename}`);
+  if (matches.length === 1) {
+    const existing = matches[0];
+    if (existing.appProperties?.semantic_hash === semanticHash) {
+      return driveJsonResult(existing, json, semanticHash, "REUSED");
+    }
+    const updated = await drive.files.update({
+      fileId: existing.id,
+      supportsAllDrives: true,
+      requestBody: {
+        name: filename,
+        mimeType: JSON_MIME,
+        appProperties: jsonArtifactAppProperties({ run_id, artifact_name, semanticHash })
+      },
+      media: {
+        mimeType: JSON_MIME,
+        body: Readable.from([json])
+      },
+      fields: "id,name,webViewLink,size,driveId,appProperties"
+    });
+    return driveJsonResult(updated.data, json, semanticHash, "UPDATED");
+  }
 
   const created = await drive.files.create({
     supportsAllDrives: true,
     requestBody: {
       name: filename,
-      mimeType: "application/json",
-      parents: [drive_folder_id]
+      mimeType: JSON_MIME,
+      parents: [drive_folder_id],
+      appProperties: jsonArtifactAppProperties({ run_id, artifact_name, semanticHash })
     },
     media: {
-      mimeType: "application/json",
+      mimeType: JSON_MIME,
       body: Readable.from([json])
     },
-    fields: "id,name,webViewLink,size,driveId"
+    fields: "id,name,webViewLink,size,driveId,appProperties"
   });
+  return driveJsonResult(created.data, json, semanticHash, "CREATED");
+}
 
-  return {
-    drive_file_id: created.data.id,
-    drive_filename: created.data.name,
-    drive_web_view_link: created.data.webViewLink,
-    drive_id: created.data.driveId || "",
-    artifact_size_bytes: Buffer.byteLength(json, "utf8")
-  };
+export function semanticJsonArtifactHash({ run_id, artifact_name, artifact }) {
+  const canonical = canonicaliseForSemanticHash({ run_id, artifact_name, artifact });
+  return createHash("sha256").update(JSON.stringify(canonical)).digest("hex");
+}
+
+export function canonicaliseForSemanticHash(value) {
+  if (Array.isArray(value)) return value.map((item) => canonicaliseForSemanticHash(item));
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(Object.keys(value)
+    .filter((key) => !VOLATILE_HASH_FIELDS.has(key))
+    .sort()
+    .map((key) => [key, canonicaliseForSemanticHash(value[key])]));
 }
 
 export async function saveBinaryFileToDrive({ drive_folder_id, filename, mime_type, buffer }) {
@@ -177,6 +224,40 @@ export async function readJsonArtifactFromDrive(fileId) {
   return parsed.artifact ?? parsed;
 }
 
+async function findJsonArtifactFiles({ drive, drive_folder_id, filename }) {
+  const existing = await drive.files.list({
+    supportsAllDrives: true,
+    includeItemsFromAllDrives: true,
+    q: `'${escapeDriveQuery(drive_folder_id)}' in parents and name = '${escapeDriveQuery(filename)}' and mimeType = '${JSON_MIME}' and trashed = false`,
+    fields: "files(id,name,webViewLink,size,driveId,appProperties,mimeType)",
+    pageSize: 10
+  });
+  return existing.data.files || [];
+}
+
+function jsonArtifactAppProperties({ run_id, artifact_name, semanticHash }) {
+  return {
+    persistence_schema: JSON_PERSISTENCE_SCHEMA,
+    run_id: String(run_id || ""),
+    artifact_name: String(artifact_name || ""),
+    semantic_hash: semanticHash
+  };
+}
+
+function driveJsonResult(file, json, semanticHash, persistenceAction) {
+  return {
+    drive_file_id: file.id,
+    drive_filename: file.name,
+    drive_web_view_link: file.webViewLink,
+    drive_id: file.driveId || "",
+    artifact_size_bytes: Buffer.byteLength(json, "utf8"),
+    semantic_hash: semanticHash,
+    persistence_action: persistenceAction,
+    reused: persistenceAction === "REUSED",
+    updated_in_place: persistenceAction === "UPDATED"
+  };
+}
+
 function escapeDriveQuery(value) {
   return String(value || "").replaceAll("\\", "\\\\").replaceAll("'", "\\'");
 }
@@ -184,6 +265,9 @@ function escapeDriveQuery(value) {
 export const DRIVE_STORAGE_SERVICE_STATUS = Object.freeze({
   central_runtime_service: "storage/drive.service",
   storage_model: "one_folder_per_run",
+  idempotent_json_artifact_persistence: true,
+  semantic_hash_ignores_runtime_timestamps: true,
+  duplicate_same_name_json_files_fail_loud: true,
   idempotent_binary_assembly_custody: true,
   deterministic_subfolder_reuse: true
 });
