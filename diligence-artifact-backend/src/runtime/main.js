@@ -1,5 +1,7 @@
 import { config } from "./config.js";
 import { createRuntimeApp } from "./app.js";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 export function startRuntimeServer() {
   const app = createRuntimeApp();
@@ -8,6 +10,9 @@ export function startRuntimeServer() {
   });
 }
 
-if (process.argv[1] && process.argv[1].endsWith("src/runtime/main.js")) {
+const invokedEntrypoint = process.argv[1] ? path.resolve(process.argv[1]) : "";
+const runtimeEntrypoint = path.resolve(fileURLToPath(import.meta.url));
+
+if (invokedEntrypoint === runtimeEntrypoint) {
   startRuntimeServer();
 }
