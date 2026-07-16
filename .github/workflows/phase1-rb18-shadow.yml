@@ -6,7 +6,9 @@ on:
       - "diligence-artifact-backend/src/phases/01-source-discovery/**"
       - "diligence-artifact-backend/src/runtime/services/storage/drive.service.js"
       - "diligence-artifact-backend/src/runtime/services/storage/firestore.service.js"
-      - "diligence-artifact-backend/scripts/check-phase1-rb18-shadow-runs.mjs"
+      - "diligence-artifact-backend/scripts/check-phase1-rb18-shadow-runs-v2.mjs"
+      - "diligence-artifact-backend/scripts/check-phase1-rb18-materialisation-classification.mjs"
+      - "diligence-artifact-backend/scripts/lib/rb18-controlled-fetch.mjs"
       - "diligence-artifact-backend/package.json"
       - ".github/workflows/phase1-rb18-shadow.yml"
   workflow_dispatch:
