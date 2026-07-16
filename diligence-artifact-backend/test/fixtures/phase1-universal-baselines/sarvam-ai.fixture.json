@@ -1,0 +1,133 @@
+{
+  "fixture_id": "PHASE1_BASELINE_SARVAM_AI_v1",
+  "target": {
+    "brand": "Sarvam AI",
+    "primary_entity_id": "sarvam_primary",
+    "root_path": "/"
+  },
+  "pages": [
+    {
+      "id": "sarvam-translation-canonical",
+      "path": "/apis/translation",
+      "entity_id": "sarvam_primary",
+      "common_root": "product_service",
+      "feature_cluster": "translation",
+      "evidence_lane": "commercial_product",
+      "variant_family": "translation_overview",
+      "body": "Sarvam Translation is the canonical product overview for translating Indian-language text. It describes direct translation, supported language coverage, pricing context, enterprise use cases, transliteration support, and the core API proposition. This is the strongest commercial source for the translation feature."
+    },
+    {
+      "id": "sarvam-translation-tamil-marathi",
+      "path": "/apis/translation/tamil-to-marathi",
+      "entity_id": "sarvam_primary",
+      "common_root": "product_service",
+      "feature_cluster": "translation",
+      "evidence_lane": "commercial_product",
+      "variant_family": "translation_language_pair",
+      "coverage": { "source_language": "tamil", "target_language": "marathi" },
+      "body": "Translate Indian-language text using Sarvam Translation. The service provides direct translation, transliteration support, enterprise use cases, pricing context, and API access. Choose a source language and a target language, submit the text, and receive translated output. This page is a language-pair template."
+    },
+    {
+      "id": "sarvam-translation-hindi-marathi",
+      "path": "/apis/translation/hindi-to-marathi",
+      "entity_id": "sarvam_primary",
+      "common_root": "product_service",
+      "feature_cluster": "translation",
+      "evidence_lane": "commercial_product",
+      "variant_family": "translation_language_pair",
+      "coverage": { "source_language": "hindi", "target_language": "marathi" },
+      "body": "Translate Indian-language text using Sarvam Translation. The service provides direct translation, transliteration support, enterprise use cases, pricing context, and API access. Choose a source language and a target language, submit the text, and receive translated output. This page is a language-pair template."
+    },
+    {
+      "id": "sarvam-translation-unique-variant",
+      "path": "/apis/translation/english-to-hindi",
+      "entity_id": "sarvam_primary",
+      "common_root": "product_service",
+      "feature_cluster": "translation",
+      "evidence_lane": "commercial_product",
+      "variant_family": "translation_language_pair",
+      "coverage": { "source_language": "english", "target_language": "hindi" },
+      "unique_material": ["code-mixed input handling"],
+      "body": "Translate Indian-language text using Sarvam Translation. The service provides direct translation, transliteration support, enterprise use cases, pricing context, and API access. This language-pair page additionally states that code-mixed English and Hindi input can be handled without requiring users to pre-normalise the script."
+    },
+    {
+      "id": "sarvam-tts-canonical",
+      "path": "/apis/text-to-speech",
+      "entity_id": "sarvam_primary",
+      "common_root": "product_service",
+      "feature_cluster": "text_to_speech",
+      "evidence_lane": "commercial_product",
+      "variant_family": "tts_overview",
+      "body": "Sarvam Text to Speech is the canonical product overview for generating natural speech in Indian languages. It describes voice selection, language support, enterprise applications, synthesis controls, and API availability. This content is materially distinct from translation and must remain as a separate feature cluster."
+    },
+    {
+      "id": "sarvam-tts-hindi",
+      "path": "/apis/text-to-speech/hindi",
+      "entity_id": "sarvam_primary",
+      "common_root": "product_service",
+      "feature_cluster": "text_to_speech",
+      "evidence_lane": "commercial_product",
+      "variant_family": "tts_language_variant",
+      "coverage": { "language": "hindi" },
+      "unique_material": ["Hindi voice examples", "Hindi pronunciation control"],
+      "body": "Sarvam Text to Speech generates natural Hindi speech. This language-specific page supplies Hindi voice examples and describes Hindi pronunciation control. The repeated generic synthesis proposition should be suppressed, but those language-specific capabilities are materially unique and must be retained as a partial contributor."
+    },
+    {
+      "id": "sarvam-terms",
+      "path": "/terms-of-service",
+      "entity_id": "sarvam_primary",
+      "common_root": "privacy_data_processing",
+      "feature_cluster": "legal_governance",
+      "evidence_lane": "legal_instrument",
+      "legal_doc_candidate": true,
+      "legal_doc_type": "terms_of_service",
+      "body": "Terms of Service. These terms form a distinct legal instrument governing access to and use of the Sarvam services. They identify the contracting relationship, user obligations, restrictions, disclaimers, liability allocation, termination rights, and governing provisions. This document must remain complete and independent."
+    },
+    {
+      "id": "sarvam-privacy",
+      "path": "/privacy-policy",
+      "entity_id": "sarvam_primary",
+      "common_root": "privacy_data_processing",
+      "feature_cluster": "legal_governance",
+      "evidence_lane": "legal_instrument",
+      "legal_doc_candidate": true,
+      "legal_doc_type": "privacy_policy",
+      "body": "Privacy Policy. This is a distinct legal instrument explaining personal information collection, processing purposes, disclosures, retention, security, user choices, contact routes, and other privacy practices for Sarvam services. This document must remain complete and must not be merged into the Terms or EULA."
+    },
+    {
+      "id": "sarvam-eula",
+      "path": "/eula",
+      "entity_id": "sarvam_primary",
+      "common_root": "privacy_data_processing",
+      "feature_cluster": "legal_governance",
+      "evidence_lane": "legal_instrument",
+      "legal_doc_candidate": true,
+      "legal_doc_type": "eula",
+      "body": "End User Licence Agreement. This is a separate legal instrument governing licensed software or model use. It contains licence scope, restrictions, intellectual-property treatment, warranties, termination, and related conditions. It must be preserved independently from the Terms of Service and Privacy Policy."
+    }
+  ],
+  "expected": {
+    "legal_documents": ["terms_of_service", "privacy_policy", "eula"],
+    "forbidden_legal_classifications": [
+      { "path": "/apis/translation", "forbidden_doc_type": "service_level_agreement" },
+      { "path": "/apis/translation/tamil-to-marathi", "forbidden_doc_type": "service_level_agreement" }
+    ],
+    "feature_clusters": {
+      "translation": {
+        "canonical_page_id": "sarvam-translation-canonical",
+        "exact_duplicate_variant_groups": [["sarvam-translation-tamil-marathi", "sarvam-translation-hindi-marathi"]],
+        "partial_contributors": ["sarvam-translation-unique-variant"],
+        "structured_coverage_required": true
+      },
+      "text_to_speech": {
+        "canonical_page_id": "sarvam-tts-canonical",
+        "partial_contributors": ["sarvam-tts-hindi"]
+      }
+    },
+    "logical_root_policy": {
+      "product_service_logical_artifacts": 1,
+      "source_count_sharding_forbidden": true,
+      "size_threshold_bytes": 819200
+    }
+  }
+}
