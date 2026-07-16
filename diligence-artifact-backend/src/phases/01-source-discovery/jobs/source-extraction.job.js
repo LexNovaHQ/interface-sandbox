@@ -1,4 +1,4 @@
-import { buildUniversalSourceExtractionArtifactSet } from "../services/universal-source-extraction.service.js";
+import { buildPhase1Rb15ExtractionArtifactSet } from "../services/phase1-rb15-extraction-orchestrator.service.js";
 import { SOURCE_DISCOVERY_CONTRACT } from "../source-discovery.contract.js";
 import { assertSourceDiscoveryBoundary, assertNoSourceDiscoveryModelUsage } from "../validators/source-discovery.validator.js";
 
@@ -11,7 +11,7 @@ export const SOURCE_DISCOVERY_EXTRACTION_JOB = Object.freeze({
 });
 
 export async function buildSourceExtractionArtifacts({ run, deduped_url_manifest } = {}) {
-  const output = await buildUniversalSourceExtractionArtifactSet({ run, deduped_url_manifest });
+  const output = await buildPhase1Rb15ExtractionArtifactSet({ run, deduped_url_manifest });
   assertNoSourceDiscoveryModelUsage({ job_id: SOURCE_DISCOVERY_EXTRACTION_JOB.job_id });
   assertSourceDiscoveryBoundary({ job_id: SOURCE_DISCOVERY_EXTRACTION_JOB.job_id, output });
   return output;
