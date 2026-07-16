@@ -211,6 +211,7 @@ export function assertIndependentLegalArtifacts(output) {
     const key = `${doc.entity_id}|${doc.doc_type}|${doc.sha256}`;
     if (integrityKeys.has(key)) throw new Error(`PHASE1_INDEPENDENT_LEGAL_EXACT_DUPLICATE_NOT_COLLAPSED:${key}`);
     integrityKeys.add(key);
+    if (!isDynamicLegalArtifactName(doc.artifact_name)) throw new Error(`PHASE1_INDEPENDENT_LEGAL_NAME_INVALID:${doc.artifact_name}`);
   }
   return { ok: true, legal_artifacts: names.size };
 }
@@ -246,7 +247,7 @@ function assignArtifactNames(groups, primaryEntityId) {
       }
       const entitySuffix = stableSlug(group.entity_id || "entity");
       let suffix = entitySuffix;
-      if (typeGroups.filter((item) => item.entity_id === group.entity_id).length > 1) suffix = `${entitySuffix}__${stableSlug(group.scope_identity || group.source_url)}`;
+      if (typeGroups.filter((item) => item.entity_id === group.entity_id).length > 1) suffix = `${entitySuffix}-${stableSlug(group.scope_identity || group.source_url)}`;
       let name = `${base}__${suffix}`;
       let counter = 2;
       while (used.has(name)) name = `${base}__${suffix}_${counter++}`;
@@ -271,7 +272,7 @@ function projectLegalArtifactHints(output, urlToArtifact, canonicalIdentityToArt
   }
 }
 
-function isDynamicLegalArtifactName(name) { return /^legal_doc_[a-z0-9_]+(?:__[a-z0-9_]+)*$/.test(name) && !CONTROL_ARTIFACTS.has(name); }
+function isDynamicLegalArtifactName(name) { return /^legal_doc_(?!.*__.*__)[a-z0-9_]+(?:__[a-z0-9_-]+)?$/.test(name) && !CONTROL_ARTIFACTS.has(name); }
 function normaliseDocType(value) { return stableSlug(String(value || "other")).replace(/-+/g, "_") || "other"; }
 function deriveScopeIdentity(row, artifact) { return row.feature_cluster || artifact.feature_cluster || stableSlug(row.canonical_url || artifact.source_url || "legal_instrument"); }
 function canonicalCandidateRank(candidate) { return (candidate.source_url?.length || 9999) + (candidate.canonical_candidate_id ? 0 : 10000); }
