@@ -4,13 +4,12 @@ import { resolveEntityBoundary, assertEntityBoundary } from "./entity-boundary.s
 import { buildInternalEvidenceModel, assertInternalEvidenceModel } from "./internal-evidence-model.service.js";
 import { buildCanonicalUrlInventory, reconcileFingerprintCanonicalHints, assertCanonicalUrlInventory } from "./canonical-url.service.js";
 import { buildSourceFingerprintPass, assertSourceFingerprintInventory } from "./source-fingerprint.service.js";
-import { normaliseSourceFingerprintEvidencePass, assertSourceFingerprintEvidenceNormalisation } from "./source-fingerprint-evidence-normalizer.service.js";
 import { buildLegalInstrumentClassification, assertLegalInstrumentClassification } from "./legal-instrument-classifier.service.js";
 import { buildRootFeatureLaneClustering, assertRootFeatureLaneClustering } from "./root-feature-lane-clustering.service.js";
 import { buildCanonicalSelection, assertCanonicalSelection } from "./canonical-selection.service.js";
 import { buildFinalDedupedManifest, assertFinalDedupedManifest } from "./final-deduped-manifest.service.js";
 
-export const PHASE1_UNIVERSAL_DISCOVERY_PRODUCER_VERSION = "PHASE1_UNIVERSAL_DISCOVERY_RB12_v1";
+export const PHASE1_UNIVERSAL_DISCOVERY_PRODUCER_VERSION = "PHASE1_UNIVERSAL_DISCOVERY_RB18_MATERIAL_GATE_v1";
 
 export async function buildUniversalSourceUrlManifestArtifact({ run, preflightContext = {} } = {}) {
   const legacyOutput = await buildLegacySourceUrlManifestArtifact({ run, preflightContext });
@@ -38,11 +37,10 @@ export async function augmentSourceUrlManifestOutput({ run, legacyOutput, rootHt
   const initialCanonicalInventory = buildCanonicalUrlInventory({ rawDiscoveryInventory: broadDiscovery, entityBoundary });
   assertCanonicalUrlInventory(initialCanonicalInventory);
 
-  const fingerprintPass = normaliseSourceFingerprintEvidencePass(await buildSourceFingerprintPass({
+  const fingerprintPass = await buildSourceFingerprintPass({
     canonicalInventory: initialCanonicalInventory,
     fetchImpl
-  }));
-  assertSourceFingerprintEvidenceNormalisation(fingerprintPass);
+  });
   assertSourceFingerprintInventory(fingerprintPass.inventory);
 
   const canonicalInventory = reconcileFingerprintCanonicalHints({
@@ -136,7 +134,8 @@ export async function augmentSourceUrlManifestOutput({ run, legacyOutput, rootHt
       rb08_bounded_legal_classifier_active: true,
       rb09_canonical_selection_active: true,
       rb10_final_deduped_manifest_active: true,
-      rb18_empty_http_evidence_reclassification_active: true,
+      rb18_material_content_gate_active: true,
+      http_success_alone_never_authorizes_extraction: true,
       manifest_selection_unchanged_until_rb09: false,
       final_manifest_controls_agent_1b: true
     },
@@ -146,6 +145,8 @@ export async function augmentSourceUrlManifestOutput({ run, legacyOutput, rootHt
       broad_discovery_candidate_count: broadDiscovery.counts.candidate_urls,
       canonical_candidate_count: canonicalInventory.canonical_candidates.length,
       fingerprint_count: fingerprintPass.inventory.fingerprints.length,
+      material_content_count: fingerprintPass.inventory.counts.material_content,
+      no_material_content_count: fingerprintPass.inventory.counts.fetched_no_material_content,
       selected_extraction_count: canonicalSelection.counts.extraction_authorized,
       exact_duplicates_suppressed: canonicalSelection.counts.exact_duplicates_suppressed,
       external_surface_candidate_count: broadDiscovery.counts.external_surface_candidates,
