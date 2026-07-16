@@ -94,9 +94,15 @@ export function assertExtractedSourcesContainMaterialText(output) {
     const artifactNames = output.source_family_index?.root_artifact_manifest?.[row.common_root]?.required_artifacts || [];
     const source = artifactNames.flatMap((name) => output[name]?.sources || []).find((item) => item.source_id === row.source_id);
     if (row.legal_doc_candidate) continue;
-    if (!source?.lossless_text) throw new Error(`PHASE1_EXTRACTED_SOURCE_TEXT_MISSING:${row.source_id || row.manifest_id}`);
-    const materiality = assessSourceContentMateriality({ text: source.lossless_text });
-    if (!materiality.extraction_eligible) throw new Error(`PHASE1_EXTRACTED_SOURCE_NOT_MATERIAL:${row.source_id || row.manifest_id}:${materiality.reasons.join(",")}`);
+    const retainedText = normalizeText(source?.lossless_text);
+    if (!retainedText) throw new Error(`PHASE1_EXTRACTED_SOURCE_TEXT_MISSING:${row.source_id || row.manifest_id}`);
+    const scope = source?.extraction_scope || row.extraction_scope;
+    if (["FULL_MAIN_CONTENT", "FULL_DOCUMENT"].includes(scope)) {
+      const materiality = assessSourceContentMateriality({ text: retainedText });
+      if (!materiality.extraction_eligible) throw new Error(`PHASE1_EXTRACTED_SOURCE_NOT_MATERIAL:${row.source_id || row.manifest_id}:${materiality.reasons.join(",")}`);
+    } else if (retainedText.length < 40) {
+      throw new Error(`PHASE1_EXTRACTED_DELTA_TOO_SMALL:${row.source_id || row.manifest_id}`);
+    }
   }
   const legalDocs = output?.legal_doc_inventory?.documents_found || [];
   for (const doc of legalDocs) {
