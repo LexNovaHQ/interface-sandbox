@@ -38,7 +38,7 @@ jobs:
           npm run check:phase1-universal-baseline:red > phase1-baseline-output.log 2>&1
           cat phase1-baseline-output.log
       - name: Validate RB02 internal model RB03 boundary RB04 discovery
-        run: npm run check:phase1-rb02-rb04
+        run: node scripts/check-phase1-rb02-rb04-post-rb10.mjs
       - name: Validate RB05 canonicalisation RB06 fingerprints RB07 clustering RB08 legal classifier
         run: npm run check:phase1-rb05-rb08
       - name: Validate RB09 selection RB10 manifest RB11 extraction RB12 block dedupe
