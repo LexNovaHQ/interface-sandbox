@@ -81,7 +81,8 @@ export function assertFinalManifestMaterialExtractionBoundary(manifest) {
     const extractRequested = row.admission_tier === "PRIMARY" && row.extraction_decision === "EXTRACT";
     if (!extractRequested) continue;
     authorized += 1;
-    if (row.fingerprint_fetch_status !== "FETCHED" || row.fingerprint_extraction_eligible !== true || row.content_materiality?.status !== "MATERIAL_CONTENT" || !row.exact_content_hash || !Array.isArray(row.selected_block_hashes) || row.selected_block_hashes.length === 0) {
+    const selectedHashesRequired = row.extraction_scope !== "STRUCTURED_COVERAGE_ONLY";
+    if (row.fingerprint_fetch_status !== "FETCHED" || row.fingerprint_extraction_eligible !== true || row.content_materiality?.status !== "MATERIAL_CONTENT" || !row.exact_content_hash || !Array.isArray(row.selected_block_hashes) || (selectedHashesRequired && row.selected_block_hashes.length === 0)) {
       throw new Error(`PHASE1_EXTRACTION_BLOCKED_NON_MATERIAL_SOURCE:${row.manifest_id || row.canonical_url || "unknown"}`);
     }
   }
