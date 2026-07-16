@@ -9,7 +9,8 @@ const checks = [
   { category: "canonicalisation_clustering_and_legal_integrity", script: "check-phase1-rb05-rb08.mjs" },
   { category: "selection_manifest_and_dedupe_integrity", script: "check-phase1-rb09-rb12.mjs" },
   { category: "artifact_assembly_legal_separation_and_compatibility", script: "check-phase1-rb13-rb15.mjs" },
-  { category: "persistence_integrity", script: "check-phase1-rb16-idempotent-persistence.mjs" }
+  { category: "persistence_integrity", script: "check-phase1-rb16-idempotent-persistence.mjs" },
+  { category: "live_http_materialisation_integrity", script: "check-phase1-rb18-materialisation-classification.mjs" }
 ];
 
 const results = [];
