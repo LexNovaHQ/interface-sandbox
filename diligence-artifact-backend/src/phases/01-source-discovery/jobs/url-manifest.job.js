@@ -1,4 +1,4 @@
-import { buildSourceUrlManifestArtifact } from "../services/url-manifest.service.js";
+import { buildUniversalSourceUrlManifestArtifact } from "../services/universal-url-manifest.service.js";
 import { SOURCE_DISCOVERY_CONTRACT } from "../source-discovery.contract.js";
 import { assertSourceDiscoveryBoundary, assertNoSourceDiscoveryModelUsage } from "../validators/source-discovery.validator.js";
 
@@ -11,7 +11,7 @@ export const SOURCE_DISCOVERY_URL_MANIFEST_JOB = Object.freeze({
 });
 
 export async function buildSourceUrlManifest({ run, preflight_context } = {}) {
-  const output = await buildSourceUrlManifestArtifact({ run, preflightContext: preflight_context });
+  const output = await buildUniversalSourceUrlManifestArtifact({ run, preflightContext: preflight_context });
   assertNoSourceDiscoveryModelUsage({ job_id: SOURCE_DISCOVERY_URL_MANIFEST_JOB.job_id });
   assertSourceDiscoveryBoundary({ job_id: SOURCE_DISCOVERY_URL_MANIFEST_JOB.job_id, output });
   return output;
