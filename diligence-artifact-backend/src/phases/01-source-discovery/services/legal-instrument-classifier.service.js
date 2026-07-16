@@ -27,7 +27,9 @@ const LEGAL_ROOT_BY_TYPE = Object.freeze({
 
 /**
  * RB-08 classifies a legal instrument only from bounded route/title tokens plus
- * document-structure evidence. Raw substring matches are forbidden.
+ * document-structure evidence. Raw substring matches are forbidden. RB-18 adds
+ * the non-negotiable requirement that a legal route must contain a material
+ * document body before it can become an independent legal artifact.
  */
 export function buildLegalInstrumentClassification({ canonicalInventory, fingerprintInventory, analysisCache = new Map(), internalEvidenceModel } = {}) {
   const fingerprints = new Map((fingerprintInventory?.fingerprints || []).map((item) => [item.candidate_id, item]));
@@ -36,7 +38,7 @@ export function buildLegalInstrumentClassification({ canonicalInventory, fingerp
 
   for (const candidate of canonicalInventory?.canonical_candidates || []) {
     const memberIds = unique([candidate.candidate_id, ...(candidate.member_candidate_ids || [])]);
-    const fingerprint = memberIds.map((id) => fingerprints.get(id)).find((item) => item?.fetch_status === "FETCHED") || memberIds.map((id) => fingerprints.get(id)).find(Boolean);
+    const fingerprint = memberIds.map((id) => fingerprints.get(id)).find(isMaterialFingerprint) || memberIds.map((id) => fingerprints.get(id)).find(Boolean);
     const analysis = fingerprint ? analysisCache.get(fingerprint.candidate_id) : null;
     const internal = internalByUrl.get(candidate.canonical_url) || [...internalByUrl.values()].find((item) => (candidate.aliases || []).includes(item.canonical_url));
     classifications.push(classifyLegalInstrument({ candidate, fingerprint, analysis, internal }));
@@ -45,15 +47,17 @@ export function buildLegalInstrumentClassification({ canonicalInventory, fingerp
   return {
     schema_version: PHASE1_LEGAL_CLASSIFIER_SCHEMA_VERSION,
     status: "COMPLETE",
-    classifier_rule: "BOUNDED_TOKEN_PLUS_DOCUMENT_STRUCTURE",
+    classifier_rule: "MATERIAL_BODY_PLUS_BOUNDED_TOKEN_PLUS_DOCUMENT_STRUCTURE",
     raw_substring_matching_forbidden: true,
+    material_content_required: true,
     model_usage: "NONE",
     public_manifest_selection_changed: false,
     counts: {
       candidates_read: classifications.length,
       confirmed_legal_instruments: classifications.filter((item) => item.classification_status === "CONFIRMED_LEGAL_INSTRUMENT").length,
       potential_legal_instruments: classifications.filter((item) => item.classification_status === "POTENTIAL_LEGAL_INSTRUMENT").length,
-      not_legal: classifications.filter((item) => item.classification_status === "NOT_LEGAL_INSTRUMENT").length
+      not_legal: classifications.filter((item) => item.classification_status === "NOT_LEGAL_INSTRUMENT").length,
+      rejected_no_material_content: classifications.filter((item) => item.classification_limitation === "NO_MATERIAL_DOCUMENT_BODY").length
     },
     classifications
   };
@@ -61,6 +65,9 @@ export function buildLegalInstrumentClassification({ canonicalInventory, fingerp
 
 export function classifyLegalInstrument({ candidate, fingerprint, analysis, internal } = {}) {
   const url = candidate?.canonical_url || "";
+  const materialEvidenceAvailable = isMaterialFingerprint(fingerprint);
+  if (!materialEvidenceAvailable) return noMaterialLegalClassification({ candidate, fingerprint, url });
+
   const title = fingerprint?.title || analysis?.title || "";
   const headings = fingerprint?.headings || analysis?.headings || [];
   const text = analysis?.main_text || fingerprint?.analysis_excerpt || "";
@@ -98,7 +105,11 @@ export function classifyLegalInstrument({ candidate, fingerprint, analysis, inte
     canonical_identity: candidate?.canonical_identity || null,
     entity_id: candidate?.entity_id || null,
     canonical_url: url,
+    fingerprint_fetch_status: fingerprint.fetch_status,
+    fingerprint_extraction_eligible: true,
+    material_document_body_confirmed: true,
     classification_status: status,
+    classification_limitation: null,
     confirmed_legal_instrument: confirmed,
     doc_type: confirmed || potential ? best.doc_type : "other",
     artifact_name_hint: confirmed || potential ? best.artifact_name : "legal_doc_other",
@@ -110,23 +121,61 @@ export function classifyLegalInstrument({ candidate, fingerprint, analysis, inte
     negative_guards: {
       raw_substring_match_used: false,
       acronym_requires_complete_token: true,
-      different_entity_merge_allowed: false
+      different_entity_merge_allowed: false,
+      url_or_title_without_material_body_can_confirm_legal_instrument: false
     }
   };
 }
 
 export function assertLegalInstrumentClassification(inventory) {
   if (inventory?.schema_version !== PHASE1_LEGAL_CLASSIFIER_SCHEMA_VERSION) throw new Error("PHASE1_LEGAL_CLASSIFIER_SCHEMA_INVALID");
-  if (inventory.raw_substring_matching_forbidden !== true || inventory.model_usage !== "NONE" || inventory.public_manifest_selection_changed !== false) throw new Error("PHASE1_LEGAL_CLASSIFIER_BOUNDARY_INVALID");
+  if (inventory.raw_substring_matching_forbidden !== true || inventory.material_content_required !== true || inventory.model_usage !== "NONE" || inventory.public_manifest_selection_changed !== false) throw new Error("PHASE1_LEGAL_CLASSIFIER_BOUNDARY_INVALID");
   const seen = new Set();
   for (const item of inventory.classifications || []) {
     if (!item.classification_id || !item.candidate_id || !item.canonical_identity || !item.classification_status) throw new Error("PHASE1_LEGAL_CLASSIFICATION_INCOMPLETE");
     if (seen.has(item.canonical_identity)) throw new Error(`PHASE1_LEGAL_CLASSIFICATION_DUPLICATE:${item.canonical_identity}`);
     seen.add(item.canonical_identity);
     if (item.confirmed_legal_instrument && item.doc_type === "other") throw new Error(`PHASE1_LEGAL_CLASSIFICATION_CONFIRMED_OTHER:${item.candidate_id}`);
-    if (item.negative_guards?.raw_substring_match_used !== false || item.negative_guards?.acronym_requires_complete_token !== true) throw new Error(`PHASE1_LEGAL_CLASSIFICATION_GUARD_MISSING:${item.candidate_id}`);
+    if (item.confirmed_legal_instrument && (item.fingerprint_extraction_eligible !== true || item.material_document_body_confirmed !== true)) throw new Error(`PHASE1_LEGAL_CLASSIFICATION_CONFIRMED_WITHOUT_MATERIAL_BODY:${item.candidate_id}`);
+    if (item.classification_limitation === "NO_MATERIAL_DOCUMENT_BODY" && (item.confirmed_legal_instrument || item.classification_status !== "NOT_LEGAL_INSTRUMENT")) throw new Error(`PHASE1_LEGAL_CLASSIFICATION_NO_MATERIAL_STATUS_INVALID:${item.candidate_id}`);
+    if (item.negative_guards?.raw_substring_match_used !== false || item.negative_guards?.acronym_requires_complete_token !== true || item.negative_guards?.url_or_title_without_material_body_can_confirm_legal_instrument !== false) throw new Error(`PHASE1_LEGAL_CLASSIFICATION_GUARD_MISSING:${item.candidate_id}`);
   }
   return { ok: true, classifications: seen.size };
+}
+
+function noMaterialLegalClassification({ candidate, fingerprint, url }) {
+  return {
+    record_type: "LegalInstrumentClassification",
+    schema_version: PHASE1_LEGAL_CLASSIFIER_SCHEMA_VERSION,
+    classification_id: stableId("LEGAL", candidate?.canonical_identity || url),
+    candidate_id: candidate?.candidate_id || null,
+    canonical_identity: candidate?.canonical_identity || null,
+    entity_id: candidate?.entity_id || null,
+    canonical_url: url,
+    fingerprint_fetch_status: fingerprint?.fetch_status || "MISSING",
+    fingerprint_extraction_eligible: false,
+    material_document_body_confirmed: false,
+    classification_status: "NOT_LEGAL_INSTRUMENT",
+    classification_limitation: "NO_MATERIAL_DOCUMENT_BODY",
+    confirmed_legal_instrument: false,
+    doc_type: "other",
+    artifact_name_hint: "legal_doc_other",
+    primary_root: null,
+    bounded_match_evidence: { url_terms: [], title_terms: [], heading_terms: [] },
+    document_structure_support: [],
+    legacy_candidate_signal: false,
+    confidence: "HIGH",
+    negative_guards: {
+      raw_substring_match_used: false,
+      acronym_requires_complete_token: true,
+      different_entity_merge_allowed: false,
+      url_or_title_without_material_body_can_confirm_legal_instrument: false
+    }
+  };
+}
+
+function isMaterialFingerprint(item) {
+  return item?.fetch_status === "FETCHED" && item?.extraction_eligible === true && item?.content_materiality?.status === "MATERIAL_CONTENT" && Boolean(item?.exact_content_hash);
 }
 
 function boundedUrlTermMatch(value, term) {
