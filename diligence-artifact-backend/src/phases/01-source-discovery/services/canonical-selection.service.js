@@ -12,7 +12,8 @@ const EXTRACTABLE_DISPOSITIONS = new Set([
  * RB-09 deterministically selects canonical sources inside the locked
  * entity + root + feature + evidence-lane boundary. Exact duplicates collapse
  * to one owner. Template variants retain structured coverage or unique blocks
- * without authorising another full-page extraction.
+ * without authorising another full-page extraction. RB-18 makes a material
+ * fingerprint a prerequisite for every extractable disposition.
  */
 export function buildCanonicalSelection({
   canonicalInventory,
@@ -35,18 +36,6 @@ export function buildCanonicalSelection({
     const legal = legalByIdentity.get(classification.canonical_identity);
     const record = { candidate, fingerprint, classification, legal, analysis: fingerprint ? analysisCache.get(fingerprint.candidate_id) : null };
 
-    if (legal?.confirmed_legal_instrument) {
-      decisions.push(selectionDecision(record, {
-        source_disposition: "LEGAL_INSTRUMENT",
-        extraction_scope: "FULL_DOCUMENT",
-        extraction_authorized: true,
-        canonical_owner_candidate_id: candidate.candidate_id,
-        selected_block_hashes: blockHashes(fingerprint),
-        selection_reason: "CONFIRMED_DISTINCT_LEGAL_INSTRUMENT"
-      }));
-      continue;
-    }
-
     if (!fingerprint || fingerprint.fetch_status === "FETCH_FAILED") {
       decisions.push(selectionDecision(record, {
         source_disposition: "FETCH_FAILED",
@@ -67,6 +56,30 @@ export function buildCanonicalSelection({
         canonical_owner_candidate_id: null,
         selected_block_hashes: [],
         selection_reason: fingerprint.limitation || "ENTITY_BOUNDARY_REFERENCE_ONLY"
+      }));
+      continue;
+    }
+
+    if (!isMaterialFingerprint(fingerprint)) {
+      decisions.push(selectionDecision(record, {
+        source_disposition: "REJECTED_NOT_EVIDENCE",
+        extraction_scope: "METADATA_ONLY",
+        extraction_authorized: false,
+        canonical_owner_candidate_id: null,
+        selected_block_hashes: [],
+        selection_reason: fingerprint.limitation || "NO_MATERIAL_CONTENT_NOT_EXTRACTION_ELIGIBLE"
+      }));
+      continue;
+    }
+
+    if (legal?.confirmed_legal_instrument) {
+      decisions.push(selectionDecision(record, {
+        source_disposition: "LEGAL_INSTRUMENT",
+        extraction_scope: "FULL_DOCUMENT",
+        extraction_authorized: true,
+        canonical_owner_candidate_id: candidate.candidate_id,
+        selected_block_hashes: blockHashes(fingerprint),
+        selection_reason: "CONFIRMED_DISTINCT_LEGAL_INSTRUMENT_WITH_MATERIAL_BODY"
       }));
       continue;
     }
@@ -165,11 +178,13 @@ export function buildCanonicalSelection({
     selection_key: "ENTITY_ID_PLUS_PRIMARY_ROOT_PLUS_FEATURE_CLUSTER_PLUS_EVIDENCE_LANE",
     exact_duplicate_rule: "ONE_CANONICAL_OWNER_ALIASES_RETAINED",
     variant_rule: "GENERIC_CANONICAL_PLUS_STRUCTURED_COVERAGE_AND_UNIQUE_DELTAS",
-    legal_rule: "EVERY_CONFIRMED_DISTINCT_LEGAL_INSTRUMENT_SELECTED_FULL_DOCUMENT",
+    legal_rule: "EVERY_CONFIRMED_DISTINCT_LEGAL_INSTRUMENT_WITH_MATERIAL_BODY_SELECTED_FULL_DOCUMENT",
+    material_content_rule: "NO_EXTRACTABLE_DISPOSITION_WITHOUT_MATERIAL_FINGERPRINT",
     final_extraction_authority: true,
     counts: {
       candidates_decided: decisions.length,
       extraction_authorized: decisions.filter((item) => item.extraction_authorized).length,
+      rejected_no_material_content: decisions.filter((item) => item.source_disposition === "REJECTED_NOT_EVIDENCE").length,
       exact_duplicates_suppressed: decisions.filter((item) => item.source_disposition === "ALIAS_EXACT_DUPLICATE").length,
       near_duplicates_suppressed: decisions.filter((item) => item.source_disposition === "SUPPRESSED_NEAR_DUPLICATE").length,
       partial_contributors: decisions.filter((item) => item.source_disposition === "SELECTED_PARTIAL_CONTRIBUTOR").length,
@@ -182,7 +197,7 @@ export function buildCanonicalSelection({
 
 export function assertCanonicalSelection(selection) {
   if (selection?.schema_version !== PHASE1_CANONICAL_SELECTION_SCHEMA_VERSION) throw new Error("PHASE1_CANONICAL_SELECTION_SCHEMA_INVALID");
-  if (selection.model_usage !== "NONE" || selection.final_extraction_authority !== true) throw new Error("PHASE1_CANONICAL_SELECTION_AUTHORITY_INVALID");
+  if (selection.model_usage !== "NONE" || selection.final_extraction_authority !== true || selection.material_content_rule !== "NO_EXTRACTABLE_DISPOSITION_WITHOUT_MATERIAL_FINGERPRINT") throw new Error("PHASE1_CANONICAL_SELECTION_AUTHORITY_INVALID");
   const seen = new Set();
   const decisionsById = new Map((selection.decisions || []).map((item) => [item.candidate_id, item]));
   for (const decision of selection.decisions || []) {
@@ -190,6 +205,8 @@ export function assertCanonicalSelection(selection) {
     if (seen.has(decision.canonical_identity)) throw new Error(`PHASE1_CANONICAL_SELECTION_DUPLICATE_DECISION:${decision.canonical_identity}`);
     seen.add(decision.canonical_identity);
     if (decision.extraction_authorized !== EXTRACTABLE_DISPOSITIONS.has(decision.source_disposition)) throw new Error(`PHASE1_CANONICAL_SELECTION_AUTHORITY_DISPOSITION_MISMATCH:${decision.candidate_id}`);
+    if (decision.extraction_authorized && (decision.fingerprint_fetch_status !== "FETCHED" || decision.fingerprint_extraction_eligible !== true || decision.content_materiality?.status !== "MATERIAL_CONTENT" || !decision.exact_content_hash || !decision.selected_block_hashes?.length)) throw new Error(`PHASE1_CANONICAL_SELECTION_AUTHORISED_WITHOUT_MATERIAL_EVIDENCE:${decision.candidate_id}`);
+    if (decision.source_disposition === "REJECTED_NOT_EVIDENCE" && decision.extraction_authorized !== false) throw new Error(`PHASE1_CANONICAL_SELECTION_REJECTED_SOURCE_AUTHORISED:${decision.candidate_id}`);
     if (decision.source_disposition === "ALIAS_EXACT_DUPLICATE" && !decision.canonical_owner_candidate_id) throw new Error(`PHASE1_CANONICAL_SELECTION_DUPLICATE_OWNER_MISSING:${decision.candidate_id}`);
     if (decision.source_disposition === "LEGAL_INSTRUMENT" && decision.extraction_scope !== "FULL_DOCUMENT") throw new Error(`PHASE1_CANONICAL_SELECTION_LEGAL_SCOPE_INVALID:${decision.candidate_id}`);
   }
@@ -222,6 +239,9 @@ function selectionDecision(record, values) {
     ai_overlay: classification.ai_overlay || null,
     legal_doc_type: legal?.confirmed_legal_instrument ? legal.doc_type : "other",
     legal_artifact_name_hint: legal?.confirmed_legal_instrument ? legal.artifact_name_hint : "legal_doc_other",
+    fingerprint_fetch_status: fingerprint?.fetch_status || "MISSING",
+    fingerprint_extraction_eligible: fingerprint?.extraction_eligible === true,
+    content_materiality: fingerprint?.content_materiality || null,
     exact_content_hash: fingerprint?.exact_content_hash || null,
     template_signature: fingerprint?.template_signature || null,
     structured_coverage: structuredCoverage,
@@ -230,7 +250,13 @@ function selectionDecision(record, values) {
 }
 
 function memberFingerprint(candidate, fingerprints) {
-  return [candidate.candidate_id, ...(candidate.member_candidate_ids || [])].map((id) => fingerprints.get(id)).find((item) => item?.fetch_status === "FETCHED") || null;
+  return [candidate.candidate_id, ...(candidate.member_candidate_ids || [])].map((id) => fingerprints.get(id)).find(isMaterialFingerprint)
+    || [candidate.candidate_id, ...(candidate.member_candidate_ids || [])].map((id) => fingerprints.get(id)).find(Boolean)
+    || null;
+}
+
+function isMaterialFingerprint(item) {
+  return item?.fetch_status === "FETCHED" && item?.extraction_eligible === true && item?.content_materiality?.status === "MATERIAL_CONTENT" && Boolean(item?.exact_content_hash) && (item?.block_hashes || []).length > 0;
 }
 
 function clusterKey(classification) {
