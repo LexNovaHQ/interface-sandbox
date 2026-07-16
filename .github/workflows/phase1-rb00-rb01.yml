@@ -43,6 +43,8 @@ jobs:
         run: npm run check:phase1-rb05-rb08
       - name: Validate RB09 selection RB10 manifest RB11 extraction RB12 block dedupe
         run: npm run check:phase1-rb09-rb12
+      - name: Validate RB13 logical roots RB14 legal artifacts RB15 compatibility projection
+        run: npm run check:phase1-rb13-rb15
       - name: Upload Phase 1 baseline diagnostics
         if: always()
         uses: actions/upload-artifact@v4
