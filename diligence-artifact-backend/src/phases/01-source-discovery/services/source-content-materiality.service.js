@@ -15,10 +15,11 @@ const PLACEHOLDER_PATTERNS = Object.freeze([
   ["EMPTY_PRODUCT_STATE", /^\s*(?:coming soon|under construction|no content available|nothing here yet)\b/i]
 ]);
 
-const SUPPRESSION_ACTIONS = new Set([
+const DUPLICATE_SUPPRESSION_ACTIONS = new Set([
   "SUPPRESS_EXACT_DUPLICATE",
   "SUPPRESS_BLOCK_ONLY_DUPLICATE"
 ]);
+const POST_SCOPE_SUPPRESSION_ACTION = "SUPPRESS_NO_RETAINED_MATERIAL_AFTER_SCOPE";
 
 /**
  * One deterministic authority for deciding whether fetched text is evidence.
@@ -97,8 +98,7 @@ export function assertFinalManifestMaterialExtractionBoundary(manifest) {
 /**
  * Validate the actual post-dedupe storage corpus. Navigation indexes are not the
  * storage source of truth and may retain auditable references to sources removed
- * as exact or all-block duplicates. Only physical root sources and independent
- * legal artifacts are required to carry material text.
+ * as exact duplicates, all-block duplicates, or empty post-scope contributors.
  */
 export function assertExtractedSourcesContainMaterialText(output) {
   const sourceFamilyIndex = output?.source_family_index;
@@ -139,7 +139,7 @@ export function assertExtractedSourcesContainMaterialText(output) {
   const blockDedupe = sourceFamilyIndex.block_dedupe_forensics || {};
   for (const [root, rootForensics] of Object.entries(blockDedupe.roots || {})) {
     for (const source of rootForensics.source_forensics || []) {
-      if (!SUPPRESSION_ACTIONS.has(source.action)) continue;
+      if (!DUPLICATE_SUPPRESSION_ACTIONS.has(source.action)) continue;
       if (!source.source_id || !source.duplicate_owner_source_id) throw new Error(`PHASE1_MATERIAL_STORAGE_SUPPRESSION_PROVENANCE_MISSING:${root}:${source.source_id || "unknown"}`);
       if (physicalSourceIds.has(source.source_id)) throw new Error(`PHASE1_MATERIAL_STORAGE_SUPPRESSED_SOURCE_STILL_PHYSICAL:${source.source_id}`);
       suppressedSourceIds.add(source.source_id);
@@ -147,8 +147,11 @@ export function assertExtractedSourcesContainMaterialText(output) {
   }
 
   for (const row of sourceFamilyIndex.manifest_only_index || []) {
-    if (!SUPPRESSION_ACTIONS.has(row.extraction_status)) continue;
-    if (!row.source_id || !row.duplicate_owner_source_id) throw new Error(`PHASE1_MATERIAL_STORAGE_MANIFEST_SUPPRESSION_PROVENANCE_MISSING:${row.source_id || row.manifest_id || "unknown"}`);
+    const action = row.extraction_status;
+    if (!DUPLICATE_SUPPRESSION_ACTIONS.has(action) && action !== POST_SCOPE_SUPPRESSION_ACTION) continue;
+    if (!row.source_id) throw new Error(`PHASE1_MATERIAL_STORAGE_MANIFEST_SUPPRESSION_SOURCE_ID_MISSING:${row.manifest_id || "unknown"}`);
+    if (DUPLICATE_SUPPRESSION_ACTIONS.has(action) && !row.duplicate_owner_source_id) throw new Error(`PHASE1_MATERIAL_STORAGE_MANIFEST_SUPPRESSION_PROVENANCE_MISSING:${row.source_id}`);
+    if (action === POST_SCOPE_SUPPRESSION_ACTION && !row.suppression_reason) throw new Error(`PHASE1_MATERIAL_STORAGE_POST_SCOPE_SUPPRESSION_REASON_MISSING:${row.source_id}`);
     if (physicalSourceIds.has(row.source_id)) throw new Error(`PHASE1_MATERIAL_STORAGE_MANIFEST_SUPPRESSED_SOURCE_STILL_PHYSICAL:${row.source_id}`);
     suppressedSourceIds.add(row.source_id);
   }
@@ -163,7 +166,7 @@ export function assertExtractedSourcesContainMaterialText(output) {
   return {
     ok: true,
     physical_root_sources: physicalRootSources,
-    suppressed_duplicate_sources: suppressedSourceIds.size,
+    suppressed_nonphysical_sources: suppressedSourceIds.size,
     legal_artifacts: legalDocs.length
   };
 }
