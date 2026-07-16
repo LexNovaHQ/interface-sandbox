@@ -32,6 +32,8 @@ try {
     run_id: run.run_id,
     target_url: run.root_url,
     target_boundary: { primary_entity_id: "one97" },
+    final_extraction_authority: true,
+    material_content_required_for_extraction: true,
     manifest_sources: [
       ...Array.from({ length: 6 }, (_, index) => productRow(index + 1)),
       legalRow("privacy_data_processing.URL.001", "/one97/privacy-policy", "one97"),
@@ -89,7 +91,8 @@ try {
     product_physical_artifacts: productEntry.required_artifacts.length,
     distinct_privacy_instruments: privacyDocs.length,
     exact_legal_aliases_collapsed: output.legal_doc_lossless_validation_manifest.exact_duplicate_aliases_collapsed,
-    downstream_handoff_unchanged: true
+    downstream_handoff_unchanged: true,
+    material_content_gate_active: true
   }, null, 2));
 } finally {
   await close(server);
@@ -162,6 +165,7 @@ function productRow(index) {
     discovered_by: ["RB13_RB15_FIXTURE"],
     admission_tier: "PRIMARY",
     extraction_decision: "EXTRACT",
+    extraction_authorized_by_canonical_selection: true,
     extraction_scope: "FULL_MAIN_CONTENT",
     source_disposition: "SELECTED_CANONICAL",
     feature_cluster: `product_${index}`,
@@ -171,7 +175,8 @@ function productRow(index) {
     legal_doc_candidate: false,
     legal_doc_type: "other",
     legal_doc_artifact_hint: "legal_doc_other",
-    phase_1_classification_effect: "SOURCE_ROUTING_ONLY_NOT_JOB_ROUTING"
+    phase_1_classification_effect: "SOURCE_ROUTING_ONLY_NOT_JOB_ROUTING",
+    ...materialProof(`product-${index}`)
   };
 }
 
@@ -195,6 +200,7 @@ function legalRow(id, path, entityId) {
     discovered_by: ["RB13_RB15_FIXTURE"],
     admission_tier: "PRIMARY",
     extraction_decision: "EXTRACT",
+    extraction_authorized_by_canonical_selection: true,
     extraction_scope: "FULL_DOCUMENT",
     source_disposition: "LEGAL_INSTRUMENT",
     feature_cluster: "legal_governance",
@@ -204,7 +210,18 @@ function legalRow(id, path, entityId) {
     legal_doc_candidate: true,
     legal_doc_type: "privacy_policy",
     legal_doc_artifact_hint: "legal_doc_privacy_policy",
-    phase_1_classification_effect: "SOURCE_ROUTING_ONLY_NOT_JOB_ROUTING"
+    phase_1_classification_effect: "SOURCE_ROUTING_ONLY_NOT_JOB_ROUTING",
+    ...materialProof(`${entityId}-${path}`)
+  };
+}
+
+function materialProof(key) {
+  return {
+    fingerprint_fetch_status: "FETCHED",
+    fingerprint_extraction_eligible: true,
+    content_materiality: { schema_version: "PHASE1_SOURCE_CONTENT_MATERIALITY_RB18_v1", status: "MATERIAL_CONTENT", extraction_eligible: true, character_count: 240, token_count: 35, unique_token_count: 20, meaningful_block_count: 1, thresholds: { minimum_characters: 60, minimum_tokens: 8, minimum_unique_tokens: 5, minimum_blocks: 1 }, placeholder_signals: [], reasons: [] },
+    exact_content_hash: `fixture-content-${key}`,
+    selected_block_hashes: [`fixture-block-${key}`]
   };
 }
 
