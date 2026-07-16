@@ -15,6 +15,11 @@ const PLACEHOLDER_PATTERNS = Object.freeze([
   ["EMPTY_PRODUCT_STATE", /^\s*(?:coming soon|under construction|no content available|nothing here yet)\b/i]
 ]);
 
+const SUPPRESSION_ACTIONS = new Set([
+  "SUPPRESS_EXACT_DUPLICATE",
+  "SUPPRESS_BLOCK_ONLY_DUPLICATE"
+]);
+
 /**
  * One deterministic authority for deciding whether fetched text is evidence.
  * HTTP success, a title, metadata, or a non-empty DOM shell are not enough.
@@ -89,29 +94,78 @@ export function assertFinalManifestMaterialExtractionBoundary(manifest) {
   return { ok: true, authorized_material_rows: authorized };
 }
 
+/**
+ * Validate the actual post-dedupe storage corpus. Navigation indexes are not the
+ * storage source of truth and may retain auditable references to sources removed
+ * as exact or all-block duplicates. Only physical root sources and independent
+ * legal artifacts are required to carry material text.
+ */
 export function assertExtractedSourcesContainMaterialText(output) {
-  const rows = output?.source_family_index?.discovered_source_index || [];
-  for (const row of rows) {
-    const artifactNames = output.source_family_index?.root_artifact_manifest?.[row.common_root]?.required_artifacts || [];
-    const source = artifactNames.flatMap((name) => output[name]?.sources || []).find((item) => item.source_id === row.source_id);
-    if (row.legal_doc_candidate) continue;
-    const retainedText = normalizeText(source?.lossless_text);
-    if (!retainedText) throw new Error(`PHASE1_EXTRACTED_SOURCE_TEXT_MISSING:${row.source_id || row.manifest_id}`);
-    const scope = source?.extraction_scope || row.extraction_scope;
-    if (["FULL_MAIN_CONTENT", "FULL_DOCUMENT"].includes(scope)) {
-      const materiality = assessSourceContentMateriality({ text: retainedText });
-      if (!materiality.extraction_eligible) throw new Error(`PHASE1_EXTRACTED_SOURCE_NOT_MATERIAL:${row.source_id || row.manifest_id}:${materiality.reasons.join(",")}`);
-    } else if (retainedText.length < 40) {
-      throw new Error(`PHASE1_EXTRACTED_DELTA_TOO_SMALL:${row.source_id || row.manifest_id}`);
+  const sourceFamilyIndex = output?.source_family_index;
+  if (!sourceFamilyIndex?.root_artifact_manifest) throw new Error("PHASE1_MATERIAL_STORAGE_BOUNDARY_INPUT_INVALID");
+
+  const indexedSourceIds = new Set((sourceFamilyIndex.discovered_source_index || []).map((row) => row.source_id).filter(Boolean));
+  const physicalSourceIds = new Set();
+  let physicalRootSources = 0;
+
+  for (const [root, entry] of Object.entries(sourceFamilyIndex.root_artifact_manifest || {})) {
+    for (const artifactName of entry.required_artifacts || []) {
+      const artifact = output[artifactName];
+      if (!artifact || artifact.common_root !== root || !Array.isArray(artifact.sources)) throw new Error(`PHASE1_MATERIAL_STORAGE_ROOT_ARTIFACT_INVALID:${artifactName}`);
+      for (const source of artifact.sources) {
+        const sourceId = source?.source_id || source?.manifest_id || `${root}:unknown`;
+        if (physicalSourceIds.has(sourceId)) throw new Error(`PHASE1_MATERIAL_STORAGE_DUPLICATE_PHYSICAL_SOURCE:${sourceId}`);
+        physicalSourceIds.add(sourceId);
+        physicalRootSources += 1;
+
+        if (indexedSourceIds.size && source.source_id && !indexedSourceIds.has(source.source_id)) throw new Error(`PHASE1_MATERIAL_STORAGE_PHYSICAL_SOURCE_NOT_INDEXED:${source.source_id}`);
+        const retainedText = normalizeText(source.lossless_text);
+        if (!retainedText) throw new Error(`PHASE1_EXTRACTED_SOURCE_TEXT_MISSING:${sourceId}`);
+
+        const scope = source.extraction_scope || "FULL_MAIN_CONTENT";
+        if (["FULL_MAIN_CONTENT", "FULL_DOCUMENT"].includes(scope)) {
+          const materiality = assessSourceContentMateriality({ text: retainedText });
+          if (!materiality.extraction_eligible) throw new Error(`PHASE1_EXTRACTED_SOURCE_NOT_MATERIAL:${sourceId}:${materiality.reasons.join(",")}`);
+        } else if (["SELECTED_UNIQUE_SECTIONS", "STRUCTURED_COVERAGE_ONLY"].includes(scope)) {
+          if (retainedText.length < 40) throw new Error(`PHASE1_EXTRACTED_DELTA_TOO_SMALL:${sourceId}`);
+        } else {
+          throw new Error(`PHASE1_MATERIAL_STORAGE_SCOPE_INVALID:${sourceId}:${scope}`);
+        }
+      }
     }
   }
+
+  const suppressedSourceIds = new Set();
+  const blockDedupe = sourceFamilyIndex.block_dedupe_forensics || {};
+  for (const [root, rootForensics] of Object.entries(blockDedupe.roots || {})) {
+    for (const source of rootForensics.source_forensics || []) {
+      if (!SUPPRESSION_ACTIONS.has(source.action)) continue;
+      if (!source.source_id || !source.duplicate_owner_source_id) throw new Error(`PHASE1_MATERIAL_STORAGE_SUPPRESSION_PROVENANCE_MISSING:${root}:${source.source_id || "unknown"}`);
+      if (physicalSourceIds.has(source.source_id)) throw new Error(`PHASE1_MATERIAL_STORAGE_SUPPRESSED_SOURCE_STILL_PHYSICAL:${source.source_id}`);
+      suppressedSourceIds.add(source.source_id);
+    }
+  }
+
+  for (const row of sourceFamilyIndex.manifest_only_index || []) {
+    if (!SUPPRESSION_ACTIONS.has(row.extraction_status)) continue;
+    if (!row.source_id || !row.duplicate_owner_source_id) throw new Error(`PHASE1_MATERIAL_STORAGE_MANIFEST_SUPPRESSION_PROVENANCE_MISSING:${row.source_id || row.manifest_id || "unknown"}`);
+    if (physicalSourceIds.has(row.source_id)) throw new Error(`PHASE1_MATERIAL_STORAGE_MANIFEST_SUPPRESSED_SOURCE_STILL_PHYSICAL:${row.source_id}`);
+    suppressedSourceIds.add(row.source_id);
+  }
+
   const legalDocs = output?.legal_doc_inventory?.documents_found || [];
   for (const doc of legalDocs) {
     const artifact = output[doc.artifact_name];
     const materiality = assessSourceContentMateriality({ text: artifact?.lossless_text });
-    if (!artifact?.lossless_text || !materiality.extraction_eligible) throw new Error(`PHASE1_LEGAL_ARTIFACT_NOT_MATERIAL:${doc.artifact_name}`);
+    if (!artifact?.lossless_text || artifact.extraction_scope !== "FULL_DOCUMENT" || !materiality.extraction_eligible) throw new Error(`PHASE1_LEGAL_ARTIFACT_NOT_MATERIAL:${doc.artifact_name}`);
   }
-  return { ok: true, root_sources: rows.filter((row) => !row.legal_doc_candidate).length, legal_artifacts: legalDocs.length };
+
+  return {
+    ok: true,
+    physical_root_sources: physicalRootSources,
+    suppressed_duplicate_sources: suppressedSourceIds.size,
+    legal_artifacts: legalDocs.length
+  };
 }
 
 function detectPlaceholderSignals(text) {
