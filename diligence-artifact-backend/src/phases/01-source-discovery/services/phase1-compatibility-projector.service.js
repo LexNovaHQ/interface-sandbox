@@ -110,6 +110,7 @@ export function projectPhase1Compatibility({ output, deduped_url_manifest } = {}
       physical_root_shard_pattern: "lossless_root__{COMMON_ROOT}__part_{NNN}",
       legal_document_pattern: "legal_doc_{DOC_TYPE}",
       legal_document_stable_suffix_pattern: "legal_doc_{DOC_TYPE}__{STABLE_SUFFIX}",
+      legal_document_stable_suffix_character_rule: "LOWERCASE_ALNUM_UNDERSCORE_HYPHEN",
       downstream_consumer_edit_required: false,
       root_reconstruction_supported: true,
       legal_navigation_controls_preserved: true
@@ -198,7 +199,7 @@ function compatibilityStamp(artifactType) {
   };
 }
 
-function isValidRootArtifactName(name, root) { return name === `lossless_root__${root}` || new RegExp(`^lossless_root__${escapeRegex(root)}__part_\\d{3}$`).test(name); }
-function isValidLegalArtifactName(name) { return /^legal_doc_[a-z0-9_]+(?:__[a-z0-9_]+)*$/.test(name) && !FIXED_AGENT_1B_ARTIFACTS.includes(name); }
+function isValidRootArtifactName(name, root) { return name === `lossless_root__${root}` || new RegExp(`^lossless_root__${escapeRegex(root)}__part_\d{3}$`).test(name); }
+function isValidLegalArtifactName(name) { return /^legal_doc_(?!.*__.*__)[a-z0-9_]+(?:__[a-z0-9_-]+)?$/.test(name) && !FIXED_AGENT_1B_ARTIFACTS.includes(name); }
 function unique(values) { return [...new Set((values || []).filter(Boolean))]; }
 function escapeRegex(value) { return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
