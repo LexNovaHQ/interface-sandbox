@@ -38,7 +38,7 @@ try {
       ...Array.from({ length: 6 }, (_, index) => productRow(index + 1)),
       legalRow("privacy_data_processing.URL.001", "/one97/privacy-policy", "one97"),
       legalRow("privacy_data_processing.URL.002", "/one97/privacy-policy-copy", "one97"),
-      legalRow("privacy_data_processing.URL.003", "/ppsl/privacy-policy", "ppsl")
+      legalRow("privacy_data_processing.URL.003", "/ppsl/privacy-policy", "entity-explicit-ppsl")
     ]
   };
 
@@ -59,11 +59,11 @@ try {
 
   const privacyDocs = output.legal_doc_inventory.documents_found.filter((doc) => doc.doc_type === "privacy_policy");
   assert.equal(privacyDocs.length, 2);
-  assert.deepEqual(new Set(privacyDocs.map((doc) => doc.entity_id)), new Set(["one97", "ppsl"]));
+  assert.deepEqual(new Set(privacyDocs.map((doc) => doc.entity_id)), new Set(["one97", "entity-explicit-ppsl"]));
   assert.ok(output.legal_doc_privacy_policy);
   assert.equal(output.legal_doc_privacy_policy.entity_id, "one97");
-  assert.ok(output.legal_doc_privacy_policy__ppsl);
-  assert.equal(output.legal_doc_privacy_policy__ppsl.entity_id, "ppsl");
+  assert.ok(output["legal_doc_privacy_policy__entity-explicit-ppsl"]);
+  assert.equal(output["legal_doc_privacy_policy__entity-explicit-ppsl"].entity_id, "entity-explicit-ppsl");
   assert.equal(output.legal_doc_lossless_validation_manifest.exact_duplicate_aliases_collapsed, 1);
   assert.equal(output.legal_doc_lossless_validation_manifest.cross_entity_merge_detected, false);
   assert.equal(output.legal_doc_lossless_validation_manifest.status, "PASS");
@@ -91,6 +91,7 @@ try {
     product_physical_artifacts: productEntry.required_artifacts.length,
     distinct_privacy_instruments: privacyDocs.length,
     exact_legal_aliases_collapsed: output.legal_doc_lossless_validation_manifest.exact_duplicate_aliases_collapsed,
+    hyphenated_stable_legal_suffix_supported: true,
     downstream_handoff_unchanged: true,
     material_content_gate_active: true
   }, null, 2));
