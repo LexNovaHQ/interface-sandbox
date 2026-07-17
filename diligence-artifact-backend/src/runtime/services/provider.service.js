@@ -2,6 +2,7 @@ import { config, configStatus, requireGeminiConfig } from "../config.js";
 
 const RETRYABLE_STATUS = new Set([408, 429, 500, 502, 503, 504]);
 const KEY_SCOPED_STATUS = new Set([400, 401, 403]);
+let nextGeminiRequestAt = 0;
 
 export const PROVIDER_SERVICE_STATUS = Object.freeze({
   central_runtime_service: "provider.service",
@@ -46,8 +47,9 @@ export async function callGeminiJson({ prompt, phase, temperature = 0, maxOutput
   for (let round = 0; round < rounds; round += 1) {
     for (let modelIndex = 0; modelIndex < models.length; modelIndex += 1) {
       const model = models[modelIndex];
+      const startKeyIndex = round % keyCount;
       for (let offset = 0; offset < keyCount; offset += 1) {
-        const keyIndex = (round + offset) % keyCount;
+        const keyIndex = (startKeyIndex + offset) % keyCount;
         const key = config.geminiApiKeys[keyIndex];
         try {
           const result = await callGeminiOnce({ key, model, prompt, temperature, maxOutputTokens: effectiveMaxOutputTokens });
@@ -77,11 +79,24 @@ export async function callGeminiJson({ prompt, phase, temperature = 0, maxOutput
           const summary = providerErrorSummary({ error, phase, model, round: round + 1, keyIndex, maxOutputTokens: effectiveMaxOutputTokens });
           errors.push(summary);
           if (shouldContinueToNextKey(error)) continue;
-          if (!isRetryableGeminiError(error)) throw aggregatedProviderError(phase, errors);
+          if (providerErrorType(error) === "RATE_OR_QUOTA") {
+            if (round < rounds - 1) {
+              await sleep(Math.max(providerRetryAfterDelayMs(error), backoffDelay(round), config.geminiMinRequestIntervalMs));
+              break;
+            }
+            throw aggregatedProviderError(phase, errors);
+          }
+          if (isRetryableGeminiError(error)) {
+            if (round < rounds - 1) {
+              await sleep(Math.max(backoffDelay(round), config.geminiMinRequestIntervalMs));
+              break;
+            }
+            throw aggregatedProviderError(phase, errors);
+          }
+          throw aggregatedProviderError(phase, errors);
         }
       }
     }
-    if (round < rounds - 1) await sleep(backoffDelay(round));
   }
 
   throw aggregatedProviderError(phase, errors);
@@ -94,32 +109,36 @@ export async function probeGeminiAccess({ phase = "PHASE1_SEMANTIC_PROVIDER_ACCE
 
   for (let keyIndex = 0; keyIndex < config.geminiApiKeys.length; keyIndex += 1) {
     const key = config.geminiApiKeys[keyIndex];
-    try {
-      const result = await callGeminiOnce({ key, model, prompt, temperature: 0, maxOutputTokens: 128 });
-      const json = parseJsonFromText(result.text);
-      if (json?.ok !== true || json?.phase1_semantic_access !== true) throw new Error("GEMINI_PREFLIGHT_RESPONSE_SCHEMA_INVALID");
-      results.push({
-        key_alias: keyAlias(keyIndex),
-        status: "AUTHORIZED",
-        model,
-        finish_reason: result.finishReason || null
-      });
-    } catch (error) {
-      const sanitized = sanitizeProviderError(error);
-      results.push({
-        key_alias: keyAlias(keyIndex),
-        status: "REJECTED",
-        model,
-        provider_error_type: providerErrorType(error),
-        ...sanitized
-      });
+    let finalError = null;
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      try {
+        const result = await callGeminiOnce({ key, model, prompt, temperature: 0, maxOutputTokens: 128 });
+        const json = parseJsonFromText(result.text);
+        if (json?.ok !== true || json?.phase1_semantic_access !== true) throw new Error("GEMINI_PREFLIGHT_RESPONSE_SCHEMA_INVALID");
+        results.push({ key_alias: keyAlias(keyIndex), authorization_status: "AUTHORIZED", http_status: 200, model, finish_reason: result.finishReason || null });
+        finalError = null;
+        break;
+      } catch (error) {
+        finalError = error;
+        if (providerErrorType(error) === "RATE_OR_QUOTA" && attempt === 0) {
+          await sleep(Math.max(providerRetryAfterDelayMs(error), config.geminiMinRequestIntervalMs));
+          continue;
+        }
+        break;
+      }
+    }
+    if (finalError) {
+      const errorType = providerErrorType(finalError);
+      const authorizationStatus = errorType === "RATE_OR_QUOTA" ? "RATE_LIMITED" : "REJECTED";
+      results.push({ key_alias: keyAlias(keyIndex), authorization_status: authorizationStatus, model, provider_error_type: errorType, ...sanitizeProviderError(finalError) });
     }
   }
 
-  const authorized = results.filter((item) => item.status === "AUTHORIZED");
-  const rejected = results.filter((item) => item.status === "REJECTED");
+  const authorized = results.filter((item) => item.authorization_status === "AUTHORIZED");
+  const rejected = results.filter((item) => item.authorization_status === "REJECTED");
+  const rateLimited = results.filter((item) => item.authorization_status === "RATE_LIMITED");
   return {
-    schema_version: "GEMINI_PROVIDER_ACCESS_PREFLIGHT_v1",
+    schema_version: "GEMINI_PROVIDER_ACCESS_PREFLIGHT_v2",
     phase,
     provider: "gemini",
     model,
@@ -127,15 +146,17 @@ export async function probeGeminiAccess({ phase = "PHASE1_SEMANTIC_PROVIDER_ACCE
     keys_tested: results.length,
     keys_authorized: authorized.length,
     keys_rejected: rejected.length,
+    keys_rate_limited: rateLimited.length,
     model_confirmed: authorized.length > 0,
     phase1_semantic_access_confirmed: authorized.length > 0,
-    all_configured_keys_authorized: rejected.length === 0 && authorized.length === config.geminiApiKeys.length,
-    status: rejected.length === 0 && authorized.length === config.geminiApiKeys.length ? "PASS" : "FAIL",
+    all_configured_keys_authorized: authorized.length === config.geminiApiKeys.length,
+    status: rejected.length === 0 && authorized.length > 0 ? "PASS" : "FAIL",
     results
   };
 }
 
 async function callGeminiOnce({ key, model, prompt, temperature, maxOutputTokens }) {
+  await waitForGeminiRequestSlot();
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), config.geminiTimeoutMs);
   try {
@@ -148,11 +169,14 @@ async function callGeminiOnce({ key, model, prompt, temperature, maxOutputTokens
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig })
     });
-    const payload = await response.json().catch(() => ({}));
+    const raw = await response.text();
+    let payload = {};
+    try { payload = JSON.parse(raw); } catch {}
     if (!response.ok) {
-      const error = new Error(payload?.error?.message || `GEMINI_HTTP_${response.status}`);
+      const error = new Error(payload?.error?.message || sanitizeRawProviderBody(raw) || `GEMINI_HTTP_${response.status}`);
       error.status = response.status;
       error.payload = payload;
+      error.responseContentType = response.headers.get("content-type") || null;
       throw error;
     }
     const candidate = payload?.candidates?.[0] || {};
@@ -302,6 +326,21 @@ function buildJsonRepairPrompt({ phase, originalPrompt, malformedText, parseErro
   ].join("\n\n");
 }
 
+async function waitForGeminiRequestSlot() {
+  const now = Date.now();
+  const waitMs = Math.max(0, nextGeminiRequestAt - now);
+  if (waitMs) await sleep(waitMs);
+  nextGeminiRequestAt = Date.now() + Number(config.geminiMinRequestIntervalMs || 0);
+}
+
+function sanitizeRawProviderBody(value) {
+  return String(value || "")
+    .replace(/AIza[0-9A-Za-z_-]+/g, "[REDACTED]")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 1000);
+}
+
 function providerErrorSummary({ error, phase, model, round, keyIndex, maxOutputTokens }) {
   const errorType = providerErrorType(error);
   const retryAfterDelayMs = errorType === "RATE_OR_QUOTA" ? providerRetryAfterDelayMs(error) : 0;
@@ -418,7 +457,9 @@ export function activeProviderModelConfig() {
     max_output_tokens: config.geminiMaxOutputTokens || null,
     retry_rounds: config.geminiRetryRounds,
     keys_per_model_per_round: config.geminiKeysPerModelPerRound,
+    min_request_interval_ms: config.geminiMinRequestIntervalMs,
     configured_key_count: config.geminiApiKeys.length,
-    key_rotation_rule: "ALL_CONFIGURED_KEYS_TESTED_BEFORE_FAILURE"
+    key_rotation_rule: "ROTATE_ALL_KEYS_ONLY_FOR_KEY_SCOPED_400_401_403",
+    quota_rule: "PACE_AND_RETRY_WITHOUT_KEY_FANOUT"
   };
 }
