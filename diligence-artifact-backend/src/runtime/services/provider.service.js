@@ -1,6 +1,7 @@
 import { config, configStatus, requireGeminiConfig } from "../config.js";
 
 const RETRYABLE_STATUS = new Set([408, 429, 500, 502, 503, 504]);
+const KEY_SCOPED_STATUS = new Set([400, 401, 403]);
 
 export const PROVIDER_SERVICE_STATUS = Object.freeze({
   central_runtime_service: "provider.service",
@@ -40,14 +41,13 @@ export async function callGeminiJson({ prompt, phase, temperature = 0, maxOutput
   const keyCount = config.geminiApiKeys.length;
   const models = config.geminiModels.length ? config.geminiModels : [config.geminiModel];
   const rounds = Math.max(1, Number(config.geminiRetryRounds || 1));
-  const keysPerModel = Math.min(keyCount, Math.max(1, Number(config.geminiKeysPerModelPerRound || keyCount)));
   const effectiveMaxOutputTokens = resolveMaxOutputTokens(maxOutputTokens);
 
   for (let round = 0; round < rounds; round += 1) {
     for (let modelIndex = 0; modelIndex < models.length; modelIndex += 1) {
       const model = models[modelIndex];
-      for (let offset = 0; offset < keysPerModel; offset += 1) {
-        const keyIndex = (round * keysPerModel + offset) % keyCount;
+      for (let offset = 0; offset < keyCount; offset += 1) {
+        const keyIndex = (round + offset) % keyCount;
         const key = config.geminiApiKeys[keyIndex];
         try {
           const result = await callGeminiOnce({ key, model, prompt, temperature, maxOutputTokens: effectiveMaxOutputTokens });
@@ -62,7 +62,9 @@ export async function callGeminiJson({ prompt, phase, temperature = 0, maxOutput
               primary_model: config.geminiModel,
               fallback_models: models,
               retry_round: round + 1,
-              key_alias: `GEMINI_API_KEYS_${keyIndex + 1}`,
+              key_alias: keyAlias(keyIndex),
+              configured_key_count: keyCount,
+              keys_tested_before_success: uniqueStrings(errors.map((item) => item.key_alias)).length + 1,
               max_output_tokens_sent: effectiveMaxOutputTokens || null,
               warnings: [...buildGeminiWarnings(result), ...parsed.warnings],
               usage_metadata: result.usageMetadata,
@@ -72,28 +74,65 @@ export async function callGeminiJson({ prompt, phase, temperature = 0, maxOutput
             }
           };
         } catch (error) {
-          const errorType = providerErrorType(error);
-          const retryAfterDelayMs = errorType === "RATE_OR_QUOTA" ? providerRetryAfterDelayMs(error) : 0;
-          errors.push({
-            phase,
-            model,
-            retry_round: round + 1,
-            key_alias: `GEMINI_API_KEYS_${keyIndex + 1}`,
-            max_output_tokens_sent: effectiveMaxOutputTokens || null,
-            message: error?.message || String(error),
-            status: error?.status || null,
-            finish_reason: error?.finishReason || null,
-            provider_error_type: errorType,
-            retry_after_delay_ms: retryAfterDelayMs || null
-          });
-          if (!isRetryableGeminiError(error)) throw new Error(`GEMINI_CALL_FAILED:${phase}:${JSON.stringify(errors)}`);
+          const summary = providerErrorSummary({ error, phase, model, round: round + 1, keyIndex, maxOutputTokens: effectiveMaxOutputTokens });
+          errors.push(summary);
+          if (shouldContinueToNextKey(error)) continue;
+          if (!isRetryableGeminiError(error)) throw aggregatedProviderError(phase, errors);
         }
       }
     }
     if (round < rounds - 1) await sleep(backoffDelay(round));
   }
 
-  throw new Error(`GEMINI_CALL_FAILED:${phase}:${JSON.stringify(errors)}`);
+  throw aggregatedProviderError(phase, errors);
+}
+
+export async function probeGeminiAccess({ phase = "PHASE1_SEMANTIC_PROVIDER_ACCESS_PREFLIGHT", model = config.geminiModel } = {}) {
+  requireGeminiConfig();
+  const results = [];
+  const prompt = 'Return exactly this JSON object and nothing else: {"ok":true,"phase1_semantic_access":true}';
+
+  for (let keyIndex = 0; keyIndex < config.geminiApiKeys.length; keyIndex += 1) {
+    const key = config.geminiApiKeys[keyIndex];
+    try {
+      const result = await callGeminiOnce({ key, model, prompt, temperature: 0, maxOutputTokens: 128 });
+      const json = parseJsonFromText(result.text);
+      if (json?.ok !== true || json?.phase1_semantic_access !== true) throw new Error("GEMINI_PREFLIGHT_RESPONSE_SCHEMA_INVALID");
+      results.push({
+        key_alias: keyAlias(keyIndex),
+        status: "AUTHORIZED",
+        model,
+        finish_reason: result.finishReason || null
+      });
+    } catch (error) {
+      const sanitized = sanitizeProviderError(error);
+      results.push({
+        key_alias: keyAlias(keyIndex),
+        status: "REJECTED",
+        model,
+        provider_error_type: providerErrorType(error),
+        ...sanitized
+      });
+    }
+  }
+
+  const authorized = results.filter((item) => item.status === "AUTHORIZED");
+  const rejected = results.filter((item) => item.status === "REJECTED");
+  return {
+    schema_version: "GEMINI_PROVIDER_ACCESS_PREFLIGHT_v1",
+    phase,
+    provider: "gemini",
+    model,
+    parsed_key_count: config.geminiApiKeys.length,
+    keys_tested: results.length,
+    keys_authorized: authorized.length,
+    keys_rejected: rejected.length,
+    model_confirmed: authorized.length > 0,
+    phase1_semantic_access_confirmed: authorized.length > 0,
+    all_configured_keys_authorized: rejected.length === 0 && authorized.length === config.geminiApiKeys.length,
+    status: rejected.length === 0 && authorized.length === config.geminiApiKeys.length ? "PASS" : "FAIL",
+    results
+  };
 }
 
 async function callGeminiOnce({ key, model, prompt, temperature, maxOutputTokens }) {
@@ -263,8 +302,51 @@ function buildJsonRepairPrompt({ phase, originalPrompt, malformedText, parseErro
   ].join("\n\n");
 }
 
+function providerErrorSummary({ error, phase, model, round, keyIndex, maxOutputTokens }) {
+  const errorType = providerErrorType(error);
+  const retryAfterDelayMs = errorType === "RATE_OR_QUOTA" ? providerRetryAfterDelayMs(error) : 0;
+  return {
+    phase,
+    model,
+    retry_round: round,
+    key_alias: keyAlias(keyIndex),
+    max_output_tokens_sent: maxOutputTokens || null,
+    provider_error_type: errorType,
+    retry_after_delay_ms: retryAfterDelayMs || null,
+    ...sanitizeProviderError(error)
+  };
+}
+
+function sanitizeProviderError(error) {
+  const payloadError = error?.payload?.error || {};
+  const details = Array.isArray(payloadError.details) ? payloadError.details : [];
+  const reasons = uniqueStrings(details.flatMap((item) => [item?.reason, item?.metadata?.reason, item?.errorInfo?.reason]).filter(Boolean));
+  return {
+    message: String(payloadError.message || error?.message || "UNKNOWN_PROVIDER_ERROR").slice(0, 1000),
+    status: Number(error?.status || 0) || null,
+    google_status: String(payloadError.status || "") || null,
+    google_reason_codes: reasons,
+    finish_reason: error?.finishReason || null
+  };
+}
+
+function aggregatedProviderError(phase, errors) {
+  const error = new Error(`GEMINI_CALL_FAILED:${phase}:${JSON.stringify(errors)}`);
+  error.provider_attempts = errors;
+  error.status = errors.at(-1)?.status || null;
+  return error;
+}
+
+function keyAlias(index) {
+  return `GEMINI_API_KEYS_${index + 1}`;
+}
+
+function shouldContinueToNextKey(error) {
+  return KEY_SCOPED_STATUS.has(Number(error?.status || 0));
+}
+
 function uniqueStrings(values) {
-  return [...new Set(values.map((value) => String(value || "").trim()).filter(Boolean))];
+  return [...new Set((values || []).map((value) => String(value || "").trim()).filter(Boolean))];
 }
 
 function resolveMaxOutputTokens(requested) {
@@ -335,6 +417,8 @@ export function activeProviderModelConfig() {
     timeout_ms: config.geminiTimeoutMs,
     max_output_tokens: config.geminiMaxOutputTokens || null,
     retry_rounds: config.geminiRetryRounds,
-    keys_per_model_per_round: config.geminiKeysPerModelPerRound
+    keys_per_model_per_round: config.geminiKeysPerModelPerRound,
+    configured_key_count: config.geminiApiKeys.length,
+    key_rotation_rule: "ALL_CONFIGURED_KEYS_TESTED_BEFORE_FAILURE"
   };
 }
