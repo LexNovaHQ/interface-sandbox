@@ -6,17 +6,18 @@ import { buildCanonicalUrlInventory, reconcileFingerprintCanonicalHints, assertC
 import { buildSourceFingerprintPass, assertSourceFingerprintInventory } from "./source-fingerprint.service.js";
 import { buildLegalInstrumentClassification, assertLegalInstrumentClassification } from "./legal-instrument-classifier.service.js";
 import { buildRootFeatureLaneClustering, assertRootFeatureLaneClustering } from "./root-feature-lane-clustering.service.js";
-import { buildCanonicalSelection, assertCanonicalSelection } from "./canonical-selection.service.js";
+import { buildSemanticFeatureAdjudication, assertSemanticFeatureAdjudication } from "./semantic-feature-adjudication.service.js";
+import { buildRb18bCanonicalSelection, assertRb18bCanonicalSelection } from "./rb18b-canonical-selection.service.js";
 import { buildFinalDedupedManifest, assertFinalDedupedManifest } from "./final-deduped-manifest.service.js";
 
-export const PHASE1_UNIVERSAL_DISCOVERY_PRODUCER_VERSION = "PHASE1_UNIVERSAL_DISCOVERY_RB18_MATERIAL_GATE_v1";
+export const PHASE1_UNIVERSAL_DISCOVERY_PRODUCER_VERSION = "PHASE1_UNIVERSAL_DISCOVERY_RB18B_SEMANTIC_COMPRESSION_v1";
 
 export async function buildUniversalSourceUrlManifestArtifact({ run, preflightContext = {} } = {}) {
   const legacyOutput = await buildLegacySourceUrlManifestArtifact({ run, preflightContext });
   return augmentSourceUrlManifestOutput({ run, legacyOutput });
 }
 
-export async function augmentSourceUrlManifestOutput({ run, legacyOutput, rootHtml, fetchImpl } = {}) {
+export async function augmentSourceUrlManifestOutput({ run, legacyOutput, rootHtml, fetchImpl, semanticCallProvider } = {}) {
   if (!legacyOutput?.deduped_url_manifest || !legacyOutput?.source_discovery_matrix_manifest || !legacyOutput?.adapter_expansion_log || !legacyOutput?.neutral_evidence_bucket_manifest) throw new Error("PHASE1_UNIVERSAL_DISCOVERY_LEGACY_OUTPUT_INCOMPLETE");
 
   const legacyManifest = legacyOutput.deduped_url_manifest;
@@ -37,44 +38,38 @@ export async function augmentSourceUrlManifestOutput({ run, legacyOutput, rootHt
   const initialCanonicalInventory = buildCanonicalUrlInventory({ rawDiscoveryInventory: broadDiscovery, entityBoundary });
   assertCanonicalUrlInventory(initialCanonicalInventory);
 
-  const fingerprintPass = await buildSourceFingerprintPass({
-    canonicalInventory: initialCanonicalInventory,
-    fetchImpl
-  });
+  const fingerprintPass = await buildSourceFingerprintPass({ canonicalInventory: initialCanonicalInventory, fetchImpl });
   assertSourceFingerprintInventory(fingerprintPass.inventory);
 
-  const canonicalInventory = reconcileFingerprintCanonicalHints({
-    canonicalInventory: initialCanonicalInventory,
-    fingerprintInventory: fingerprintPass.inventory,
-    entityBoundary
-  });
+  const canonicalInventory = reconcileFingerprintCanonicalHints({ canonicalInventory: initialCanonicalInventory, fingerprintInventory: fingerprintPass.inventory, entityBoundary });
   assertCanonicalUrlInventory(canonicalInventory);
 
-  const legalClassification = buildLegalInstrumentClassification({
-    canonicalInventory,
-    fingerprintInventory: fingerprintPass.inventory,
-    analysisCache: fingerprintPass.analysis_cache,
-    internalEvidenceModel: initialInternalEvidenceModel
-  });
+  const legalClassification = buildLegalInstrumentClassification({ canonicalInventory, fingerprintInventory: fingerprintPass.inventory, analysisCache: fingerprintPass.analysis_cache, internalEvidenceModel: initialInternalEvidenceModel });
   assertLegalInstrumentClassification(legalClassification);
 
-  const rootFeatureLaneClustering = buildRootFeatureLaneClustering({
-    canonicalInventory,
-    fingerprintInventory: fingerprintPass.inventory,
-    analysisCache: fingerprintPass.analysis_cache,
-    internalEvidenceModel: initialInternalEvidenceModel,
-    legalClassification
-  });
+  const rootFeatureLaneClustering = buildRootFeatureLaneClustering({ canonicalInventory, fingerprintInventory: fingerprintPass.inventory, analysisCache: fingerprintPass.analysis_cache, internalEvidenceModel: initialInternalEvidenceModel, legalClassification });
   assertRootFeatureLaneClustering(rootFeatureLaneClustering);
 
-  const canonicalSelection = buildCanonicalSelection({
+  const semanticFeatureAdjudication = await buildSemanticFeatureAdjudication({
     canonicalInventory,
     fingerprintInventory: fingerprintPass.inventory,
     rootFeatureLaneClustering,
     legalClassification,
+    analysisCache: fingerprintPass.analysis_cache,
+    enableModel: run?.phase1_semantic_adjudication_enabled !== false,
+    ...(typeof semanticCallProvider === "function" ? { callProvider: semanticCallProvider } : {})
+  });
+  assertSemanticFeatureAdjudication(semanticFeatureAdjudication);
+
+  const canonicalSelection = buildRb18bCanonicalSelection({
+    canonicalInventory,
+    fingerprintInventory: fingerprintPass.inventory,
+    rootFeatureLaneClustering: semanticFeatureAdjudication.adjudicated_root_feature_lane_clustering,
+    legalClassification,
+    semanticFeatureAdjudication,
     analysisCache: fingerprintPass.analysis_cache
   });
-  assertCanonicalSelection(canonicalSelection);
+  assertRb18bCanonicalSelection(canonicalSelection);
 
   const finalManifest = buildFinalDedupedManifest({ legacyManifest, canonicalSelection });
   assertFinalDedupedManifest(finalManifest, canonicalSelection);
@@ -86,6 +81,7 @@ export async function augmentSourceUrlManifestOutput({ run, legacyOutput, rootHt
     source_fingerprint_inventory_ref: "source_discovery_matrix_manifest.source_fingerprint_inventory",
     legal_instrument_classification_ref: "source_discovery_matrix_manifest.legal_instrument_classification",
     root_feature_lane_clustering_ref: "source_discovery_matrix_manifest.root_feature_lane_clustering",
+    semantic_feature_adjudication_ref: "source_discovery_matrix_manifest.semantic_feature_adjudication",
     canonical_selection_ref: "source_discovery_matrix_manifest.canonical_selection",
     canonical_identity_rule: "ENTITY_ID_PLUS_CANONICAL_URL",
     analysis_public_manifest_selection_changed: true,
@@ -102,6 +98,7 @@ export async function augmentSourceUrlManifestOutput({ run, legacyOutput, rootHt
       source_fingerprint_inventory_ref: "source_discovery_matrix_manifest.source_fingerprint_inventory",
       legal_instrument_classification_ref: "source_discovery_matrix_manifest.legal_instrument_classification",
       root_feature_lane_clustering_ref: "source_discovery_matrix_manifest.root_feature_lane_clustering",
+      semantic_feature_adjudication_ref: "source_discovery_matrix_manifest.semantic_feature_adjudication",
       canonical_selection_ref: "source_discovery_matrix_manifest.canonical_selection",
       target_boundary: {
         ...(finalManifest.target_boundary || {}),
@@ -122,6 +119,7 @@ export async function augmentSourceUrlManifestOutput({ run, legacyOutput, rootHt
       source_fingerprint_inventory: fingerprintPass.inventory,
       legal_instrument_classification: legalClassification,
       root_feature_lane_clustering: rootFeatureLaneClustering,
+      semantic_feature_adjudication: semanticFeatureAdjudication,
       canonical_selection: canonicalSelection,
       final_manifest_forensics: finalManifest.manifest_forensics,
       internal_evidence_model: internalEvidenceModel,
@@ -132,10 +130,13 @@ export async function augmentSourceUrlManifestOutput({ run, legacyOutput, rootHt
       rb06_source_fingerprint_pass_active: true,
       rb07_root_feature_lane_clustering_active: true,
       rb08_bounded_legal_classifier_active: true,
+      rb18b_hybrid_semantic_adjudication_active: true,
+      rb18b_coverage_only_body_extraction_forbidden: true,
       rb09_canonical_selection_active: true,
       rb10_final_deduped_manifest_active: true,
       rb18_material_content_gate_active: true,
       http_success_alone_never_authorizes_extraction: true,
+      semantic_output_never_directly_authorizes_extraction: true,
       manifest_selection_unchanged_until_rb09: false,
       final_manifest_controls_agent_1b: true
     },
@@ -147,8 +148,13 @@ export async function augmentSourceUrlManifestOutput({ run, legacyOutput, rootHt
       fingerprint_count: fingerprintPass.inventory.fingerprints.length,
       material_content_count: fingerprintPass.inventory.counts.material_content,
       no_material_content_count: fingerprintPass.inventory.counts.fetched_no_material_content,
+      semantic_model_call_count: semanticFeatureAdjudication.counts.model_calls,
+      semantic_feature_cluster_count: semanticFeatureAdjudication.counts.final_feature_clusters,
       selected_extraction_count: canonicalSelection.counts.extraction_authorized,
+      coverage_only_manifest_count: canonicalSelection.counts.coverage_only_manifest_rows,
+      qualifying_unique_delta_source_count: canonicalSelection.counts.qualifying_unique_delta_sources,
       exact_duplicates_suppressed: canonicalSelection.counts.exact_duplicates_suppressed,
+      template_variants_suppressed: canonicalSelection.counts.template_variants_suppressed,
       external_surface_candidate_count: broadDiscovery.counts.external_surface_candidates,
       external_surface_candidates_are_discovery_only: true,
       downstream_contract_changed: false
@@ -159,6 +165,7 @@ export async function augmentSourceUrlManifestOutput({ run, legacyOutput, rootHt
       entity_boundary_ref: "source_discovery_matrix_manifest.entity_surface_map",
       internal_evidence_model_ref: "source_discovery_matrix_manifest.internal_evidence_model",
       root_feature_lane_clustering_ref: "source_discovery_matrix_manifest.root_feature_lane_clustering",
+      semantic_feature_adjudication_ref: "source_discovery_matrix_manifest.semantic_feature_adjudication",
       canonical_selection_ref: "source_discovery_matrix_manifest.canonical_selection",
       downstream_contract_changed: false
     }
