@@ -1,12 +1,28 @@
+const PROVIDER_PASSTHROUGH_HOSTS = new Set(["generativelanguage.googleapis.com"]);
+
 export function createRb18ControlledFetch({ originalFetch, allowedHosts, budgets, timeoutMs }) {
   if (typeof originalFetch !== "function") throw new Error("RB18_ORIGINAL_FETCH_MISSING");
   const allowed = new Set((allowedHosts || []).map(normaliseHost));
   const cache = new Map();
   const lanes = Object.fromEntries(Object.entries(budgets || {}).map(([lane, budget]) => [lane, laneState(budget)]));
   if (!lanes.other) lanes.other = laneState(10);
+  const passthrough = { requests: 0, responses_by_status: {}, failures: 0 };
 
   async function controlledFetch(input, init = {}) {
     const url = new URL(typeof input === "string" || input instanceof URL ? String(input) : input.url);
+
+    if (PROVIDER_PASSTHROUGH_HOSTS.has(normaliseHost(url.hostname))) {
+      passthrough.requests += 1;
+      try {
+        const response = await originalFetch(url, init);
+        passthrough.responses_by_status[response.status] = (passthrough.responses_by_status[response.status] || 0) + 1;
+        return response;
+      } catch (error) {
+        passthrough.failures += 1;
+        throw error;
+      }
+    }
+
     const lane = requestLane(init);
     const stats = lanes[lane] || lanes.other;
     if (!hostAllowed(url.hostname, allowed)) {
@@ -55,8 +71,10 @@ export function createRb18ControlledFetch({ originalFetch, allowedHosts, budgets
   return {
     fetch: controlledFetch,
     snapshot: () => ({
-      schema_version: "PHASE1_RB18_NETWORK_LANES_v1",
+      schema_version: "PHASE1_RB18_NETWORK_LANES_v2_PROVIDER_PASSTHROUGH",
       allowed_hosts: [...allowed],
+      provider_passthrough_hosts: [...PROVIDER_PASSTHROUGH_HOSTS],
+      provider_passthrough: { ...passthrough },
       timeout_ms: timeoutMs,
       cache_entries: cache.size,
       lanes: Object.fromEntries(Object.entries(lanes).map(([lane, stats]) => [lane, {
