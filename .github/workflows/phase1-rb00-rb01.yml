@@ -49,6 +49,8 @@ jobs:
         run: npm run check:phase1-rb13-rb15
       - name: Validate RB16 idempotent persistence
         run: node scripts/check-phase1-rb16-idempotent-persistence.mjs
+      - name: Validate RB18B semantic compression
+        run: npm run check:phase1-rb18b-semantic
       - name: Validate RB17 consolidated behavioural gate
         run: node scripts/check-phase1-behavioural-validators.mjs
       - name: Upload Phase 1 baseline diagnostics
