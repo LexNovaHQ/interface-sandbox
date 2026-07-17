@@ -6,7 +6,31 @@ function env(name, fallback = "") {
 }
 
 function csv(name, fallback = "") {
-  return env(name, fallback).split(",").map((x) => x.trim()).filter(Boolean);
+  return parseDelimitedList(env(name, fallback));
+}
+
+export function parseGeminiApiKeys(value) {
+  const raw = String(value || "").replace(/^\uFEFF/, "").trim();
+  if (!raw) return [];
+
+  let values;
+  if (raw.startsWith("[")) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) throw new Error("not_array");
+      values = parsed;
+    } catch {
+      throw new Error("INVALID_GEMINI_API_KEYS_JSON_ARRAY");
+    }
+  } else {
+    values = raw.split(/[,\r\n]+/);
+  }
+
+  return [...new Set(values.map((item) => String(item || "").trim()).filter(Boolean))];
+}
+
+function parseDelimitedList(value) {
+  return [...new Set(String(value || "").split(/[,\r\n]+/).map((item) => item.trim()).filter(Boolean))];
 }
 
 function bool(name, fallback = "false") {
@@ -19,6 +43,7 @@ function numberEnv(name, fallback) {
 }
 
 const geminiModelList = csv("GEMINI_MODELS", env("GEMINI_MODEL", "gemini-2.5-flash"));
+const geminiApiKeys = parseGeminiApiKeys(env("GEMINI_API_KEYS"));
 const projectId = env("GCP_PROJECT_ID") || env("GOOGLE_CLOUD_PROJECT") || "direct-album-497808-f1";
 const region = env("GCP_REGION", "asia-south1");
 
@@ -44,7 +69,7 @@ export const config = Object.freeze({
   cloudTasksDispatchDeadlineSeconds: Math.max(0, numberEnv("CLOUD_TASKS_DISPATCH_DEADLINE_SECONDS", 1800)),
   earlyPhaseStaleMs: Math.max(60000, numberEnv("EARLY_PHASE_STALE_MS", 5 * 60 * 1000)),
   workerStaleMs: Math.max(60000, numberEnv("WORKER_STALE_MS", 20 * 60 * 1000)),
-  geminiApiKeys: csv("GEMINI_API_KEYS"),
+  geminiApiKeys,
   geminiModel: geminiModelList[0] || "gemini-2.5-flash",
   geminiModels: geminiModelList.length ? geminiModelList : ["gemini-2.5-flash"],
   geminiTimeoutMs: numberEnv("GEMINI_TIMEOUT_MS", 240000),
