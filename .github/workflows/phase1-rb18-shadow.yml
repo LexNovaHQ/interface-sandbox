@@ -4,8 +4,12 @@ on:
   pull_request:
     paths:
       - "diligence-artifact-backend/src/phases/01-source-discovery/**"
+      - "diligence-artifact-backend/src/runtime/config.js"
+      - "diligence-artifact-backend/src/runtime/services/provider.service.js"
       - "diligence-artifact-backend/src/runtime/services/storage/drive.service.js"
       - "diligence-artifact-backend/src/runtime/services/storage/firestore.service.js"
+      - "diligence-artifact-backend/scripts/check-gemini-key-configuration.mjs"
+      - "diligence-artifact-backend/scripts/check-phase1-semantic-provider-access.mjs"
       - "diligence-artifact-backend/scripts/check-phase1-rb18-shadow-runs-v2.mjs"
       - "diligence-artifact-backend/scripts/check-phase1-rb18-materialisation-classification.mjs"
       - "diligence-artifact-backend/scripts/lib/rb18-controlled-fetch.mjs"
@@ -52,6 +56,8 @@ jobs:
         run: npm ci
       - name: Validate deterministic Phase 1 behaviour first
         run: npm run check:phase1-behavioural
+      - name: Validate Gemini key configuration parser
+        run: npm run check:gemini-key-configuration
       - name: Require semantic provider secret
         shell: bash
         run: |
@@ -59,12 +65,16 @@ jobs:
             echo "GEMINI_API_KEYS repository secret is required for RB-18B live semantic adjudication."
             exit 1
           fi
-      - name: Run controlled Sarvam and Paytm shadows
+      - name: Probe every configured key for Phase 1 semantic access
+        run: npm run check:phase1-semantic-provider-access
+      - name: Run controlled Sarvam and Paytm semantic shadows
         run: npm run check:phase1-rb18-shadow
-      - name: Upload RB-18 shadow diagnostics
+      - name: Upload RB-18B provider and shadow diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: phase1-rb18-shadow-diagnostics
-          path: diligence-artifact-backend/phase1-shadow-output
+          path: |
+            diligence-artifact-backend/phase1-provider-preflight-output
+            diligence-artifact-backend/phase1-shadow-output
           if-no-files-found: error
