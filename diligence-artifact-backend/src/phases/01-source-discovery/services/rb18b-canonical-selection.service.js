@@ -1,6 +1,6 @@
 import { buildCanonicalSelection as buildRb09CanonicalSelection } from "./canonical-selection.service.js";
 
-export const PHASE1_RB18B_CANONICAL_SELECTION_SCHEMA_VERSION = "PHASE1_CANONICAL_SELECTION_RB18B_v3";
+export const PHASE1_RB18B_CANONICAL_SELECTION_SCHEMA_VERSION = "PHASE1_CANONICAL_SELECTION_RB18B_v4";
 
 const EXTRACTABLE_DISPOSITIONS = new Set(["SELECTED_CANONICAL", "SELECTED_PARTIAL_CONTRIBUTOR", "LEGAL_INSTRUMENT"]);
 const UNIQUE_BLOCK_MIN_CHARS = 120;
@@ -15,8 +15,10 @@ export function buildRb18bCanonicalSelection({ canonicalInventory, fingerprintIn
 
   const enriched = (base.decisions || []).map((decision) => {
     const semanticDecision = semantic.get(decision.candidate_id) || null;
+    const fingerprint = fingerprints.get(decision.candidate_id) || null;
     return {
       ...decision,
+      template_signature: fingerprint?.template_signature || null,
       structured_coverage: normalizeStructuredCoverage(decision),
       semantic_feature_key: semanticDecision?.semantic_feature_key || decision.feature_cluster,
       semantic_relationship: semanticDecision?.relationship || null,
@@ -85,10 +87,11 @@ export function buildRb18bCanonicalSelection({ canonicalInventory, fingerprintIn
     variant_rule: "GENERIC_CANONICAL_PLUS_MANIFEST_ONLY_STRUCTURED_COVERAGE_PLUS_SEMANTICALLY_AND_DETERMINISTICALLY_QUALIFIED_UNIQUE_DELTAS",
     semantic_authority_rule: "SEMANTIC_RECOMMENDATION_NEVER_DIRECT_EXTRACTION_AUTHORITY",
     unique_evidence_rule: `SEMANTIC_UNIQUE_DELTA_AND_MIN_${UNIQUE_BLOCK_MIN_CHARS}_CHARS_${UNIQUE_BLOCK_MIN_MEANINGFUL_TOKENS}_TOKENS_${UNIQUE_BLOCK_MIN_NOVEL_TOKEN_RATIO}_NOVEL_RATIO_MAX_${UNIQUE_BLOCK_MAX_OWNER_JACCARD}_OWNER_JACCARD`,
-    parent_template_rule: "DIRECT_CHILD_TEMPLATE_FAMILIES_COLLAPSE_TO_ROUTE_BASE_CANONICAL_WITH_DETERMINISTIC_ROOT_CORRECTION",
+    parent_template_rule: "ONLY_EXISTING_AUTHORIZED_CANONICALS_MAY_OWN_CORROBORATED_DIRECT_CHILD_TEMPLATE_FAMILIES",
     evidence_value_rule: "NAVIGATION_LISTING_AND_CORPORATE_PERIPHERAL_INDEXES_ARE_REFERENCE_ONLY",
     coverage_only_extraction_forbidden: true,
     partial_without_semantic_unique_delta_forbidden: true,
+    suppressed_candidate_repromotion_forbidden: true,
     counts: {
       ...base.counts,
       extraction_authorized: decisions.filter((item) => item.extraction_authorized).length,
@@ -109,7 +112,7 @@ export function buildRb18bCanonicalSelection({ canonicalInventory, fingerprintIn
 }
 
 export function assertRb18bCanonicalSelection(selection) {
-  if (selection?.schema_version !== PHASE1_RB18B_CANONICAL_SELECTION_SCHEMA_VERSION || selection.final_extraction_authority !== true || selection.coverage_only_extraction_forbidden !== true || selection.partial_without_semantic_unique_delta_forbidden !== true || selection.semantic_authority_rule !== "SEMANTIC_RECOMMENDATION_NEVER_DIRECT_EXTRACTION_AUTHORITY") throw new Error("PHASE1_RB18B_CANONICAL_SELECTION_SCHEMA_INVALID");
+  if (selection?.schema_version !== PHASE1_RB18B_CANONICAL_SELECTION_SCHEMA_VERSION || selection.final_extraction_authority !== true || selection.coverage_only_extraction_forbidden !== true || selection.partial_without_semantic_unique_delta_forbidden !== true || selection.suppressed_candidate_repromotion_forbidden !== true || selection.semantic_authority_rule !== "SEMANTIC_RECOMMENDATION_NEVER_DIRECT_EXTRACTION_AUTHORITY") throw new Error("PHASE1_RB18B_CANONICAL_SELECTION_SCHEMA_INVALID");
   const seen = new Set();
   const canonicalByCluster = new Map();
   const activeMaterialClusters = new Set();
@@ -125,6 +128,7 @@ export function assertRb18bCanonicalSelection(selection) {
     if (decision.source_disposition === "SELECTED_PARTIAL_CONTRIBUTOR" && (decision.semantic_relationship !== "SAME_FEATURE_UNIQUE_DELTA" || decision.unique_evidence_gate?.status !== "QUALIFIED_UNIQUE_EVIDENCE")) throw new Error(`PHASE1_RB18B_PARTIAL_WITHOUT_SEMANTIC_AND_DETERMINISTIC_UNIQUE_EVIDENCE:${decision.candidate_id}`);
     if (decision.source_disposition === "LEGAL_INSTRUMENT" && decision.extraction_scope !== "FULL_DOCUMENT") throw new Error(`PHASE1_RB18B_LEGAL_SCOPE_INVALID:${decision.candidate_id}`);
     if (decision.evidence_value_disposition === "REFERENCE_ONLY" && (decision.extraction_authorized || decision.extraction_scope !== "METADATA_ONLY")) throw new Error(`PHASE1_RB18B_REFERENCE_ONLY_EXTRACTION_LEAK:${decision.candidate_id}`);
+    if (decision.deterministic_parent_template_refinement?.role === "CANONICAL_BASE" && decision.selection_reason === "DETERMINISTIC_PARENT_ROUTE_CANONICAL" && decision.pre_parent_source_disposition && decision.pre_parent_source_disposition !== "SELECTED_CANONICAL") throw new Error(`PHASE1_RB18B_SUPPRESSED_CANDIDATE_REPROMOTED:${decision.candidate_id}`);
 
     if (decision.evidence_lane !== "legal_instrument" && decision.fingerprint_extraction_eligible === true) {
       const key = clusterKey(decision);
@@ -153,31 +157,42 @@ function applyParentTemplateCompression(decisions) {
 
       const winner = chooseParentTemplateWinner(base, family);
       if (!winner) continue;
-      const key = normalizeFeatureKey(stripUncertain(winner.semantic_feature_key) || stripUncertain(majorityValue(family.map((row) => row.semantic_feature_key))) || pathSegments(parent).at(-1));
+      const key = parentTemplateFeatureKey(winner, family, parent);
       for (const row of family) {
         const index = output.findIndex((item) => item.candidate_id === row.candidate_id);
         if (index < 0) continue;
-        const rootCorrected = output[index].primary_root !== winner.primary_root || output[index].evidence_lane !== winner.evidence_lane;
+        const sourceDecision = output[index];
+        const rootCorrected = sourceDecision.primary_root !== winner.primary_root || sourceDecision.evidence_lane !== winner.evidence_lane;
         const common = {
-          ...output[index],
+          ...sourceDecision,
           primary_root: winner.primary_root,
           common_root: winner.primary_root,
           evidence_lane: winner.evidence_lane,
           semantic_feature_key: key,
           feature_cluster: key,
           semantic_grouping_enforced: true,
-          semantic_deterministic_corroborators: unique([...(output[index].semantic_deterministic_corroborators || []), "SHARED_PARENT_ROUTE_FAMILY", ...(rootCorrected ? ["ROUTE_BASE_ROOT_CORRECTION"] : [])]),
+          semantic_deterministic_corroborators: unique([...(sourceDecision.semantic_deterministic_corroborators || []), "SHARED_PARENT_ROUTE_FAMILY", ...(rootCorrected ? ["ROUTE_BASE_ROOT_CORRECTION"] : [])]),
           deterministic_parent_template_refinement: {
             route_base: parent,
             canonical_candidate_id: winner.candidate_id,
             role: row.candidate_id === winner.candidate_id ? "CANONICAL_BASE" : "TEMPLATE_VARIANT",
             root_corrected: rootCorrected,
-            source_root: output[index].primary_root,
+            source_root: sourceDecision.primary_root,
             adjudicated_root: winner.primary_root
           }
         };
         if (row.candidate_id === winner.candidate_id) {
-          output[index] = { ...common, source_disposition: "SELECTED_CANONICAL", extraction_scope: winner.extraction_scope === "FULL_DOCUMENT" ? "FULL_DOCUMENT" : "FULL_MAIN_CONTENT", extraction_authorized: true, canonical_owner_candidate_id: winner.candidate_id, canonical_owner_identity: winner.canonical_identity, semantic_relationship: "SAME_FEATURE_CANONICAL_CANDIDATE", selection_reason: "DETERMINISTIC_PARENT_ROUTE_CANONICAL" };
+          output[index] = {
+            ...common,
+            pre_parent_source_disposition: sourceDecision.source_disposition,
+            source_disposition: "SELECTED_CANONICAL",
+            extraction_scope: winner.extraction_scope === "FULL_DOCUMENT" ? "FULL_DOCUMENT" : "FULL_MAIN_CONTENT",
+            extraction_authorized: true,
+            canonical_owner_candidate_id: winner.candidate_id,
+            canonical_owner_identity: winner.canonical_identity,
+            semantic_relationship: "SAME_FEATURE_CANONICAL_CANDIDATE",
+            selection_reason: "DETERMINISTIC_PARENT_ROUTE_CANONICAL"
+          };
         } else {
           output[index] = suppressCoverageOnly({
             ...common,
@@ -194,18 +209,38 @@ function applyParentTemplateCompression(decisions) {
 function qualifiesAsTemplateFamily({ parent, base, children, family }) {
   if (children.length < 2 || family.length < 3) return false;
   const parentToken = pathSegments(parent).at(-1) || "";
-  if (GENERIC_CONTAINER_SEGMENTS.has(parentToken) && !sharedTemplateMajority(children)) return false;
   const featureValues = children.map((row) => stripUncertain(row.semantic_feature_key || row.feature_cluster)).filter(Boolean);
   const dominant = majorityCount(featureValues);
   const featureCoherence = featureValues.length ? dominant / featureValues.length : 0;
   const templateCoherence = sharedTemplateMajority(children);
-  const parentMatchesFeature = featureValues.some((value) => normalizeFeatureKey(value).includes(normalizeFeatureKey(parentToken)) || normalizeFeatureKey(parentToken).includes(normalizeFeatureKey(value)));
-  return Boolean(base) || featureCoherence >= 0.7 || templateCoherence || parentMatchesFeature;
+  const coverageShapeCoherence = coverageShapedSlugMajority(children);
+  const parentKey = normalizeFeatureKey(parentToken);
+  const parentMatchesFeature = featureValues.some((value) => {
+    const featureKey = normalizeFeatureKey(value);
+    return featureKey.includes(parentKey) || parentKey.includes(featureKey);
+  });
+  const baseIsAuthorizedCanonical = base?.extraction_authorized === true && base?.source_disposition === "SELECTED_CANONICAL";
+
+  if (GENERIC_CONTAINER_SEGMENTS.has(parentToken) && !templateCoherence && !coverageShapeCoherence) return false;
+  if (templateCoherence || coverageShapeCoherence) return true;
+  return baseIsAuthorizedCanonical && children.length >= 4 && featureCoherence >= 0.85 && parentMatchesFeature;
 }
 
 function chooseParentTemplateWinner(base, family) {
-  if (base?.fingerprint_extraction_eligible === true && base.source_disposition !== "REFERENCE_ONLY") return base;
-  return [...family].filter((row) => row.fingerprint_extraction_eligible === true).sort((a, b) => Number(b.selection_score || 0) - Number(a.selection_score || 0) || safePath(a.canonical_url).length - safePath(b.canonical_url).length || a.canonical_url.localeCompare(b.canonical_url))[0] || null;
+  if (base?.extraction_authorized === true && base?.source_disposition === "SELECTED_CANONICAL") return base;
+  return [...family]
+    .filter((row) => row.extraction_authorized === true && row.source_disposition === "SELECTED_CANONICAL")
+    .sort((a, b) => Number(b.selection_score || 0) - Number(a.selection_score || 0) || safePath(a.canonical_url).length - safePath(b.canonical_url).length || a.canonical_url.localeCompare(b.canonical_url))[0] || null;
+}
+
+function parentTemplateFeatureKey(winner, family, parent) {
+  const winnerKey = normalizeFeatureKey(stripUncertain(winner.semantic_feature_key || winner.feature_cluster));
+  const majorityKey = normalizeFeatureKey(stripUncertain(majorityValue(family.map((row) => row.semantic_feature_key || row.feature_cluster))));
+  const preferred = !GENERIC_FEATURE_KEYS.has(winnerKey) ? winnerKey : !GENERIC_FEATURE_KEYS.has(majorityKey) ? majorityKey : "";
+  if (preferred) return preferred;
+  const parentSegments = pathSegments(parent).slice(-2).map(normalizeFeatureKey).filter(Boolean);
+  const pathKey = normalizeFeatureKey(parentSegments.join("_"));
+  return pathKey && !GENERIC_FEATURE_KEYS.has(pathKey) ? pathKey : `${pathKey || "route_family"}_${stableSuffix(parent)}`;
 }
 
 function referenceOnlyReason(decision) {
@@ -279,6 +314,7 @@ function normalizeStructuredCoverage(decision) {
 
 function isMaterialNonLegalCandidate(row) { return row.evidence_lane !== "legal_instrument" && row.fingerprint_extraction_eligible === true && row.content_materiality?.status === "MATERIAL_CONTENT"; }
 function sharedTemplateMajority(rows) { const counts = new Map(); for (const row of rows) if (row.template_signature) counts.set(row.template_signature, (counts.get(row.template_signature) || 0) + 1); return Math.max(0, ...counts.values()) >= Math.ceil(rows.length * 0.6); }
+function coverageShapedSlugMajority(rows) { const shaped = rows.filter((row) => COVERAGE_SHAPED_SLUG.test(pathSegments(row.canonical_url).at(-1) || "")).length; return rows.length > 0 && shaped >= Math.ceil(rows.length * 0.7); }
 function majorityCount(values) { const counts = new Map(); for (const value of values) counts.set(value, (counts.get(value) || 0) + 1); return Math.max(0, ...counts.values()); }
 function majorityValue(values) { const counts = new Map(); for (const value of values.filter(Boolean)) counts.set(value, (counts.get(value) || 0) + 1); return [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]?.[0] || ""; }
 function uniqueRows(rows) { const seen = new Set(); return rows.filter((row) => row && !seen.has(row.candidate_id) && seen.add(row.candidate_id)); }
@@ -289,7 +325,10 @@ function stripUncertain(value) { return String(value || "").replace(/__uncertain
 function normalizeFeatureKey(value) { return String(value || "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").replace(/_+/g, "_") || "unclassified_feature"; }
 function meaningfulTokens(value) { return new Set((String(value || "").toLowerCase().match(/[a-z0-9]{3,}/g) || []).filter((token) => !STOP_TOKENS.has(token))); }
 function jaccard(left, right) { if (!left.size || !right.size) return 0; let shared = 0; for (const token of left) if (right.has(token)) shared += 1; return shared / new Set([...left, ...right]).size; }
+function stableSuffix(value) { let hash = 2166136261; for (const char of String(value || "")) { hash ^= char.charCodeAt(0); hash = Math.imul(hash, 16777619); } return (hash >>> 0).toString(16).padStart(8, "0").slice(0, 8); }
+const COVERAGE_SHAPED_SLUG = /^(?:[a-z-]{2,30}-to-[a-z-]{2,30}|\d+|[a-z]{2}(?:-[a-z]{2})?|english|hindi|tamil|telugu|marathi|bengali|gujarati|kannada|malayalam|punjabi|odia|urdu|assamese|javascript|typescript|python|java|golang|ruby|php|dotnet|node)$/i;
 const GENERIC_CONTAINER_SEGMENTS = new Set(["company", "companies", "docs", "documentation", "api", "apis", "blog", "news", "media", "support", "help", "legal", "policies", "resources", "products", "services"]);
+const GENERIC_FEATURE_KEYS = new Set(["", "unclassified_feature", "pair_variant", "regulated_product_slug", "product_subdomain_root", "blog_or_resource", "product_service", "platform_feature_solution", "technical_docs_api", "commercial_product", "technical_operation"]);
 const STOP_TOKENS = new Set(["the", "and", "for", "with", "this", "that", "from", "your", "you", "our", "are", "can", "will", "using", "use", "into", "their", "they", "have", "has", "not", "was", "were", "been", "being", "also", "more", "than", "when", "where", "which", "what"]);
 function safePath(value) { try { return new URL(value).pathname.toLowerCase(); } catch { return String(value || "/").toLowerCase(); } }
 function safeHost(value) { try { return new URL(value).hostname.toLowerCase(); } catch { return ""; } }
