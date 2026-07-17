@@ -51,7 +51,8 @@ const fakeProvider = async () => ({
 const semantic = await buildSemanticFeatureAdjudication({ canonicalInventory, fingerprintInventory, rootFeatureLaneClustering, legalClassification, analysisCache, callProvider: fakeProvider });
 assertSemanticFeatureAdjudication(semantic);
 assert(semantic.counts.legal_candidates_excluded === 1, "legal instrument entered semantic pool");
-assert(semantic.counts.final_feature_clusters === 1, `expected one non-legal semantic feature cluster, received ${semantic.counts.final_feature_clusters}`);
+assert(semantic.counts.final_material_feature_clusters === 1, `expected one non-legal semantic feature cluster, received ${semantic.counts.final_material_feature_clusters}`);
+assert(semantic.counts.model_decision_coverage === 1, `fixture semantic coverage must be complete, received ${semantic.counts.model_decision_coverage}`);
 assert(semantic.decisions.find((row) => row.candidate_id === "C2")?.semantic_grouping_enforced === true, "template variant was not semantically grouped");
 assert((semantic.decisions.find((row) => row.candidate_id === "C2")?.deterministic_corroborators || []).includes("SHARED_TEMPLATE_SIGNATURE"), "semantic grouping lacked deterministic corroboration");
 
@@ -61,11 +62,11 @@ const byId = new Map(selection.decisions.map((row) => [row.candidate_id, row]));
 assert(byId.get("C1")?.source_disposition === "SELECTED_CANONICAL", "canonical translation source not selected");
 assert(byId.get("C2")?.source_disposition === "SUPPRESSED_TEMPLATE_VARIANT", "template variant remained body-extractable");
 assert(byId.get("C2")?.extraction_authorized === false && byId.get("C2")?.extraction_scope === "STRUCTURED_COVERAGE_ONLY", "coverage-only variant retained extraction authority");
-assert(byId.get("C4")?.source_disposition === "SELECTED_PARTIAL_CONTRIBUTOR" && byId.get("C4")?.unique_evidence_gate?.status === "QUALIFIED_UNIQUE_EVIDENCE", "semantic unique delta was not retained through the deterministic evidence gate");
+assert(byId.get("C4")?.source_disposition === "SELECTED_PARTIAL_CONTRIBUTOR" && byId.get("C4")?.unique_evidence_gate?.status === "QUALIFIED_UNIQUE_EVIDENCE", "semantic unique delta was not retained through the deterministic novelty gate");
 assert(byId.get("C3")?.source_disposition === "LEGAL_INSTRUMENT" && byId.get("C3")?.extraction_scope === "FULL_DOCUMENT", "legal instrument integrity was weakened");
 assert(selection.counts.extraction_authorized === 3, `expected canonical + unique delta + legal extraction, received ${selection.counts.extraction_authorized}`);
 
-console.log(JSON.stringify({ check: "phase1 RB-18B semantic compression", status: "PASS", semantic_clusters: semantic.counts.final_feature_clusters, extraction_authorized: selection.counts.extraction_authorized, coverage_only_manifest_rows: selection.counts.coverage_only_manifest_rows }, null, 2));
+console.log(JSON.stringify({ check: "phase1 RB-18B semantic compression", status: "PASS", semantic_clusters: semantic.counts.final_material_feature_clusters, extraction_authorized: selection.counts.extraction_authorized, coverage_only_manifest_rows: selection.counts.coverage_only_manifest_rows }, null, 2));
 
 function candidate(id, url) { return { candidate_id: id, canonical_identity: `entity|${url}`, entity_id: "entity", entity_status: "PRIMARY_TARGET", canonical_url: url, fetch_url: url, aliases: [], legacy_manifest_ids: [], member_candidate_ids: [], extraction_authorized_by_legacy_manifest: true }; }
 function classification(id, feature, variant, lane, root = "product_service") { const url = candidates.find((row) => row.candidate_id === id).canonical_url; return { classification_id: `RFL.${id}`, candidate_id: id, canonical_identity: `entity|${url}`, entity_id: "entity", entity_status: "PRIMARY_TARGET", canonical_url: url, primary_root: root, secondary_root_references: [], feature_cluster: feature, evidence_lane: lane, variant_family: variant, ai_overlay: null }; }
