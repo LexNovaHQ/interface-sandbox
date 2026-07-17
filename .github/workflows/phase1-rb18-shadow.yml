@@ -34,6 +34,11 @@ jobs:
       LN_PHASE1_FINGERPRINT_CONCURRENCY: "4"
       LN_PHASE1_SHADOW_MAX_NETWORK_REQUESTS: "120"
       LN_PHASE1_SHADOW_NETWORK_TIMEOUT_MS: "6000"
+      GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
+      GEMINI_MODELS: "gemini-2.5-flash"
+      GEMINI_RETRY_ROUNDS: "2"
+      GEMINI_KEYS_PER_MODEL_PER_ROUND: "2"
+      GEMINI_TIMEOUT_MS: "120000"
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -47,6 +52,13 @@ jobs:
         run: npm ci
       - name: Validate deterministic Phase 1 behaviour first
         run: npm run check:phase1-behavioural
+      - name: Require semantic provider secret
+        shell: bash
+        run: |
+          if [ -z "$GEMINI_API_KEYS" ]; then
+            echo "GEMINI_API_KEYS repository secret is required for RB-18B live semantic adjudication."
+            exit 1
+          fi
       - name: Run controlled Sarvam and Paytm shadows
         run: npm run check:phase1-rb18-shadow
       - name: Upload RB-18 shadow diagnostics
