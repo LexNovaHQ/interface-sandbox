@@ -3,10 +3,12 @@ import { assembleLogicalRootArtifacts, assertLogicalRootAssembly } from "./logic
 import { assembleIndependentLegalArtifacts, assertIndependentLegalArtifacts } from "./independent-legal-artifact-assembly.service.js";
 import { projectPhase1Compatibility, assertPhase1CompatibilityProjection } from "./phase1-compatibility-projector.service.js";
 import { assertFinalManifestMaterialExtractionBoundary, assertExtractedSourcesContainMaterialText } from "./source-content-materiality.service.js";
+import { assertCleanExtractionManifestBoundary } from "./clean-extraction-manifest-boundary.service.js";
 
-export const PHASE1_RB15_EXTRACTION_ORCHESTRATOR_VERSION = "PHASE1_EXTRACTION_ORCHESTRATOR_RB18_MATERIAL_GATE_v1";
+export const PHASE1_RB15_EXTRACTION_ORCHESTRATOR_VERSION = "PHASE1_EXTRACTION_ORCHESTRATOR_RB18B_CLEAN_MANIFEST_BOUNDARY_v2";
 
 export async function buildPhase1Rb15ExtractionArtifactSet({ run, deduped_url_manifest } = {}) {
+  assertCleanExtractionManifestBoundary(deduped_url_manifest);
   assertFinalManifestMaterialExtractionBoundary(deduped_url_manifest);
   const output = await buildUniversalSourceExtractionArtifactSet({ run, deduped_url_manifest });
 
@@ -23,10 +25,13 @@ export async function buildPhase1Rb15ExtractionArtifactSet({ run, deduped_url_ma
   output.source_family_index = {
     ...output.source_family_index,
     producer_version: PHASE1_RB15_EXTRACTION_ORCHESTRATOR_VERSION,
-    rebuild_stage: "RB18_MATERIAL_CONTENT_GATE_ACTIVE",
+    rebuild_stage: "RB18B_CLEAN_URL_MANIFEST_EXTRACTION_ACTIVE",
     material_content_required_for_every_extracted_source: true,
+    clean_url_manifest_required_before_extraction: true,
+    audit_only_url_rows_forbidden_in_agent_1b: true,
     http_success_alone_never_authorizes_extraction: true,
     assembly_sequence: [
+      "RB18B_CLEAN_URL_MANIFEST_BOUNDARY",
       "RB11_SELECTED_EXTRACTION",
       "RB12_POST_EXTRACTION_BLOCK_DEDUPE",
       "RB13_LOGICAL_ROOT_ASSEMBLY",
