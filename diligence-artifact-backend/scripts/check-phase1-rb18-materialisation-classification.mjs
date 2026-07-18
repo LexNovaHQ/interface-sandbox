@@ -4,6 +4,7 @@ import { buildLegalInstrumentClassification, assertLegalInstrumentClassification
 import { buildRootFeatureLaneClustering, assertRootFeatureLaneClustering } from "../src/phases/01-source-discovery/services/root-feature-lane-clustering.service.js";
 import { buildCanonicalSelection, assertCanonicalSelection } from "../src/phases/01-source-discovery/services/canonical-selection.service.js";
 import { buildFinalDedupedManifest, assertFinalDedupedManifest } from "../src/phases/01-source-discovery/services/final-deduped-manifest.service.js";
+import { assertCleanExtractionManifestBoundary } from "../src/phases/01-source-discovery/services/clean-extraction-manifest-boundary.service.js";
 import { assertFinalManifestMaterialExtractionBoundary, assertExtractedSourcesContainMaterialText } from "../src/phases/01-source-discovery/services/source-content-materiality.service.js";
 
 const candidates = [
@@ -15,10 +16,10 @@ const candidates = [
 const canonicalInventory = { canonical_candidates: candidates };
 
 const fetchImpl = async (url) => {
-  const path = new URL(url).pathname;
-  if (path === "/app") return html("App", "<script>render()</script><div id='root'></div>");
-  if (path === "/loading") return html("Loading", "<main><p>Loading. Please wait while this application initializes.</p></main>");
-  if (path === "/privacy-policy") return html("Privacy Policy", "<script>renderPolicy()</script><div id='policy-root'></div>");
+  const pathname = new URL(url).pathname;
+  if (pathname === "/app") return html("App", "<script>render()</script><div id='root'></div>");
+  if (pathname === "/loading") return html("Loading", "<main><p>Loading. Please wait while this application initializes.</p></main>");
+  if (pathname === "/privacy-policy") return html("Privacy Policy", "<script>renderPolicy()</script><div id='policy-root'></div>");
   return html("Product", "<main><h1>Product</h1><p>This material product page explains operational capability, supported workflows, customer use, technical availability, implementation boundaries, service limitations, and the evidence required for a diligence review. The page contains substantive information rather than a navigation shell or placeholder response.</p></main>");
 };
 
@@ -63,27 +64,50 @@ const clustering = buildRootFeatureLaneClustering({ canonicalInventory, fingerpr
 assertRootFeatureLaneClustering(clustering);
 const selection = buildCanonicalSelection({ canonicalInventory, fingerprintInventory: pass.inventory, rootFeatureLaneClustering: clustering, legalClassification: legal, analysisCache: pass.analysis_cache });
 assertCanonicalSelection(selection);
+const selectionById = new Map(selection.decisions.map((row) => [row.candidate_id, row]));
 const finalManifest = buildFinalDedupedManifest({ legacyManifest: legacyManifest(candidates), canonicalSelection: selection });
 assertFinalDedupedManifest(finalManifest, selection);
+assertCleanExtractionManifestBoundary(finalManifest);
 assertFinalManifestMaterialExtractionBoundary(finalManifest);
 
-const materialRow = finalManifest.manifest_sources.find((row) => row.canonical_candidate_id === "CANON.MATERIAL");
+assert.equal(finalManifest.clean_extraction_manifest, true);
+assert.equal(finalManifest.contains_extraction_authority_only, true);
+assert.equal(finalManifest.manifest_sources.length, 1);
+const materialRow = finalManifest.manifest_sources[0];
+assert.equal(materialRow.canonical_candidate_id, "CANON.MATERIAL");
+assert.equal(materialRow.final_url_disposition, "EXTRACT_CANONICAL_FULL");
 assert.equal(materialRow.extraction_decision, "EXTRACT");
 assert.equal(materialRow.admission_tier, "PRIMARY");
 assert.equal(materialRow.fingerprint_extraction_eligible, true);
+
 for (const id of ["CANON.EMPTY_SHELL", "CANON.PLACEHOLDER", "CANON.LEGAL_SHELL"]) {
-  const row = finalManifest.manifest_sources.find((item) => item.canonical_candidate_id === id);
-  assert.equal(row.source_disposition, "REJECTED_NOT_EVIDENCE");
-  assert.equal(row.extraction_decision, "NO_EXTRACT");
-  assert.equal(row.admission_tier, "REJECTED_NOT_EVIDENCE");
-  assert.equal(row.fingerprint_extraction_eligible, false);
-  assert.equal(row.legal_doc_candidate, false);
+  const decision = selectionById.get(id);
+  assert.equal(decision.source_disposition, "REJECTED_NOT_EVIDENCE");
+  assert.equal(decision.extraction_authorized, false);
+  assert.equal(decision.fingerprint_extraction_eligible, false);
+  assert.equal(decision.legal_doc_candidate, false);
+  assert.ok(!finalManifest.manifest_sources.some((row) => row.canonical_candidate_id === id));
 }
+assert.equal(finalManifest.manifest_forensics.audited_rows, 4);
+assert.equal(finalManifest.manifest_forensics.clean_manifest_rows, 1);
+assert.equal(finalManifest.manifest_forensics.audit_only_rows_excluded_from_extraction_manifest, 3);
+assert.equal(finalManifest.manifest_forensics.audit_disposition_counts.REJECT_NONMATERIAL, 3);
 
 const corrupted = structuredClone(finalManifest);
-const corruptRow = corrupted.manifest_sources.find((row) => row.canonical_candidate_id === "CANON.EMPTY_SHELL");
-corruptRow.admission_tier = "PRIMARY";
-corruptRow.extraction_decision = "EXTRACT";
+corrupted.manifest_sources.push({
+  ...materialRow,
+  manifest_id: "product_service.URL.999",
+  canonical_candidate_id: "CANON.CORRUPTED",
+  canonical_identity: "entity|https://example.test/corrupted",
+  canonical_url: "https://example.test/corrupted",
+  fetch_url: "https://example.test/corrupted",
+  fingerprint_fetch_status: "FETCHED_NO_MATERIAL_CONTENT",
+  fingerprint_extraction_eligible: false,
+  content_materiality: { status: "NO_MATERIAL_CONTENT" },
+  exact_content_hash: null,
+  selected_block_hashes: []
+});
+assert.throws(() => assertCleanExtractionManifestBoundary(corrupted), /PHASE1_AGENT_1B_BLOCKED_NON_MATERIAL_CLEAN_ROW/);
 assert.throws(() => assertFinalManifestMaterialExtractionBoundary(corrupted), /PHASE1_EXTRACTION_BLOCKED_NON_MATERIAL_SOURCE/);
 
 const postDedupeOutput = postDedupePhysicalFixture();
@@ -97,13 +121,14 @@ assert.throws(() => assertExtractedSourcesContainMaterialText(corruptedPhysical)
 console.log(JSON.stringify({
   check: "phase1 RB18 material-content extraction gate",
   status: "PASS",
-  material_pages_authorized: finalManifest.manifest_forensics.extract_rows,
-  non_material_pages_rejected: finalManifest.manifest_forensics.no_material_content_rows,
+  audited_urls: finalManifest.manifest_forensics.audited_rows,
+  material_pages_authorized: finalManifest.manifest_sources.length,
+  non_material_pages_rejected_before_clean_manifest: 3,
   empty_legal_route_confirmed: legalShellClassification.confirmed_legal_instrument,
   post_dedupe_physical_source_of_truth_proved: true,
   suppressed_duplicate_reference_allowed_without_physical_text: true,
   empty_post_scope_source_suppressed_before_assembly: true,
-  fail_loud_boundary_proved: true
+  clean_manifest_fail_loud_boundary_proved: true
 }, null, 2));
 
 function postDedupePhysicalFixture() {
