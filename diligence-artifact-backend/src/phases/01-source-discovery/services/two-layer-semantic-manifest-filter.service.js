@@ -24,12 +24,15 @@ const CONTROLLED_REASON_CODES = new Set([
 ]);
 
 /**
- * RB-18B manifest filtration authority:
- *   Layer 1: deterministic materiality, legal boundary, exact duplicate,
- *            singleton and obvious route/template-family resolution.
- *   Layer 2: bounded semantic support only for unresolved provisional clusters.
- * Semantic output never authorises extraction; RB-09/RB-18B deterministic
- * canonical selection remains the sole extraction authority.
+ * One manifest-building job, two filtration layers:
+ * 1. Deterministic materiality, legal boundary, exact duplicate, singleton and
+ *    obvious template/parameter-family filtering.
+ * 2. Compact semantic support only for the unresolved remainder of a
+ *    provisional feature cluster.
+ *
+ * The semantic layer never grants extraction authority. Canonical selection
+ * deterministically corroborates its output before the clean URL manifest is
+ * projected for Agent 1B.
  */
 export async function buildSemanticFeatureAdjudication({
   canonicalInventory,
@@ -69,11 +72,17 @@ export async function buildSemanticFeatureAdjudication({
     resolveObviousTemplateFamilies(clusterRows, deterministicProposals);
 
     const unresolved = clusterRows.filter((row) => !deterministicProposals.has(row.candidate_id));
-    if (unresolved.length === 1) {
+    const anchor = nearestDeterministicAnchor(clusterRows, unresolved, deterministicProposals);
+
+    if (unresolved.length === 1 && !anchor) {
       deterministicProposals.set(unresolved[0].candidate_id, singletonProposal(unresolved[0]));
-    } else if (unresolved.length > 1) {
-      for (const chunk of chunkWithAnchor(unresolved, MODEL_CLUSTER_MAX_CANDIDATES)) {
-        ambiguousClusters.push({ cluster_key: clusterKey, rows: chunk });
+    } else if (unresolved.length) {
+      for (const chunk of chunkWithOptionalAnchor(unresolved, anchor, MODEL_CLUSTER_MAX_CANDIDATES)) {
+        ambiguousClusters.push({
+          cluster_key: clusterKey,
+          rows: chunk.rows,
+          required_candidate_ids: chunk.required_candidate_ids
+        });
       }
     }
 
@@ -81,13 +90,14 @@ export async function buildSemanticFeatureAdjudication({
       provisional_cluster_key: clusterKey,
       material_candidates: clusterRows.length,
       deterministically_resolved_candidates: deterministicProposals.size - proposalsBefore,
-      semantic_required_candidates: unresolved.length > 1 ? unresolved.length : 0
+      semantic_required_candidates: unresolved.length && (unresolved.length > 1 || anchor) ? unresolved.length : 0,
+      semantic_anchor_candidate_id: anchor?.candidate_id || null
     });
   }
 
   const modelProposals = new Map();
   const modelCalls = [];
-  const modelRequired = new Set(ambiguousClusters.flatMap((cluster) => cluster.rows.map((row) => row.candidate_id)));
+  const modelRequired = new Set(ambiguousClusters.flatMap((cluster) => cluster.required_candidate_ids));
   const modelCompleted = new Set();
   const limitations = [];
   const providerReady = modelReady(enableModel, callProvider);
@@ -100,7 +110,8 @@ export async function buildSemanticFeatureAdjudication({
         prompt_bytes: Buffer.byteLength(prompt, "utf8"),
         prompt_sha256: crypto.createHash("sha256").update(prompt).digest("hex"),
         max_output_tokens: MODEL_MAX_OUTPUT_TOKENS,
-        candidate_count: cluster.rows.length
+        candidate_count: cluster.rows.length,
+        semantic_required_count: cluster.required_candidate_ids.length
       };
       try {
         const result = await callProvider({
@@ -110,27 +121,36 @@ export async function buildSemanticFeatureAdjudication({
           maxOutputTokens: MODEL_MAX_OUTPUT_TOKENS,
           repairOnJsonParse: true
         });
-        const accepted = indexClusterProposal(result?.json, cluster.rows, modelProposals, modelCompleted);
+        const accepted = indexClusterProposal({
+          payload: result?.json,
+          batch: cluster.rows,
+          requiredCandidateIds: cluster.required_candidate_ids,
+          target: modelProposals,
+          completed: modelCompleted
+        });
+        const success = accepted === cluster.required_candidate_ids.length;
         modelCalls.push({
           provisional_cluster_key: cluster.cluster_key,
           candidate_count: cluster.rows.length,
-          accepted_decisions: accepted,
-          status: accepted === cluster.rows.length ? "SUCCESS" : "INCOMPLETE",
+          semantic_required_count: cluster.required_candidate_ids.length,
+          accepted_required_decisions: accepted,
+          status: success ? "SUCCESS" : "INCOMPLETE",
           model: result?.metadata?.model || null,
           key_alias: result?.metadata?.key_alias || null,
           request_profile: requestProfile
         });
-        if (accepted !== cluster.rows.length) limitations.push({
+        if (!success) limitations.push({
           code: "SEMANTIC_CLUSTER_INCOMPLETE_PRESERVED_UNCERTAIN",
           provisional_cluster_key: cluster.cluster_key,
-          candidate_count: cluster.rows.length,
-          accepted_decisions: accepted
+          semantic_required_count: cluster.required_candidate_ids.length,
+          accepted_required_decisions: accepted
         });
       } catch (error) {
         modelCalls.push({
           provisional_cluster_key: cluster.cluster_key,
           candidate_count: cluster.rows.length,
-          accepted_decisions: 0,
+          semantic_required_count: cluster.required_candidate_ids.length,
+          accepted_required_decisions: 0,
           status: "FAILED",
           model: null,
           request_profile: requestProfile
@@ -138,7 +158,7 @@ export async function buildSemanticFeatureAdjudication({
         limitations.push({
           code: "SEMANTIC_CLUSTER_CALL_FAILED_PRESERVED_UNCERTAIN",
           provisional_cluster_key: cluster.cluster_key,
-          candidate_count: cluster.rows.length,
+          semantic_required_count: cluster.required_candidate_ids.length,
           message: error?.message || String(error)
         });
       }
@@ -154,7 +174,9 @@ export async function buildSemanticFeatureAdjudication({
   const decisions = rows.map((row) => decide({
     row,
     proposal: modelProposals.get(row.candidate_id) || deterministicProposals.get(row.candidate_id),
-    proposalSource: modelProposals.has(row.candidate_id) ? "BOUNDED_MODEL_PLUS_DETERMINISTIC_ENFORCEMENT" : deterministicProposals.get(row.candidate_id)?.decision_source,
+    proposalSource: modelProposals.has(row.candidate_id)
+      ? "BOUNDED_MODEL_PLUS_DETERMINISTIC_ENFORCEMENT"
+      : deterministicProposals.get(row.candidate_id)?.decision_source,
     rowsById,
     semanticRequired: modelRequired.has(row.candidate_id)
   }));
@@ -233,7 +255,8 @@ export function assertSemanticFeatureAdjudication(value) {
 
 function compactRow({ candidate, fingerprint, classification, analysis }) {
   const routeFamily = routeFamilyFor(candidate.canonical_url, classification.variant_family, classification.feature_cluster);
-  const deterministicFeatureKey = normalizeFeature(classification.feature_cluster || featureFromRouteBase(routeBase(routeFamily)) || fingerprint?.title);
+  const routeDerivedFeature = routeFamily.includes("{") ? featureFromRouteBase(routeBase(routeFamily)) : "";
+  const deterministicFeatureKey = normalizeFeature(routeDerivedFeature || classification.feature_cluster || fingerprint?.title);
   return {
     candidate_id: classification.candidate_id,
     canonical_identity: classification.canonical_identity,
@@ -248,6 +271,7 @@ function compactRow({ candidate, fingerprint, classification, analysis }) {
     route_parameterized: routeFamily.includes("{") && routeFamily.includes("}"),
     variant_family: classification.variant_family || "none",
     exact_content_hash: fingerprint?.exact_content_hash || null,
+    block_hashes: (fingerprint?.block_hashes || []).map((item) => item.sha256).filter(Boolean),
     template_signature: sanitizeSemanticText(fingerprint?.template_signature || "", 120),
     shingles: fingerprint?.near_duplicate_signature?.sampled_hashes || [],
     title_tokens: tokens(`${fingerprint?.title || ""} ${(fingerprint?.headings || []).slice(0, 4).join(" ")}`),
@@ -279,59 +303,65 @@ function resolveExactDuplicateGroups(rows, proposals) {
 function resolveObviousTemplateFamilies(rows, proposals) {
   const unresolved = rows.filter((row) => !proposals.has(row.candidate_id));
   const byRouteFamily = groupBy(unresolved.filter((row) => row.route_parameterized), (row) => row.route_family);
+
   for (const family of byRouteFamily.values()) {
     const basePath = family[0]?.route_base;
     const baseCandidate = unresolved.find((row) => normalizePath(safePath(row.canonical_url)) === normalizePath(basePath));
     if (family.length < 2 && !baseCandidate) continue;
     const members = uniqueRows([...(baseCandidate ? [baseCandidate] : []), ...family]);
     const winner = baseCandidate || chooseCanonical(members);
-    const ids = members.map((row) => row.candidate_id);
     const featureKey = normalizeFeature(winner.deterministic_feature_key || featureFromRouteBase(basePath));
-    for (const row of members) proposals.set(row.candidate_id, {
-      candidate_id: row.candidate_id,
-      normalized_feature_key: featureKey,
-      relationship: row.candidate_id === winner.candidate_id ? "SAME_FEATURE_CANONICAL_CANDIDATE" : "SAME_FEATURE_TEMPLATE_VARIANT",
-      related_candidate_ids: ids.filter((id) => id !== row.candidate_id),
-      confidence: 1,
-      reason_code: "SAME_FEATURE_PARAMETER_VARIANTS",
-      decision_source: "DETERMINISTIC_PARAMETERIZED_ROUTE_FAMILY"
-    });
+    const obviousVariants = members.filter((row) => row.candidate_id !== winner.candidate_id && isObviousCoverageVariant(row, winner));
+    if (!obviousVariants.length && members.length > 1) {
+      proposals.set(winner.candidate_id, canonicalProposal(winner, featureKey, [], "DETERMINISTIC_ROUTE_FAMILY_ANCHOR"));
+      continue;
+    }
+    const groupedIds = [winner.candidate_id, ...obviousVariants.map((row) => row.candidate_id)];
+    proposals.set(winner.candidate_id, canonicalProposal(winner, featureKey, groupedIds.filter((id) => id !== winner.candidate_id), "DETERMINISTIC_PARAMETERIZED_ROUTE_FAMILY"));
+    for (const row of obviousVariants) proposals.set(row.candidate_id, templateProposal(row, featureKey, groupedIds.filter((id) => id !== row.candidate_id), "DETERMINISTIC_OBVIOUS_PARAMETER_VARIANT"));
   }
 
   const stillUnresolved = rows.filter((row) => !proposals.has(row.candidate_id));
   const byTemplate = groupBy(stillUnresolved.filter((row) => row.template_signature), (row) => row.template_signature);
   for (const family of byTemplate.values()) {
     if (family.length < 3) continue;
-    const sharedRouteBase = new Set(family.map((row) => row.route_base)).size === 1;
-    const sharedVariantFamily = family.every((row) => row.variant_family !== "none" && row.variant_family === family[0].variant_family);
-    if (!sharedRouteBase && !sharedVariantFamily) continue;
     const winner = chooseCanonical(family);
-    const ids = family.map((row) => row.candidate_id);
-    for (const row of family) proposals.set(row.candidate_id, {
-      candidate_id: row.candidate_id,
-      normalized_feature_key: winner.deterministic_feature_key,
-      relationship: row.candidate_id === winner.candidate_id ? "SAME_FEATURE_CANONICAL_CANDIDATE" : "SAME_FEATURE_TEMPLATE_VARIANT",
-      related_candidate_ids: ids.filter((id) => id !== row.candidate_id),
-      confidence: 1,
-      reason_code: "SAME_FEATURE_TEMPLATE_VARIANTS",
-      decision_source: "DETERMINISTIC_SHARED_TEMPLATE_FAMILY"
-    });
+    const obviousVariants = family.filter((row) => row.candidate_id !== winner.candidate_id && isObviousCoverageVariant(row, winner));
+    if (obviousVariants.length < 2) continue;
+    const groupedIds = [winner.candidate_id, ...obviousVariants.map((row) => row.candidate_id)];
+    proposals.set(winner.candidate_id, canonicalProposal(winner, winner.deterministic_feature_key, groupedIds.filter((id) => id !== winner.candidate_id), "DETERMINISTIC_SHARED_TEMPLATE_FAMILY"));
+    for (const row of obviousVariants) proposals.set(row.candidate_id, templateProposal(row, winner.deterministic_feature_key, groupedIds.filter((id) => id !== row.candidate_id), "DETERMINISTIC_OBVIOUS_TEMPLATE_VARIANT"));
   }
 }
 
-function singletonProposal(row) {
-  return {
-    candidate_id: row.candidate_id,
-    normalized_feature_key: row.deterministic_feature_key,
-    relationship: "SAME_FEATURE_CANONICAL_CANDIDATE",
-    related_candidate_ids: [],
-    confidence: 1,
-    reason_code: "DISTINCT_FEATURES",
-    decision_source: "DETERMINISTIC_SINGLE_MATERIAL_CANDIDATE"
-  };
+function isObviousCoverageVariant(row, winner) {
+  if (row.exact_content_hash && row.exact_content_hash === winner.exact_content_hash) return true;
+  const shingleSimilarity = jaccard(row.shingles, winner.shingles);
+  if (shingleSimilarity >= 0.72) return true;
+  return shingleSimilarity >= 0.6 && row.template_signature && row.template_signature === winner.template_signature;
 }
 
-function indexClusterProposal(payload, batch, target, completed) {
+function nearestDeterministicAnchor(clusterRows, unresolved, proposals) {
+  if (!unresolved.length) return null;
+  const anchors = clusterRows.filter((row) => proposals.get(row.candidate_id)?.relationship === "SAME_FEATURE_CANONICAL_CANDIDATE");
+  return anchors.sort((a, b) => anchorScore(b, unresolved) - anchorScore(a, unresolved) || canonicalSort(a, b))[0] || null;
+}
+
+function anchorScore(anchor, unresolved) {
+  return unresolved.reduce((score, row) => score + pairSignals(anchor, row).length, 0);
+}
+
+function canonicalProposal(row, featureKey, related, source) {
+  return { candidate_id: row.candidate_id, normalized_feature_key: featureKey, relationship: "SAME_FEATURE_CANONICAL_CANDIDATE", related_candidate_ids: related, confidence: 1, reason_code: "SAME_FEATURE_PARAMETER_VARIANTS", decision_source: source };
+}
+function templateProposal(row, featureKey, related, source) {
+  return { candidate_id: row.candidate_id, normalized_feature_key: featureKey, relationship: "SAME_FEATURE_TEMPLATE_VARIANT", related_candidate_ids: related, confidence: 1, reason_code: "SAME_FEATURE_TEMPLATE_VARIANTS", decision_source: source };
+}
+function singletonProposal(row) {
+  return { candidate_id: row.candidate_id, normalized_feature_key: row.deterministic_feature_key, relationship: "SAME_FEATURE_CANONICAL_CANDIDATE", related_candidate_ids: [], confidence: 1, reason_code: "DISTINCT_FEATURES", decision_source: "DETERMINISTIC_SINGLE_MATERIAL_CANDIDATE" };
+}
+
+function indexClusterProposal({ payload, batch, requiredCandidateIds, target, completed }) {
   const result = payload?.cluster || payload;
   const ids = new Set(batch.map((row) => row.candidate_id));
   if (!result || !ids.has(result.canonical_candidate_id) || !CONTROLLED_REASON_CODES.has(result.reason_code)) return 0;
@@ -339,25 +369,18 @@ function indexClusterProposal(payload, batch, target, completed) {
   const uniqueDelta = validIds(result.unique_delta_candidate_ids, ids, result.canonical_candidate_id);
   const distinct = validIds(result.distinct_candidate_ids, ids, result.canonical_candidate_id);
   const uncertain = validIds(result.uncertain_candidate_ids, ids, result.canonical_candidate_id);
-  const assigned = new Set([result.canonical_candidate_id, ...coverage, ...uniqueDelta, ...distinct, ...uncertain]);
+  const assignedList = [result.canonical_candidate_id, ...coverage, ...uniqueDelta, ...distinct, ...uncertain];
+  if (new Set(assignedList).size !== assignedList.length || new Set(assignedList).size !== ids.size) return 0;
+
   const sameFeatureIds = [result.canonical_candidate_id, ...coverage, ...uniqueDelta];
   const normalizedFeatureKey = normalizeFeature(result.normalized_feature_key);
-
-  target.set(result.canonical_candidate_id, {
-    candidate_id: result.canonical_candidate_id,
-    normalized_feature_key: normalizedFeatureKey,
-    relationship: "SAME_FEATURE_CANONICAL_CANDIDATE",
-    related_candidate_ids: sameFeatureIds.filter((id) => id !== result.canonical_candidate_id),
-    confidence: confidence(result.confidence),
-    reason_code: result.reason_code
-  });
+  target.set(result.canonical_candidate_id, { candidate_id: result.canonical_candidate_id, normalized_feature_key: normalizedFeatureKey, relationship: "SAME_FEATURE_CANONICAL_CANDIDATE", related_candidate_ids: sameFeatureIds.filter((id) => id !== result.canonical_candidate_id), confidence: confidence(result.confidence), reason_code: result.reason_code });
   for (const id of coverage) target.set(id, { candidate_id: id, normalized_feature_key: normalizedFeatureKey, relationship: "SAME_FEATURE_TEMPLATE_VARIANT", related_candidate_ids: sameFeatureIds.filter((peer) => peer !== id), confidence: confidence(result.confidence), reason_code: result.reason_code });
   for (const id of uniqueDelta) target.set(id, { candidate_id: id, normalized_feature_key: normalizedFeatureKey, relationship: "SAME_FEATURE_UNIQUE_DELTA", related_candidate_ids: sameFeatureIds.filter((peer) => peer !== id), confidence: confidence(result.confidence), reason_code: result.reason_code });
   for (const id of distinct) target.set(id, { candidate_id: id, normalized_feature_key: batch.find((row) => row.candidate_id === id)?.deterministic_feature_key || normalizedFeatureKey, relationship: "DISTINCT_FEATURE", related_candidate_ids: [], confidence: confidence(result.confidence), reason_code: result.reason_code });
   for (const id of uncertain) target.set(id, { candidate_id: id, normalized_feature_key: batch.find((row) => row.candidate_id === id)?.deterministic_feature_key || normalizedFeatureKey, relationship: "UNCERTAIN", related_candidate_ids: [], confidence: confidence(result.confidence), reason_code: "INSUFFICIENT_EVIDENCE" });
-  for (const row of batch) if (!assigned.has(row.candidate_id)) target.set(row.candidate_id, { candidate_id: row.candidate_id, normalized_feature_key: row.deterministic_feature_key, relationship: "UNCERTAIN", related_candidate_ids: [], confidence: 0, reason_code: "INSUFFICIENT_EVIDENCE" });
-  for (const row of batch) completed.add(row.candidate_id);
-  return batch.length;
+  for (const id of requiredCandidateIds) completed.add(id);
+  return requiredCandidateIds.length;
 }
 
 function decide({ row, proposal, proposalSource, rowsById, semanticRequired }) {
@@ -390,17 +413,7 @@ function decide({ row, proposal, proposalSource, rowsById, semanticRequired }) {
 
   if (proposal.relationship.startsWith("SAME_FEATURE_") && peers.length) {
     if (!corroborators.length) return isolateUncertain(base, "SAME_FEATURE_RECOMMENDATION_REJECTED_NO_DETERMINISTIC_CORROBORATION", peers.map((peer) => peer.candidate_id));
-    return {
-      ...base,
-      semantic_feature_key: proposedKey,
-      relationship: proposal.relationship,
-      semantic_grouping_enforced: true,
-      deterministic_corroborators: corroborators,
-      related_candidate_ids: peers.map((peer) => peer.candidate_id),
-      confidence: confidence(proposal.confidence),
-      reason_code: proposal.reason_code || null,
-      decision_source: proposalSource || "DETERMINISTIC_FILTER"
-    };
+    return { ...base, semantic_feature_key: proposedKey, relationship: proposal.relationship, semantic_grouping_enforced: true, deterministic_corroborators: corroborators, related_candidate_ids: peers.map((peer) => peer.candidate_id), confidence: confidence(proposal.confidence), reason_code: proposal.reason_code || null, decision_source: proposalSource || "DETERMINISTIC_FILTER" };
   }
 
   if (proposal.relationship === "SAME_FEATURE_CANONICAL_CANDIDATE" && !peers.length) {
@@ -463,13 +476,14 @@ function pairSignals(a, b) {
   return out;
 }
 
-function chunkWithAnchor(rows, maxSize) {
-  if (rows.length <= maxSize) return [rows];
-  const ordered = [...rows].sort(canonicalSort);
-  const anchor = ordered[0];
-  const rest = ordered.slice(1);
+function chunkWithOptionalAnchor(requiredRows, anchor, maxSize) {
+  const ordered = [...requiredRows].sort(canonicalSort);
+  const capacity = anchor ? maxSize - 1 : maxSize;
   const chunks = [];
-  for (let index = 0; index < rest.length; index += maxSize - 1) chunks.push([anchor, ...rest.slice(index, index + maxSize - 1)]);
+  for (let index = 0; index < ordered.length; index += capacity) {
+    const required = ordered.slice(index, index + capacity);
+    chunks.push({ rows: anchor ? [anchor, ...required] : required, required_candidate_ids: required.map((row) => row.candidate_id) });
+  }
   return chunks;
 }
 
