@@ -1,0 +1,50 @@
+name: RB-18B One-Time Semantic Tuning
+
+on:
+  push:
+    branches:
+      - phase1-universal-dedupe-rb00-rb01
+    paths:
+      - ".github/workflows/rb18b-one-time-semantic-tuning.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  tune:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout working branch
+        uses: actions/checkout@v5
+        with:
+          ref: phase1-universal-dedupe-rb00-rb01
+          fetch-depth: 0
+      - name: Apply exact semantic request tuning
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("diligence-artifact-backend/src/phases/01-source-discovery/services/two-layer-semantic-manifest-filter.service.js")
+          text = path.read_text(encoding="utf-8")
+          replacements = {
+              "const MODEL_CLUSTER_MAX_CANDIDATES = 6;": "const MODEL_CLUSTER_MAX_CANDIDATES = 9;",
+              "const MODEL_MAX_OUTPUT_TOKENS = 1536;": "const MODEL_MAX_OUTPUT_TOKENS = 8192;",
+          }
+          for old, new in replacements.items():
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"Expected exactly one occurrence of {old!r}; found {count}")
+              text = text.replace(old, new)
+          path.write_text(text, encoding="utf-8")
+          PY
+          git diff --check
+          git diff -- diligence-artifact-backend/src/phases/01-source-discovery/services/two-layer-semantic-manifest-filter.service.js
+      - name: Commit exact tuning
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add diligence-artifact-backend/src/phases/01-source-discovery/services/two-layer-semantic-manifest-filter.service.js
+          git commit -m "RB-18B: tune compact semantic cluster requests"
+          git push origin HEAD:phase1-universal-dedupe-rb00-rb01
