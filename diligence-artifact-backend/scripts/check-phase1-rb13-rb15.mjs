@@ -33,12 +33,13 @@ try {
     target_url: run.root_url,
     target_boundary: { primary_entity_id: "one97" },
     final_extraction_authority: true,
+    clean_extraction_manifest: true,
+    contains_extraction_authority_only: true,
     material_content_required_for_extraction: true,
     manifest_sources: [
       ...Array.from({ length: 6 }, (_, index) => productRow(index + 1)),
-      legalRow("privacy_data_processing.URL.001", "/one97/privacy-policy", "one97"),
-      legalRow("privacy_data_processing.URL.002", "/one97/privacy-policy-copy", "one97"),
-      legalRow("privacy_data_processing.URL.003", "/ppsl/privacy-policy", "entity-explicit-ppsl")
+      legalRow("privacy_data_processing.URL.001", "/one97/privacy-policy", "one97", [`${origin}/one97/privacy-policy-copy`]),
+      legalRow("privacy_data_processing.URL.002", "/ppsl/privacy-policy", "entity-explicit-ppsl")
     ]
   };
 
@@ -62,9 +63,11 @@ try {
   assert.deepEqual(new Set(privacyDocs.map((doc) => doc.entity_id)), new Set(["one97", "entity-explicit-ppsl"]));
   assert.ok(output.legal_doc_privacy_policy);
   assert.equal(output.legal_doc_privacy_policy.entity_id, "one97");
+  assert.ok(output.legal_doc_privacy_policy.source_urls.includes(`${origin}/one97/privacy-policy-copy`));
   assert.ok(output["legal_doc_privacy_policy__entity-explicit-ppsl"]);
   assert.equal(output["legal_doc_privacy_policy__entity-explicit-ppsl"].entity_id, "entity-explicit-ppsl");
-  assert.equal(output.legal_doc_lossless_validation_manifest.exact_duplicate_aliases_collapsed, 1);
+  assert.equal(output.legal_doc_lossless_validation_manifest.exact_duplicate_aliases_collapsed, 0);
+  assert.equal(output.legal_doc_lossless_validation_manifest.legal_source_count, 2);
   assert.equal(output.legal_doc_lossless_validation_manifest.cross_entity_merge_detected, false);
   assert.equal(output.legal_doc_lossless_validation_manifest.status, "PASS");
 
@@ -90,10 +93,12 @@ try {
     product_sources: productEntry.source_count,
     product_physical_artifacts: productEntry.required_artifacts.length,
     distinct_privacy_instruments: privacyDocs.length,
-    exact_legal_aliases_collapsed: output.legal_doc_lossless_validation_manifest.exact_duplicate_aliases_collapsed,
+    exact_legal_alias_collapsed_before_extraction: true,
+    alias_provenance_preserved: output.legal_doc_privacy_policy.source_urls.includes(`${origin}/one97/privacy-policy-copy`),
     hyphenated_stable_legal_suffix_supported: true,
     downstream_handoff_unchanged: true,
-    material_content_gate_active: true
+    material_content_gate_active: true,
+    clean_manifest_boundary_active: true
   }, null, 2));
 } finally {
   await close(server);
@@ -167,6 +172,8 @@ function productRow(index) {
     admission_tier: "PRIMARY",
     extraction_decision: "EXTRACT",
     extraction_authorized_by_canonical_selection: true,
+    downstream_default: true,
+    final_url_disposition: "EXTRACT_CANONICAL_FULL",
     extraction_scope: "FULL_MAIN_CONTENT",
     source_disposition: "SELECTED_CANONICAL",
     feature_cluster: `product_${index}`,
@@ -181,7 +188,7 @@ function productRow(index) {
   };
 }
 
-function legalRow(id, path, entityId) {
+function legalRow(id, path, entityId, aliasUrls = []) {
   return {
     manifest_id: id,
     entity_id: entityId,
@@ -193,6 +200,7 @@ function legalRow(id, path, entityId) {
     canonical_url: `${origin}${path}`,
     canonical_url_key: `${origin}${path}`,
     fetch_url: `${origin}${path}`,
+    alias_urls: aliasUrls,
     route_type: "privacy_policy",
     route_type_aliases: [],
     materiality: "legal_document",
@@ -202,6 +210,8 @@ function legalRow(id, path, entityId) {
     admission_tier: "PRIMARY",
     extraction_decision: "EXTRACT",
     extraction_authorized_by_canonical_selection: true,
+    downstream_default: true,
+    final_url_disposition: "EXTRACT_LEGAL_FULL_DOCUMENT",
     extraction_scope: "FULL_DOCUMENT",
     source_disposition: "LEGAL_INSTRUMENT",
     feature_cluster: "legal_governance",
