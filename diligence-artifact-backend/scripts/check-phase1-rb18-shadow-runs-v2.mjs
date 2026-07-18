@@ -11,6 +11,12 @@ const TIMEOUT_MS = positiveInt(process.env.LN_PHASE1_SHADOW_NETWORK_TIMEOUT_MS, 
 const originalFetch = globalThis.fetch?.bind(globalThis);
 if (!originalFetch) throw new Error("PHASE1_RB18_SHADOW_FETCH_UNAVAILABLE");
 
+const CLEAN_EXTRACTION_DISPOSITIONS = new Set([
+  "EXTRACT_CANONICAL_FULL",
+  "EXTRACT_UNIQUE_BLOCKS",
+  "EXTRACT_LEGAL_FULL_DOCUMENT"
+]);
+
 const [{ buildUniversalSourceUrlManifestArtifact }, { buildPhase1Rb15ExtractionArtifactSet }, { buildSourceFamilyHandoffArtifact }, { semanticJsonArtifactHash }, { callProviderJson }] = await Promise.all([
   import("../src/phases/01-source-discovery/services/universal-url-manifest.service.js"),
   import("../src/phases/01-source-discovery/services/phase1-rb15-extraction-orchestrator.service.js"),
@@ -35,10 +41,12 @@ const targets = [
 await fs.rm(OUTPUT_DIR, { recursive: true, force: true });
 await fs.mkdir(OUTPUT_DIR, { recursive: true });
 const summary = {
-  schema_version: "PHASE1_RB18B_SHADOW_RUNS_v4_SEMANTIC_COMPRESSION",
+  schema_version: "PHASE1_RB18B_SHADOW_RUNS_v5_TWO_LAYER_CLEAN_MANIFEST",
   mode: "READ_ONLY_NO_PERSISTENCE",
+  architecture: "ONE_JOB_TWO_LAYER_URL_MANIFEST_FILTER",
   material_content_rule: "ONLY_MATERIAL_PAGES_MAY_RECEIVE_EXTRACTION_AUTHORITY",
-  semantic_rule: "BOUNDED_MODEL_ADJUDICATION_PLUS_DETERMINISTIC_CORROBORATION_AND_NOVELTY_GATE",
+  semantic_rule: "DETERMINISTIC_FILTER_FIRST_SEMANTIC_SUPPORT_ONLY_FOR_UNRESOLVED_CLUSTERS",
+  extraction_rule: "ONLY_CLEAN_DEDUPED_URL_MANIFEST_MOVES_TO_AGENT_1B",
   production_matter_created: false,
   production_matter_advanced: false,
   persistence_invoked: false,
@@ -79,12 +87,17 @@ for (const spec of targets) {
     limitations: report.limitations || [],
     validation_error: report.validation_error || null,
     pipeline_error: report.pipeline_error || null,
+    audited_urls: report.after_selection?.audited_urls || 0,
+    clean_manifest_urls: report.after_selection?.clean_manifest_rows || 0,
+    audit_only_urls: report.after_selection?.audit_only_rows || 0,
     material_pages_fingerprinted: report.material_content_authority?.material_pages_fingerprinted || 0,
     material_pages_authorized: report.material_content_authority?.material_pages_authorized || 0,
     non_material_pages_rejected: report.material_content_authority?.non_material_pages_rejected || 0,
+    semantic_required_candidates: report.semantic_adjudication?.counts?.semantic_required_candidates || 0,
+    semantic_completed_candidates: report.semantic_adjudication?.counts?.semantic_completed_candidates || 0,
     semantic_model_calls: report.semantic_adjudication?.counts?.model_calls || 0,
     semantic_feature_clusters: report.semantic_adjudication?.counts?.final_material_feature_clusters || 0,
-    coverage_only_manifest_rows: report.semantic_compression?.coverage_only_manifest_rows || 0,
+    coverage_only_audit_rows: report.semantic_compression?.coverage_only_audit_rows || 0,
     qualifying_unique_delta_sources: report.semantic_compression?.qualifying_unique_delta_sources || 0
   });
   console.log(`[RB-18B] finish ${spec.id}: ${report.status}`);
@@ -127,6 +140,8 @@ function buildReport(spec, discovery, extraction, handoff, network, elapsedMs) {
   const fingerprints = matrix.source_fingerprint_inventory || {};
   const semantic = matrix.semantic_feature_adjudication || {};
   const selection = matrix.canonical_selection || {};
+  const dispositionLedger = matrix.url_disposition_ledger || {};
+  const auditRows = dispositionLedger.rows || [];
   const legalDocs = extraction.legal_doc_inventory?.documents_found || [];
   const roots = Object.values(sourceIndex.root_artifact_manifest || {}).map((entry) => ({
     common_root: entry.common_root,
@@ -144,20 +159,22 @@ function buildReport(spec, discovery, extraction, handoff, network, elapsedMs) {
     ...(fingerprints.counts?.failed ? [`FINGERPRINT_FAILURES:${fingerprints.counts.failed}`] : []),
     ...(fingerprints.counts?.fetched_no_material_content ? [`NO_MATERIAL_CONTENT_PAGES:${fingerprints.counts.fetched_no_material_content}`] : []),
     ...Object.entries(networkSnapshot.lanes).filter(([, lane]) => lane.budget_exhausted).map(([lane]) => `NETWORK_BUDGET_EXHAUSTED:${lane}`),
-    ...(semantic.limitations || []).map((item) => typeof item === "string" ? item : `${item.code}:${item.boundary_key || "global"}`)
+    ...(semantic.limitations || []).map((item) => typeof item === "string" ? item : `${item.code}:${item.provisional_cluster_key || item.boundary_key || "global"}`)
   ]);
-  const extractRows = manifest.manifest_sources.filter((row) => row.extraction_decision === "EXTRACT" && row.admission_tier === "PRIMARY");
-  const noMaterialRows = manifest.manifest_sources.filter((row) => row.fingerprint_fetch_status === "FETCHED_NO_MATERIAL_CONTENT" || row.fingerprint_extraction_eligible === false && row.content_materiality?.status === "NO_MATERIAL_CONTENT");
+  const extractRows = manifest.manifest_sources || [];
+  const noMaterialRows = auditRows.filter((row) => row.final_url_disposition === "REJECT_NONMATERIAL");
+  const coverageRows = auditRows.filter((row) => row.final_url_disposition === "MANIFEST_ONLY_COVERAGE");
   const selectionById = new Map((selection.decisions || []).map((row) => [row.candidate_id, row]));
   const materialNonLegal = (semantic.decisions || []).filter((row) => row.semantic_eligible).length;
   const nonLegalExtractRows = extractRows.filter((row) => !row.legal_doc_candidate);
   const clusterLedger = buildClusterLedger(selection.decisions || []);
 
   return {
-    schema_version: "PHASE1_RB18B_TARGET_SHADOW_REPORT_v4_SEMANTIC_COMPRESSION",
+    schema_version: "PHASE1_RB18B_TARGET_SHADOW_REPORT_v5_TWO_LAYER_CLEAN_MANIFEST",
     target_id: spec.id,
     target_url: spec.url,
     mode: "READ_ONLY_NO_PERSISTENCE",
+    architecture: semantic.architecture || null,
     production_mutations_attempted: false,
     persistence_invoked: false,
     elapsed_ms: elapsedMs,
@@ -173,7 +190,11 @@ function buildReport(spec, discovery, extraction, handoff, network, elapsedMs) {
       schema_version: semantic.schema_version || null,
       status: semantic.status || null,
       model_usage: semantic.model_usage || null,
+      architecture: semantic.architecture || null,
       authority_rule: semantic.authority_rule || null,
+      deterministic_layer_rule: semantic.deterministic_layer_rule || null,
+      semantic_layer_rule: semantic.semantic_layer_rule || null,
+      final_manifest_rule: semantic.final_manifest_rule || null,
       counts: semantic.counts || {},
       limitations: semantic.limitations || []
     },
@@ -182,18 +203,22 @@ function buildReport(spec, discovery, extraction, handoff, network, elapsedMs) {
       non_legal_body_extraction_rows: nonLegalExtractRows.length,
       body_extraction_ratio: materialNonLegal ? Number((nonLegalExtractRows.length / materialNonLegal).toFixed(4)) : 0,
       selected_canonicals: selection.counts?.selected_canonicals || 0,
-      coverage_only_manifest_rows: selection.counts?.coverage_only_manifest_rows || 0,
+      coverage_only_audit_rows: coverageRows.length,
       qualifying_unique_delta_sources: selection.counts?.qualifying_unique_delta_sources || 0,
       template_variants_suppressed: selection.counts?.template_variants_suppressed || 0,
       partial_contributors: selection.counts?.partial_contributors || 0,
       cluster_ledger: clusterLedger
     },
     after_selection: {
+      audited_urls: auditRows.length,
+      clean_manifest_rows: extractRows.length,
+      audit_only_rows: auditRows.filter((row) => !row.extraction_authorized).length,
       final_manifest_rows: manifest.manifest_forensics?.final_rows || 0,
       extraction_rows: manifest.manifest_forensics?.extract_rows || 0,
-      dispositions: countBy(manifest.manifest_sources, (row) => row.source_disposition || "UNASSIGNED"),
+      audit_dispositions: countBy(auditRows, (row) => row.final_url_disposition || "UNASSIGNED"),
+      clean_manifest_dispositions: countBy(extractRows, (row) => row.final_url_disposition || "UNASSIGNED"),
       retained_sources: sourceIndex.discovered_source_index?.length || 0,
-      manifest_only_sources: sourceIndex.manifest_only_index?.length || 0,
+      extraction_manifest_only_sources: sourceIndex.manifest_only_index?.length || 0,
       duplicate_blocks_removed: sourceIndex.block_dedupe_forensics?.totals?.duplicate_blocks_removed || 0,
       exact_duplicate_sources_suppressed: sourceIndex.block_dedupe_forensics?.totals?.exact_duplicate_sources_suppressed || 0
     },
@@ -202,15 +227,16 @@ function buildReport(spec, discovery, extraction, handoff, network, elapsedMs) {
       material_pages_fingerprinted: fingerprints.counts?.material_content || 0,
       material_pages_authorized: extractRows.length,
       non_material_pages_fingerprinted: fingerprints.counts?.fetched_no_material_content || 0,
-      non_material_pages_rejected: noMaterialRows.filter((row) => row.extraction_decision !== "EXTRACT").length,
-      non_material_extraction_leaks: noMaterialRows.filter((row) => row.extraction_decision === "EXTRACT").map((row) => ({ manifest_id: row.manifest_id, canonical_url: row.canonical_url })),
-      coverage_only_extraction_leaks: manifest.manifest_sources.filter((row) => row.extraction_scope === "STRUCTURED_COVERAGE_ONLY" && row.extraction_decision === "EXTRACT").map((row) => ({ manifest_id: row.manifest_id, canonical_url: row.canonical_url })),
+      non_material_pages_rejected: noMaterialRows.length,
+      non_material_extraction_leaks: extractRows.filter((row) => row.content_materiality?.status !== "MATERIAL_CONTENT" || row.fingerprint_extraction_eligible !== true).map((row) => ({ manifest_id: row.manifest_id, canonical_url: row.canonical_url })),
+      coverage_only_extraction_leaks: extractRows.filter((row) => row.extraction_scope === "STRUCTURED_COVERAGE_ONLY" || row.final_url_disposition === "MANIFEST_ONLY_COVERAGE").map((row) => ({ manifest_id: row.manifest_id, canonical_url: row.canonical_url })),
+      audit_only_extraction_leaks: extractRows.filter((row) => !CLEAN_EXTRACTION_DISPOSITIONS.has(row.final_url_disposition)).map((row) => ({ manifest_id: row.manifest_id, canonical_url: row.canonical_url, final_url_disposition: row.final_url_disposition })),
       unauthorized_partial_contributor_leaks: (selection.decisions || []).filter((row) => row.source_disposition === "SELECTED_PARTIAL_CONTRIBUTOR" && (row.semantic_relationship !== "SAME_FEATURE_UNIQUE_DELTA" || row.unique_evidence_gate?.status !== "QUALIFIED_UNIQUE_EVIDENCE")).map((row) => ({ candidate_id: row.candidate_id, canonical_url: row.canonical_url })),
       authorized_rows: extractRows.map((row) => {
         const decision = selectionById.get(row.canonical_candidate_id);
-        return { manifest_id: row.manifest_id, canonical_url: row.canonical_url, source_disposition: row.source_disposition, extraction_scope: row.extraction_scope, semantic_relationship: decision?.semantic_relationship || null, unique_evidence_status: decision?.unique_evidence_gate?.status || null, fingerprint_fetch_status: row.fingerprint_fetch_status, fingerprint_extraction_eligible: row.fingerprint_extraction_eligible, content_status: row.content_materiality?.status || null };
+        return { manifest_id: row.manifest_id, canonical_url: row.canonical_url, final_url_disposition: row.final_url_disposition, source_disposition: row.source_disposition, extraction_scope: row.extraction_scope, semantic_relationship: decision?.semantic_relationship || null, unique_evidence_status: decision?.unique_evidence_gate?.status || null, fingerprint_fetch_status: row.fingerprint_fetch_status, fingerprint_extraction_eligible: row.fingerprint_extraction_eligible, content_status: row.content_materiality?.status || null };
       }),
-      rejected_rows: noMaterialRows.map((row) => ({ manifest_id: row.manifest_id, canonical_url: row.canonical_url, source_disposition: row.source_disposition, extraction_decision: row.extraction_decision, limitation: row.tier_reason }))
+      rejected_rows: noMaterialRows.map((row) => ({ candidate_id: row.candidate_id, canonical_url: row.canonical_url, final_url_disposition: row.final_url_disposition, limitation: row.selection_reason }))
     },
     entity_boundary: {
       primary_entity_id: matrix.target_boundary_manifest?.primary_entity_id || null,
@@ -225,12 +251,12 @@ function buildReport(spec, discovery, extraction, handoff, network, elapsedMs) {
       roots
     },
     legal_artifacts: {
-      documents: legalDocs.map((doc) => ({ artifact_name: doc.artifact_name, doc_type: doc.doc_type, entity_id: doc.entity_id, source_urls: doc.source_urls, extraction_scope: doc.extraction_scope, sha256: doc.sha256 })),
+      documents: legalDocs.map((doc) => ({ artifact_name: doc.artifact_name, doc_type: doc.doc_type, entity_id: doc.entity_id, source_url: doc.source_url, extraction_scope: doc.extraction_scope, sha256: doc.sha256 })),
       validation: extraction.legal_doc_lossless_validation_manifest
     },
     relationship_metadata: {
-      ai_overlay_rows: manifest.manifest_sources.filter((row) => row.ai_overlay).map((row) => ({ canonical_url: row.canonical_url, feature_cluster: row.feature_cluster, ai_overlay: row.ai_overlay })),
-      secondary_root_rows: manifest.manifest_sources.filter((row) => (row.secondary_root_references || []).length).map((row) => ({ canonical_url: row.canonical_url, primary_root: row.common_root, secondary_root_references: row.secondary_root_references }))
+      ai_overlay_rows: extractRows.filter((row) => row.ai_overlay).map((row) => ({ canonical_url: row.canonical_url, feature_cluster: row.feature_cluster, ai_overlay: row.ai_overlay })),
+      secondary_root_rows: extractRows.filter((row) => (row.secondary_root_references || []).length).map((row) => ({ canonical_url: row.canonical_url, primary_root: row.common_root, secondary_root_references: row.secondary_root_references }))
     },
     compatibility: {
       handoff_status: handoff.source_discovery_handoff?.status || null,
@@ -251,6 +277,8 @@ function validateReport(spec, discovery, extraction, handoff, report) {
   const legal = extraction.legal_doc_lossless_validation_manifest;
   const semantic = matrix.semantic_feature_adjudication;
   const selection = matrix.canonical_selection;
+  const dispositionLedger = matrix.url_disposition_ledger;
+  const auditRows = dispositionLedger?.rows || [];
   const fingerprints = matrix.source_fingerprint_inventory?.fingerprints || [];
   const fingerprintsById = new Map(fingerprints.map((item) => [item.candidate_id, item]));
   const canonicalById = new Map((matrix.canonical_url_inventory?.canonical_candidates || []).map((item) => [item.candidate_id, item]));
@@ -258,27 +286,40 @@ function validateReport(spec, discovery, extraction, handoff, report) {
   assert.equal(report.production_mutations_attempted, false);
   assert.equal(report.persistence_invoked, false);
   assert.equal(manifest.final_extraction_authority, true);
+  assert.equal(manifest.clean_extraction_manifest, true);
+  assert.equal(manifest.contains_extraction_authority_only, true);
   assert.equal(manifest.material_content_required_for_extraction, true);
+  assert.equal(dispositionLedger?.authority_rule, "AUDIT_LEDGER_NEVER_DIRECT_EXTRACTION_INPUT");
+  assert.equal(auditRows.length, selection?.decisions?.length || 0, "audit ledger and canonical selection accounting differ");
+  assert.equal(manifest.manifest_sources.length, auditRows.filter((row) => row.extraction_authorized).length, "clean manifest and authorized audit-ledger accounting differ");
   assert.ok(report.before_selection.raw_candidates > 0, "no live discovery candidates");
   assert.ok(report.before_selection.fingerprints.fetched > 0, "no live material fingerprint");
-  assert.ok(report.after_selection.final_manifest_rows > 0, "empty final manifest");
-  assert.ok(report.after_selection.extraction_rows > 0, "no selected extraction rows");
+  assert.ok(report.after_selection.clean_manifest_rows > 0, "empty clean extraction manifest");
+  assert.equal(report.after_selection.clean_manifest_rows, report.after_selection.extraction_rows, "clean manifest contains non-extraction rows");
   assert.ok(report.after_selection.retained_sources > 0, "no retained source rows");
   assert.ok(report.root_assembly.populated_roots > 0, "no populated logical roots");
 
+  assert.equal(semantic?.architecture, "ONE_JOB_TWO_LAYER_URL_MANIFEST_FILTER");
   assert.equal(semantic?.authority_rule, "SEMANTIC_RECOMMENDATION_PLUS_DETERMINISTIC_CORROBORATION");
   assert.equal(semantic?.extraction_authority, false);
-  assert.ok((semantic?.counts?.model_calls_succeeded || 0) > 0, "live semantic model was not exercised");
-  assert.equal(semantic?.counts?.model_calls_failed || 0, 0, "semantic model call failed");
-  assert.ok((semantic?.counts?.model_decision_coverage || 0) >= 0.95, `semantic decision coverage below 95%: ${semantic?.counts?.model_decision_coverage || 0}`);
-  assert.ok(!(semantic?.limitations || []).some((item) => /UNAVAILABLE|CALL_FAILED|INCOMPLETE_BATCH/.test(item?.code || String(item))), "semantic adjudication has blocking model limitation");
-  assert.ok((semantic?.counts?.final_material_feature_clusters || 0) > 0, "semantic feature ledger is empty");
-  assert.ok((selection?.counts?.selected_canonicals || 0) > 0, "no canonical semantic winners");
-  assert.equal(report.material_content_authority.coverage_only_extraction_leaks.length, 0, "coverage-only page retained body extraction authority");
+  const semanticRequired = semantic?.counts?.semantic_required_candidates || 0;
+  if (semanticRequired > 0) {
+    assert.ok((semantic?.counts?.model_calls_succeeded || 0) > 0, "unresolved cluster existed but live semantic support did not succeed");
+    assert.equal(semantic?.counts?.model_calls_failed || 0, 0, "semantic support call failed");
+    assert.equal(semantic?.counts?.semantic_required_coverage, 1, `semantic-required coverage incomplete: ${semantic?.counts?.semantic_required_coverage || 0}`);
+    assert.equal(semantic?.counts?.semantic_completed_candidates, semanticRequired, "not every semantic-required candidate was adjudicated");
+  } else {
+    assert.equal(semantic?.counts?.semantic_required_coverage, 1, "zero-required semantic coverage must be complete");
+  }
+  assert.ok(!(semantic?.limitations || []).some((item) => /UNAVAILABLE|CALL_FAILED|INCOMPLETE/.test(item?.code || String(item))), "semantic filtration has blocking limitation");
+  assert.ok((semantic?.counts?.final_material_feature_clusters || 0) > 0, "feature ledger is empty");
+  assert.ok((selection?.counts?.selected_canonicals || 0) > 0, "no canonical winners");
+  assert.equal(report.material_content_authority.coverage_only_extraction_leaks.length, 0, "coverage-only URL entered clean manifest");
+  assert.equal(report.material_content_authority.audit_only_extraction_leaks.length, 0, "audit-only URL entered clean manifest");
   assert.equal(report.material_content_authority.unauthorized_partial_contributor_leaks.length, 0, "partial contributor bypassed semantic unique-delta gate");
-  assert.equal(report.material_content_authority.non_material_extraction_leaks.length, 0, "non-material page received extraction authority");
+  assert.equal(report.material_content_authority.non_material_extraction_leaks.length, 0, "non-material URL entered clean manifest");
   assert.ok(report.material_content_authority.material_pages_authorized > 0, "no material page authorized");
-  if (report.semantic_compression.material_non_legal_candidates > 1) assert.ok(report.semantic_compression.non_legal_body_extraction_rows < report.semantic_compression.material_non_legal_candidates, "semantic layer produced no body-extraction compression");
+  if (report.semantic_compression.material_non_legal_candidates > 1) assert.ok(report.semantic_compression.non_legal_body_extraction_rows < report.semantic_compression.material_non_legal_candidates, "two-layer manifest filter produced no body-extraction compression");
 
   assert.ok(String(report.compatibility.handoff_status).startsWith("LOCKED"));
   assert.equal(report.compatibility.domain_gate_allowed, true);
@@ -290,27 +331,30 @@ function validateReport(spec, discovery, extraction, handoff, report) {
   assert.equal(legal?.every_artifact_is_full_document, true);
   assert.equal(new Set(manifest.manifest_sources.map((row) => row.canonical_identity)).size, manifest.manifest_sources.length);
 
+  const cleanCandidateIds = new Set(manifest.manifest_sources.map((row) => row.canonical_candidate_id));
+  for (const auditRow of auditRows) {
+    assert.equal(cleanCandidateIds.has(auditRow.candidate_id), auditRow.extraction_authorized, `audit/clean authority mismatch: ${auditRow.candidate_id}`);
+  }
+
   for (const row of manifest.manifest_sources) {
+    assert.equal(row.admission_tier, "PRIMARY");
+    assert.equal(row.extraction_decision, "EXTRACT");
+    assert.equal(row.extraction_authorized_by_canonical_selection, true);
+    assert.equal(row.downstream_default, true);
+    assert.ok(CLEAN_EXTRACTION_DISPOSITIONS.has(row.final_url_disposition), `invalid clean-manifest disposition: ${row.final_url_disposition}`);
+    assert.ok(!["STRUCTURED_COVERAGE_ONLY", "METADATA_ONLY"].includes(row.extraction_scope), `non-extraction scope entered clean manifest: ${row.extraction_scope}`);
     if (/translation/i.test(`${row.canonical_url} ${row.route_type} ${row.feature_cluster}`)) assert.notEqual(row.legal_doc_type, "service_level_agreement");
     if (row.legal_doc_candidate) assert.equal(row.extraction_scope, "FULL_DOCUMENT");
-    if (row.extraction_scope === "STRUCTURED_COVERAGE_ONLY") assert.notEqual(row.extraction_decision, "EXTRACT");
-    if (row.extraction_decision === "EXTRACT") {
-      const fingerprint = materialFingerprintForRow(row, canonicalById, fingerprintsById);
-      assert.ok(fingerprint, `extract row missing material fingerprint trace: ${row.manifest_id}`);
-      assert.equal(fingerprint.fetch_status, "FETCHED");
-      assert.equal(fingerprint.extraction_eligible, true);
-      assert.equal(fingerprint.content_materiality?.status, "MATERIAL_CONTENT");
-      assert.equal(row.fingerprint_fetch_status, "FETCHED");
-      assert.equal(row.fingerprint_extraction_eligible, true);
-      assert.equal(row.content_materiality?.status, "MATERIAL_CONTENT");
-      assert.ok(row.exact_content_hash);
-      assert.ok(row.selected_block_hashes?.length > 0);
-    }
-    if (row.fingerprint_fetch_status === "FETCHED_NO_MATERIAL_CONTENT" || row.content_materiality?.status === "NO_MATERIAL_CONTENT") {
-      assert.notEqual(row.extraction_decision, "EXTRACT");
-      assert.equal(row.extraction_authorized_by_canonical_selection, false);
-      assert.equal(row.legal_doc_candidate, false);
-    }
+    const fingerprint = materialFingerprintForRow(row, canonicalById, fingerprintsById);
+    assert.ok(fingerprint, `extract row missing material fingerprint trace: ${row.manifest_id}`);
+    assert.equal(fingerprint.fetch_status, "FETCHED");
+    assert.equal(fingerprint.extraction_eligible, true);
+    assert.equal(fingerprint.content_materiality?.status, "MATERIAL_CONTENT");
+    assert.equal(row.fingerprint_fetch_status, "FETCHED");
+    assert.equal(row.fingerprint_extraction_eligible, true);
+    assert.equal(row.content_materiality?.status, "MATERIAL_CONTENT");
+    assert.ok(row.exact_content_hash);
+    assert.ok(row.selected_block_hashes?.length > 0);
   }
 
   for (const root of report.root_assembly.roots.filter((item) => item.source_count > 0)) {
@@ -351,7 +395,7 @@ function materialFingerprintForRow(row, canonicalById, fingerprintsById) {
 }
 
 function failureReport(spec, network, started, error, key) {
-  return { schema_version: "PHASE1_RB18B_TARGET_SHADOW_REPORT_v4_SEMANTIC_COMPRESSION", target_id: spec.id, target_url: spec.url, status: "FAIL", [key]: error?.stack || error?.message || String(error), network: network.snapshot(), elapsed_ms: Date.now() - started, production_mutations_attempted: false, persistence_invoked: false };
+  return { schema_version: "PHASE1_RB18B_TARGET_SHADOW_REPORT_v5_TWO_LAYER_CLEAN_MANIFEST", target_id: spec.id, target_url: spec.url, status: "FAIL", [key]: error?.stack || error?.message || String(error), network: network.snapshot(), elapsed_ms: Date.now() - started, production_mutations_attempted: false, persistence_invoked: false };
 }
 function target(id, runId, url, allowedHosts, packages, entitySurfaces) {
   return { id, run_id: runId, url, allowed_hosts: allowedHosts, entity_surfaces: entitySurfaces, preflight: { domain_selection_profile: { provisional_primary_domain_candidates: packages.map((package_id) => ({ package_id })), provisional_capability_overlay_candidates: packages.includes("ai-native") ? [{ package_id: "ai-native" }] : [], provisional_regulatory_overlay_candidates: [{ package_id: "privacy" }] } } };
