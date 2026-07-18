@@ -8,9 +8,9 @@ import { buildLegalInstrumentClassification, assertLegalInstrumentClassification
 import { buildRootFeatureLaneClustering, assertRootFeatureLaneClustering } from "./root-feature-lane-clustering.service.js";
 import { buildSemanticFeatureAdjudication, assertSemanticFeatureAdjudication } from "./semantic-feature-adjudication.service.js";
 import { buildRb18bCanonicalSelection, assertRb18bCanonicalSelection } from "./rb18b-canonical-selection.service.js";
-import { buildFinalDedupedManifest, assertFinalDedupedManifest } from "./final-deduped-manifest.service.js";
+import { buildFinalDedupedManifest, assertFinalDedupedManifest, finalUrlDispositionForDecision } from "./final-deduped-manifest.service.js";
 
-export const PHASE1_UNIVERSAL_DISCOVERY_PRODUCER_VERSION = "PHASE1_UNIVERSAL_DISCOVERY_RB18B_SEMANTIC_COMPRESSION_v1";
+export const PHASE1_UNIVERSAL_DISCOVERY_PRODUCER_VERSION = "PHASE1_UNIVERSAL_DISCOVERY_RB18B_TWO_LAYER_MANIFEST_FILTER_v2";
 
 export async function buildUniversalSourceUrlManifestArtifact({ run, preflightContext = {} } = {}) {
   const legacyOutput = await buildLegacySourceUrlManifestArtifact({ run, preflightContext });
@@ -71,6 +71,9 @@ export async function augmentSourceUrlManifestOutput({ run, legacyOutput, rootHt
   });
   assertRb18bCanonicalSelection(canonicalSelection);
 
+  const urlDispositionLedger = buildUrlDispositionLedger(canonicalSelection);
+  assertUrlDispositionLedger(urlDispositionLedger, canonicalSelection);
+
   const finalManifest = buildFinalDedupedManifest({ legacyManifest, canonicalSelection });
   assertFinalDedupedManifest(finalManifest, canonicalSelection);
 
@@ -83,9 +86,11 @@ export async function augmentSourceUrlManifestOutput({ run, legacyOutput, rootHt
     root_feature_lane_clustering_ref: "source_discovery_matrix_manifest.root_feature_lane_clustering",
     semantic_feature_adjudication_ref: "source_discovery_matrix_manifest.semantic_feature_adjudication",
     canonical_selection_ref: "source_discovery_matrix_manifest.canonical_selection",
+    url_disposition_ledger_ref: "source_discovery_matrix_manifest.url_disposition_ledger",
     canonical_identity_rule: "ENTITY_ID_PLUS_CANONICAL_URL",
     analysis_public_manifest_selection_changed: true,
-    final_manifest_projection_ref: "deduped_url_manifest"
+    final_manifest_projection_ref: "deduped_url_manifest",
+    final_manifest_rule: "ONLY_EXTRACTION_AUTHORISED_URLS_MOVE_TO_AGENT_1B"
   };
 
   return {
@@ -100,6 +105,7 @@ export async function augmentSourceUrlManifestOutput({ run, legacyOutput, rootHt
       root_feature_lane_clustering_ref: "source_discovery_matrix_manifest.root_feature_lane_clustering",
       semantic_feature_adjudication_ref: "source_discovery_matrix_manifest.semantic_feature_adjudication",
       canonical_selection_ref: "source_discovery_matrix_manifest.canonical_selection",
+      url_disposition_ledger_ref: "source_discovery_matrix_manifest.url_disposition_ledger",
       target_boundary: {
         ...(finalManifest.target_boundary || {}),
         entity_boundary_schema_version: entityBoundary.target_boundary_manifest.schema_version,
@@ -121,6 +127,7 @@ export async function augmentSourceUrlManifestOutput({ run, legacyOutput, rootHt
       root_feature_lane_clustering: rootFeatureLaneClustering,
       semantic_feature_adjudication: semanticFeatureAdjudication,
       canonical_selection: canonicalSelection,
+      url_disposition_ledger: urlDispositionLedger,
       final_manifest_forensics: finalManifest.manifest_forensics,
       internal_evidence_model: internalEvidenceModel,
       rb02_internal_evidence_model_active: true,
@@ -130,7 +137,11 @@ export async function augmentSourceUrlManifestOutput({ run, legacyOutput, rootHt
       rb06_source_fingerprint_pass_active: true,
       rb07_root_feature_lane_clustering_active: true,
       rb08_bounded_legal_classifier_active: true,
-      rb18b_hybrid_semantic_adjudication_active: true,
+      rb18b_two_layer_manifest_filter_active: true,
+      rb18b_deterministic_filter_first: true,
+      rb18b_semantic_support_layer_second: true,
+      rb18b_semantic_output_never_directly_authorizes_extraction: true,
+      rb18b_clean_manifest_only_moves_to_extraction: true,
       rb18b_coverage_only_body_extraction_forbidden: true,
       rb09_canonical_selection_active: true,
       rb10_final_deduped_manifest_active: true,
@@ -149,7 +160,10 @@ export async function augmentSourceUrlManifestOutput({ run, legacyOutput, rootHt
       material_content_count: fingerprintPass.inventory.counts.material_content,
       no_material_content_count: fingerprintPass.inventory.counts.fetched_no_material_content,
       semantic_model_call_count: semanticFeatureAdjudication.counts.model_calls,
-      semantic_feature_cluster_count: semanticFeatureAdjudication.counts.final_feature_clusters,
+      semantic_feature_cluster_count: semanticFeatureAdjudication.counts.final_material_feature_clusters || semanticFeatureAdjudication.counts.final_feature_clusters,
+      audited_url_count: urlDispositionLedger.counts.audited_urls,
+      clean_extraction_manifest_count: finalManifest.manifest_sources.length,
+      audit_only_url_count: urlDispositionLedger.counts.audited_urls - finalManifest.manifest_sources.length,
       selected_extraction_count: canonicalSelection.counts.extraction_authorized,
       coverage_only_manifest_count: canonicalSelection.counts.coverage_only_manifest_rows,
       qualifying_unique_delta_source_count: canonicalSelection.counts.qualifying_unique_delta_sources,
@@ -167,7 +181,70 @@ export async function augmentSourceUrlManifestOutput({ run, legacyOutput, rootHt
       root_feature_lane_clustering_ref: "source_discovery_matrix_manifest.root_feature_lane_clustering",
       semantic_feature_adjudication_ref: "source_discovery_matrix_manifest.semantic_feature_adjudication",
       canonical_selection_ref: "source_discovery_matrix_manifest.canonical_selection",
+      url_disposition_ledger_ref: "source_discovery_matrix_manifest.url_disposition_ledger",
       downstream_contract_changed: false
     }
   };
+}
+
+function buildUrlDispositionLedger(canonicalSelection) {
+  const rows = (canonicalSelection?.decisions || []).map((decision) => ({
+    candidate_id: decision.candidate_id,
+    canonical_identity: decision.canonical_identity,
+    canonical_url: decision.canonical_url,
+    entity_id: decision.entity_id,
+    primary_root: decision.primary_root,
+    feature_cluster: decision.feature_cluster,
+    evidence_lane: decision.evidence_lane,
+    source_disposition: decision.source_disposition,
+    final_url_disposition: finalUrlDispositionForDecision(decision),
+    extraction_scope: decision.extraction_scope,
+    extraction_authorized: decision.extraction_authorized === true,
+    canonical_owner_candidate_id: decision.canonical_owner_candidate_id || null,
+    selection_reason: decision.selection_reason,
+    structured_coverage: decision.structured_coverage || null,
+    semantic_relationship: decision.semantic_relationship || null,
+    semantic_decision_source: decision.semantic_decision_source || null,
+    deterministic_corroborators: decision.semantic_deterministic_corroborators || [],
+    unique_evidence_gate: decision.unique_evidence_gate || null,
+    content_materiality: decision.content_materiality || null,
+    fingerprint_fetch_status: decision.fingerprint_fetch_status || null
+  }));
+  return {
+    schema_version: "PHASE1_URL_DISPOSITION_LEDGER_RB18B_v1",
+    status: "COMPLETE",
+    authority_rule: "AUDIT_LEDGER_NEVER_DIRECT_EXTRACTION_INPUT",
+    final_manifest_ref: "deduped_url_manifest.manifest_sources",
+    counts: {
+      audited_urls: rows.length,
+      extraction_authorised_urls: rows.filter((row) => row.extraction_authorized).length,
+      audit_only_urls: rows.filter((row) => !row.extraction_authorized).length,
+      by_final_url_disposition: countBy(rows, (row) => row.final_url_disposition)
+    },
+    rows
+  };
+}
+
+function assertUrlDispositionLedger(ledger, canonicalSelection) {
+  if (ledger?.schema_version !== "PHASE1_URL_DISPOSITION_LEDGER_RB18B_v1" || ledger.authority_rule !== "AUDIT_LEDGER_NEVER_DIRECT_EXTRACTION_INPUT") throw new Error("PHASE1_URL_DISPOSITION_LEDGER_SCHEMA_INVALID");
+  const decisions = canonicalSelection?.decisions || [];
+  if (ledger.rows.length !== decisions.length) throw new Error(`PHASE1_URL_DISPOSITION_LEDGER_ACCOUNTING_MISMATCH:${ledger.rows.length}/${decisions.length}`);
+  const seen = new Set();
+  const extractionDispositions = new Set(["EXTRACT_CANONICAL_FULL", "EXTRACT_UNIQUE_BLOCKS", "EXTRACT_LEGAL_FULL_DOCUMENT"]);
+  for (const row of ledger.rows) {
+    if (!row.candidate_id || !row.canonical_identity || !row.final_url_disposition) throw new Error("PHASE1_URL_DISPOSITION_LEDGER_ROW_INCOMPLETE");
+    if (seen.has(row.canonical_identity)) throw new Error(`PHASE1_URL_DISPOSITION_LEDGER_DUPLICATE_IDENTITY:${row.canonical_identity}`);
+    seen.add(row.canonical_identity);
+    if (row.extraction_authorized !== extractionDispositions.has(row.final_url_disposition)) throw new Error(`PHASE1_URL_DISPOSITION_LEDGER_AUTHORITY_MISMATCH:${row.candidate_id}`);
+  }
+  return { ok: true, rows: seen.size };
+}
+
+function countBy(values, keyFn) {
+  const output = {};
+  for (const value of values || []) {
+    const key = keyFn(value);
+    output[key] = (output[key] || 0) + 1;
+  }
+  return Object.fromEntries(Object.entries(output).sort(([a], [b]) => a.localeCompare(b)));
 }
