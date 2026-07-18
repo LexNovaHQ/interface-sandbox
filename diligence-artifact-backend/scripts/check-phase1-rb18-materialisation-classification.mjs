@@ -14,7 +14,6 @@ const candidates = [
   candidate("CANON.MATERIAL", "/product")
 ];
 const canonicalInventory = { canonical_candidates: candidates };
-
 const fetchImpl = async (url) => {
   const pathname = new URL(url).pathname;
   if (pathname === "/app") return html("App", "<script>render()</script><div id='root'></div>");
@@ -25,7 +24,6 @@ const fetchImpl = async (url) => {
 
 const pass = await buildSourceFingerprintPass({ canonicalInventory, fetchImpl, concurrency: 1 });
 assertSourceFingerprintInventory(pass.inventory);
-
 const empty = fingerprint(pass, "CANON.EMPTY_SHELL");
 const placeholder = fingerprint(pass, "CANON.PLACEHOLDER");
 const legalShell = fingerprint(pass, "CANON.LEGAL_SHELL");
@@ -85,7 +83,7 @@ for (const id of ["CANON.EMPTY_SHELL", "CANON.PLACEHOLDER", "CANON.LEGAL_SHELL"]
   assert.equal(decision.source_disposition, "REJECTED_NOT_EVIDENCE");
   assert.equal(decision.extraction_authorized, false);
   assert.equal(decision.fingerprint_extraction_eligible, false);
-  assert.equal(decision.legal_doc_candidate, false);
+  assert.equal(decision.legal_doc_type, "other");
   assert.ok(!finalManifest.manifest_sources.some((row) => row.canonical_candidate_id === id));
 }
 assert.equal(finalManifest.manifest_forensics.audited_rows, 4);
@@ -127,7 +125,6 @@ console.log(JSON.stringify({
   empty_legal_route_confirmed: legalShellClassification.confirmed_legal_instrument,
   post_dedupe_physical_source_of_truth_proved: true,
   suppressed_duplicate_reference_allowed_without_physical_text: true,
-  empty_post_scope_source_suppressed_before_assembly: true,
   clean_manifest_fail_loud_boundary_proved: true
 }, null, 2));
 
@@ -141,64 +138,23 @@ function postDedupePhysicalFixture() {
         { source_id: "product_service.SRC.003", common_root: "product_service" }
       ],
       manifest_only_index: [
-        {
-          source_id: "product_service.SRC.002",
-          extraction_status: "SUPPRESS_EXACT_DUPLICATE",
-          duplicate_owner_source_id: "product_service.SRC.001"
-        },
-        {
-          source_id: "product_service.SRC.003",
-          extraction_status: "SUPPRESS_NO_RETAINED_MATERIAL_AFTER_SCOPE",
-          canonical_owner_candidate_id: "CANON.OWNER",
-          suppression_reason: "DECLARED_EXTRACTION_SCOPE_RETAINED_NO_BODY_OR_UNIQUE_BLOCK"
-        }
+        { source_id: "product_service.SRC.002", extraction_status: "SUPPRESS_EXACT_DUPLICATE", duplicate_owner_source_id: "product_service.SRC.001" },
+        { source_id: "product_service.SRC.003", extraction_status: "SUPPRESS_NO_RETAINED_MATERIAL_AFTER_SCOPE", canonical_owner_candidate_id: "CANON.OWNER", suppression_reason: "DECLARED_EXTRACTION_SCOPE_RETAINED_NO_BODY_OR_UNIQUE_BLOCK" }
       ],
-      root_artifact_manifest: {
-        product_service: {
-          common_root: "product_service",
-          required_artifacts: ["lossless_root__product_service"],
-          source_count: 1,
-          source_ids: ["product_service.SRC.001"]
-        }
-      },
-      block_dedupe_forensics: {
-        roots: {
-          product_service: {
-            source_forensics: [
-              { source_id: "product_service.SRC.001", action: "RETAIN" },
-              { source_id: "product_service.SRC.002", action: "SUPPRESS_EXACT_DUPLICATE", duplicate_owner_source_id: "product_service.SRC.001" }
-            ]
-          }
-        }
-      }
+      root_artifact_manifest: { product_service: { common_root: "product_service", required_artifacts: ["lossless_root__product_service"], source_count: 1, source_ids: ["product_service.SRC.001"] } },
+      block_dedupe_forensics: { roots: { product_service: { source_forensics: [
+        { source_id: "product_service.SRC.001", action: "RETAIN" },
+        { source_id: "product_service.SRC.002", action: "SUPPRESS_EXACT_DUPLICATE", duplicate_owner_source_id: "product_service.SRC.001" }
+      ] } } }
     },
-    lossless_root__product_service: {
-      common_root: "product_service",
-      sources: [{
-        source_id: "product_service.SRC.001",
-        extraction_scope: "FULL_MAIN_CONTENT",
-        lossless_text: materialText
-      }]
-    },
+    lossless_root__product_service: { common_root: "product_service", sources: [{ source_id: "product_service.SRC.001", extraction_scope: "FULL_MAIN_CONTENT", lossless_text: materialText }] },
     legal_doc_inventory: { documents_found: [] }
   };
 }
 
 function candidate(id, pathname) {
   const url = `https://example.test${pathname}`;
-  return {
-    candidate_id: id,
-    canonical_identity: `entity|${url}`,
-    entity_id: "entity",
-    entity_status: "PRIMARY_TARGET",
-    canonical_url: url,
-    fetch_url: url,
-    aliases: [],
-    member_candidate_ids: [],
-    root_candidates: [pathname === "/privacy-policy" ? "privacy_data_processing" : "product_service"],
-    legacy_manifest_ids: [`LEGACY.${id}`],
-    extraction_authorized_by_legacy_manifest: true
-  };
+  return { candidate_id: id, canonical_identity: `entity|${url}`, entity_id: "entity", entity_status: "PRIMARY_TARGET", canonical_url: url, fetch_url: url, aliases: [], member_candidate_ids: [], root_candidates: [pathname === "/privacy-policy" ? "privacy_data_processing" : "product_service"], legacy_manifest_ids: [`LEGACY.${id}`], extraction_authorized_by_legacy_manifest: true };
 }
 function html(title, body) { return new Response(`<!doctype html><html><head><title>${title}</title></head><body>${body}</body></html>`, { status: 200, headers: { "content-type": "text/html" } }); }
 function fingerprint(pass, id) { return pass.inventory.fingerprints.find((item) => item.candidate_id === id); }
