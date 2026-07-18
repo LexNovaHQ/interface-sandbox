@@ -6,7 +6,31 @@ function env(name, fallback = "") {
 }
 
 function csv(name, fallback = "") {
-  return env(name, fallback).split(",").map((x) => x.trim()).filter(Boolean);
+  return parseDelimitedList(env(name, fallback));
+}
+
+export function parseGeminiApiKeys(value) {
+  const raw = String(value || "").replace(/^\uFEFF/, "").trim();
+  if (!raw) return [];
+
+  let values;
+  if (raw.startsWith("[")) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) throw new Error("not_array");
+      values = parsed;
+    } catch {
+      throw new Error("INVALID_GEMINI_API_KEYS_JSON_ARRAY");
+    }
+  } else {
+    values = raw.split(/[,\r\n]+/);
+  }
+
+  return [...new Set(values.map((item) => String(item || "").trim()).filter(Boolean))];
+}
+
+function parseDelimitedList(value) {
+  return [...new Set(String(value || "").split(/[,\r\n]+/).map((item) => item.trim()).filter(Boolean))];
 }
 
 function bool(name, fallback = "false") {
@@ -19,6 +43,7 @@ function numberEnv(name, fallback) {
 }
 
 const geminiModelList = csv("GEMINI_MODELS", env("GEMINI_MODEL", "gemini-2.5-flash"));
+const geminiApiKeys = parseGeminiApiKeys(env("GEMINI_API_KEYS"));
 const projectId = env("GCP_PROJECT_ID") || env("GOOGLE_CLOUD_PROJECT") || "direct-album-497808-f1";
 const region = env("GCP_REGION", "asia-south1");
 
@@ -44,13 +69,14 @@ export const config = Object.freeze({
   cloudTasksDispatchDeadlineSeconds: Math.max(0, numberEnv("CLOUD_TASKS_DISPATCH_DEADLINE_SECONDS", 1800)),
   earlyPhaseStaleMs: Math.max(60000, numberEnv("EARLY_PHASE_STALE_MS", 5 * 60 * 1000)),
   workerStaleMs: Math.max(60000, numberEnv("WORKER_STALE_MS", 20 * 60 * 1000)),
-  geminiApiKeys: csv("GEMINI_API_KEYS"),
+  geminiApiKeys,
   geminiModel: geminiModelList[0] || "gemini-2.5-flash",
   geminiModels: geminiModelList.length ? geminiModelList : ["gemini-2.5-flash"],
   geminiTimeoutMs: numberEnv("GEMINI_TIMEOUT_MS", 240000),
   geminiMaxOutputTokens: Math.max(0, numberEnv("GEMINI_MAX_OUTPUT_TOKENS", 0)),
   geminiRetryRounds: Math.max(1, numberEnv("GEMINI_RETRY_ROUNDS", 2)),
   geminiKeysPerModelPerRound: Math.max(1, numberEnv("GEMINI_KEYS_PER_MODEL_PER_ROUND", 2)),
+  geminiMinRequestIntervalMs: Math.max(0, numberEnv("GEMINI_MIN_REQUEST_INTERVAL_MS", 3200)),
   geminiRetryBaseDelayMs: Math.max(0, numberEnv("GEMINI_RETRY_BASE_DELAY_MS", 750)),
   geminiRetryMaxDelayMs: Math.max(0, numberEnv("GEMINI_RETRY_MAX_DELAY_MS", 5000)),
   geminiQuotaRetryMaxDelayMs: Math.max(0, numberEnv("GEMINI_QUOTA_RETRY_MAX_DELAY_MS", 90000)),
@@ -78,6 +104,7 @@ export function configStatus() {
     gemini_max_output_tokens: config.geminiMaxOutputTokens || "unset_no_artificial_cap",
     gemini_retry_rounds: config.geminiRetryRounds,
     gemini_keys_per_model_per_round: config.geminiKeysPerModelPerRound,
+    gemini_min_request_interval_ms: config.geminiMinRequestIntervalMs,
     gemini_quota_retry_max_delay_ms: config.geminiQuotaRetryMaxDelayMs,
     gemini_quota_retry_buffer_ms: config.geminiQuotaRetryBufferMs,
     public_reviewer_enabled: config.publicReviewerEnabled,

@@ -1,0 +1,67 @@
+name: Phase 1 Rebuild Foundation Validation
+
+on:
+  pull_request:
+    paths:
+      - "diligence-artifact-backend/src/phases/01-source-discovery/**"
+      - "diligence-artifact-backend/src/runtime/config.js"
+      - "diligence-artifact-backend/src/runtime/services/provider.service.js"
+      - "diligence-artifact-backend/src/runtime/services/storage/drive.service.js"
+      - "diligence-artifact-backend/src/runtime/services/storage/firestore.service.js"
+      - "diligence-artifact-backend/test/fixtures/phase1-universal-baselines/**"
+      - "diligence-artifact-backend/scripts/check-gemini-key-configuration.mjs"
+      - "diligence-artifact-backend/scripts/check-phase1-*.mjs"
+      - "diligence-artifact-backend/package.json"
+      - ".github/workflows/phase1-rb00-rb01.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: diligence-artifact-backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: diligence-artifact-backend/package-lock.json
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Validate Gemini key configuration parser
+        run: npm run check:gemini-key-configuration
+      - name: Validate frozen public contract
+        run: npm run check:phase1-contract-freeze
+      - name: Confirm remaining expected-red baselines
+        shell: bash
+        run: |
+          npm run check:phase1-universal-baseline:red > phase1-baseline-output.log 2>&1
+          cat phase1-baseline-output.log
+      - name: Validate RB02 internal model RB03 boundary RB04 discovery
+        run: node scripts/check-phase1-rb02-rb04-post-rb10.mjs
+      - name: Validate RB05 canonicalisation RB06 fingerprints RB07 clustering RB08 legal classifier
+        run: npm run check:phase1-rb05-rb08
+      - name: Validate RB09 selection RB10 manifest RB11 extraction RB12 block dedupe
+        run: npm run check:phase1-rb09-rb12
+      - name: Validate RB13 logical roots RB14 legal artifacts RB15 compatibility projection
+        run: npm run check:phase1-rb13-rb15
+      - name: Validate RB16 idempotent persistence
+        run: node scripts/check-phase1-rb16-idempotent-persistence.mjs
+      - name: Validate RB18B semantic compression
+        run: npm run check:phase1-rb18b-semantic
+      - name: Validate RB17 consolidated behavioural gate
+        run: node scripts/check-phase1-behavioural-validators.mjs
+      - name: Upload Phase 1 baseline diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase1-rb01-baseline-diagnostics
+          path: diligence-artifact-backend/phase1-baseline-output.log
+          if-no-files-found: error

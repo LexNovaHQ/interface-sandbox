@@ -1,0 +1,216 @@
+{
+  "fixture_id": "PHASE1_BASELINE_PAYTM_FINTECH_AI_OVERLAY_v1",
+  "target": {
+    "brand": "Paytm",
+    "primary_entity_id": "one97",
+    "included_entities": ["one97", "ppsl"]
+  },
+  "pages": [
+    {
+      "id": "paytm-electricity-canonical",
+      "path": "/electricity-bill-payment",
+      "entity_id": "one97",
+      "common_root": "product_service",
+      "feature_cluster": "electricity_bill_payment",
+      "evidence_lane": "commercial_product",
+      "variant_family": "electricity_overview",
+      "body": "Paytm Electricity Bill Payment is the canonical feature overview. It explains selection of a state and electricity board, entry of a consumer identifier, review of the payable amount, selection of a payment method, and completion of the bill payment. This generic page is the strongest commercial source for the feature."
+    },
+    {
+      "id": "paytm-electricity-bihar",
+      "path": "/electricity-bill-payment/bihar",
+      "entity_id": "one97",
+      "common_root": "product_service",
+      "feature_cluster": "electricity_bill_payment",
+      "evidence_lane": "commercial_product",
+      "variant_family": "electricity_state_provider",
+      "coverage": { "state": "Bihar", "providers": ["NBPDCL", "SBPDCL"] },
+      "body": "Pay an electricity bill by selecting the state, selecting the electricity board, entering the consumer identifier, reviewing the amount, selecting a payment method, and completing payment. This state template lists NBPDCL and SBPDCL for Bihar and otherwise repeats the generic electricity-payment workflow."
+    },
+    {
+      "id": "paytm-electricity-delhi",
+      "path": "/electricity-bill-payment/delhi",
+      "entity_id": "one97",
+      "common_root": "product_service",
+      "feature_cluster": "electricity_bill_payment",
+      "evidence_lane": "commercial_product",
+      "variant_family": "electricity_state_provider",
+      "coverage": { "state": "Delhi", "providers": ["BSES Rajdhani", "BSES Yamuna"] },
+      "body": "Pay an electricity bill by selecting the state, selecting the electricity board, entering the consumer identifier, reviewing the amount, selecting a payment method, and completing payment. This state template lists the supported Delhi electricity boards and otherwise repeats the generic electricity-payment workflow."
+    },
+    {
+      "id": "paytm-electricity-maharashtra",
+      "path": "/electricity-bill-payment/maharashtra",
+      "entity_id": "one97",
+      "common_root": "product_service",
+      "feature_cluster": "electricity_bill_payment",
+      "evidence_lane": "commercial_product",
+      "variant_family": "electricity_state_provider",
+      "coverage": { "state": "Maharashtra", "providers": ["MSEDCL"] },
+      "body": "Pay an electricity bill by selecting the state, selecting the electricity board, entering the consumer identifier, reviewing the amount, selecting a payment method, and completing payment. This state template identifies MSEDCL and otherwise repeats the generic electricity-payment workflow."
+    },
+    {
+      "id": "paytm-electricity-karnataka",
+      "path": "/electricity-bill-payment/karnataka",
+      "entity_id": "one97",
+      "common_root": "product_service",
+      "feature_cluster": "electricity_bill_payment",
+      "evidence_lane": "commercial_product",
+      "variant_family": "electricity_state_provider",
+      "coverage": { "state": "Karnataka", "providers": ["BESCOM"] },
+      "body": "Pay an electricity bill by selecting the state, selecting the electricity board, entering the consumer identifier, reviewing the amount, selecting a payment method, and completing payment. This state template identifies BESCOM and otherwise repeats the generic electricity-payment workflow."
+    },
+    {
+      "id": "paytm-electricity-gujarat",
+      "path": "/electricity-bill-payment/gujarat",
+      "entity_id": "one97",
+      "common_root": "product_service",
+      "feature_cluster": "electricity_bill_payment",
+      "evidence_lane": "commercial_product",
+      "variant_family": "electricity_state_provider",
+      "coverage": { "state": "Gujarat", "providers": ["UGVCL", "DGVCL"] },
+      "body": "Pay an electricity bill by selecting the state, selecting the electricity board, entering the consumer identifier, reviewing the amount, selecting a payment method, and completing payment. This state template lists Gujarat electricity providers and otherwise repeats the generic electricity-payment workflow."
+    },
+    {
+      "id": "paytm-electricity-rajasthan",
+      "path": "/electricity-bill-payment/rajasthan",
+      "entity_id": "one97",
+      "common_root": "product_service",
+      "feature_cluster": "electricity_bill_payment",
+      "evidence_lane": "commercial_product",
+      "variant_family": "electricity_state_provider",
+      "coverage": { "state": "Rajasthan", "providers": ["JVVNL"] },
+      "body": "Pay an electricity bill by selecting the state, selecting the electricity board, entering the consumer identifier, reviewing the amount, selecting a payment method, and completing payment. This state template identifies JVVNL and otherwise repeats the generic electricity-payment workflow."
+    },
+    {
+      "id": "paytm-payment-gateway",
+      "path": "/payment-gateway",
+      "entity_id": "ppsl",
+      "common_root": "product_service",
+      "feature_cluster": "payment_gateway",
+      "evidence_lane": "commercial_product",
+      "variant_family": "payment_gateway_overview",
+      "body": "Paytm Payment Gateway is a merchant payment-acceptance product provided through the PPSL operating surface. It describes supported payment methods, checkout options, merchant integration, settlements, commercial positioning, and payment acceptance. The entity owner must remain PPSL rather than being merged into One97 merely because the Paytm brand is shared."
+    },
+    {
+      "id": "paytm-ai-router-product",
+      "path": "/airouter",
+      "entity_id": "ppsl",
+      "common_root": "product_service",
+      "secondary_roots": ["ai_safety_transparency"],
+      "feature_cluster": "payment_routing",
+      "evidence_lane": "commercial_product",
+      "variant_family": "ai_router",
+      "ai_overlay": "payment_routing_optimisation",
+      "body": "Paytm AI Router is a payment-routing optimisation product. It evaluates gateway performance, payment attributes, and merchant preferences to select a routing path. This commercial page establishes the product proposition. The AI overlay must reference the payment-routing feature rather than creating a duplicate copy of the entire product corpus."
+    },
+    {
+      "id": "paytm-ai-router-docs",
+      "path": "/docs/ai-router-overview",
+      "entity_id": "ppsl",
+      "common_root": "technical_docs_api",
+      "secondary_roots": ["docs_api_data_flow", "ai_safety_transparency"],
+      "feature_cluster": "payment_routing",
+      "evidence_lane": "technical_operation",
+      "variant_family": "ai_router",
+      "ai_overlay": "payment_routing_optimisation",
+      "body": "The AI Router technical overview describes evaluation of historical and real-time gateway performance, merchant configuration, payment attributes, route selection, and transaction forwarding. It is materially distinct technical evidence for the same payment-routing feature and should coexist with the product page without duplicating identical marketing blocks across roots."
+    },
+    {
+      "id": "paytm-pi",
+      "path": "/paytm-pi",
+      "entity_id": "ppsl",
+      "common_root": "product_service",
+      "secondary_roots": ["security_trust_compliance", "ai_safety_transparency"],
+      "feature_cluster": "fraud_detection",
+      "evidence_lane": "commercial_product",
+      "variant_family": "fraud_ai",
+      "ai_overlay": "ml_fraud_detection",
+      "body": "Pi by Paytm is a fraud and risk product using anomaly detection, machine-learning models, feedback loops, and dynamic risk tiering. The evidence belongs primarily to the fraud-detection feature. Security and AI roots should reference the source instead of storing full duplicate text."
+    },
+    {
+      "id": "one97-privacy",
+      "path": "/company/privacy-policy",
+      "entity_id": "one97",
+      "common_root": "privacy_data_processing",
+      "feature_cluster": "legal_governance",
+      "evidence_lane": "legal_instrument",
+      "legal_doc_candidate": true,
+      "legal_doc_type": "privacy_policy",
+      "body": "One97 Communications Privacy Policy. This distinct legal instrument explains personal-information practices for the relevant One97 consumer services, including collection, purposes, sharing, retention, security, choices, and contact routes. It must retain the One97 entity identity and must not be merged with the PPSL privacy policy."
+    },
+    {
+      "id": "ppsl-privacy",
+      "path": "/policies/privacy-policy",
+      "entity_id": "ppsl",
+      "common_root": "privacy_data_processing",
+      "feature_cluster": "legal_governance",
+      "evidence_lane": "legal_instrument",
+      "legal_doc_candidate": true,
+      "legal_doc_type": "privacy_policy",
+      "body": "Paytm Payments Services Limited Privacy Policy. This is a separate legal instrument for the PPSL payment-services surface. It describes data practices, product scope, entity-specific contacts, and payment-service processing. Similar language does not permit merger with the One97 privacy policy because the entity and service scope differ."
+    },
+    {
+      "id": "one97-upi-terms",
+      "path": "/company/upi-terms-and-conditions",
+      "entity_id": "one97",
+      "common_root": "regulatory_licensing_status",
+      "secondary_roots": ["product_service", "privacy_data_processing", "grievance_complaints"],
+      "feature_cluster": "upi",
+      "evidence_lane": "legal_instrument",
+      "legal_doc_candidate": true,
+      "legal_doc_type": "terms_of_service",
+      "body": "UPI Terms and Conditions. This distinct instrument describes the Paytm TPAP role, partner PSP bank relationships, user responsibilities, processing and settlement roles, complaints, and service conditions for UPI. It must remain independent from general terms and must be referenced across relevant roots without copying the full document."
+    },
+    {
+      "id": "one97-grievance-policy",
+      "path": "/company/grievance",
+      "entity_id": "one97",
+      "common_root": "grievance_complaints",
+      "feature_cluster": "grievance_routes",
+      "evidence_lane": "legal_instrument",
+      "legal_doc_candidate": true,
+      "legal_doc_type": "legal_notice",
+      "body": "Paytm Grievance Policy. This instrument separates consumer-services and consumer-lending grievance routes, escalation stages, contact methods, and responsible officers. It is a distinct operational legal instrument and should be referenced by product and regulatory roots without duplicating its complete text."
+    }
+  ],
+  "expected": {
+    "entity_boundaries": {
+      "one97": ["one97-privacy", "one97-upi-terms", "one97-grievance-policy"],
+      "ppsl": ["paytm-payment-gateway", "paytm-ai-router-product", "paytm-ai-router-docs", "paytm-pi", "ppsl-privacy"]
+    },
+    "legal_instruments_must_remain_distinct": [
+      "one97-privacy",
+      "ppsl-privacy",
+      "one97-upi-terms",
+      "one97-grievance-policy"
+    ],
+    "feature_clusters": {
+      "electricity_bill_payment": {
+        "canonical_page_id": "paytm-electricity-canonical",
+        "variant_family": "electricity_state_provider",
+        "structured_coverage_required": true,
+        "full_variant_extraction_forbidden": true
+      },
+      "payment_routing": {
+        "commercial_canonical": "paytm-ai-router-product",
+        "technical_canonical": "paytm-ai-router-docs",
+        "ai_overlay_relationship_required": true
+      },
+      "fraud_detection": {
+        "canonical_page_id": "paytm-pi",
+        "ai_overlay_relationship_required": true
+      }
+    },
+    "cross_root_ownership": {
+      "paytm-ai-router-product": { "primary_root": "product_service", "reference_roots": ["ai_safety_transparency"] },
+      "paytm-ai-router-docs": { "primary_root": "technical_docs_api", "reference_roots": ["docs_api_data_flow", "ai_safety_transparency"] },
+      "paytm-pi": { "primary_root": "product_service", "reference_roots": ["security_trust_compliance", "ai_safety_transparency"] }
+    },
+    "logical_root_policy": {
+      "product_service_logical_artifacts": 1,
+      "source_count_sharding_forbidden": true,
+      "size_threshold_bytes": 819200
+    }
+  }
+}

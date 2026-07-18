@@ -1,0 +1,214 @@
+{
+  "freeze_id": "PHASE1_PUBLIC_CONTRACT_FREEZE_v1",
+  "status": "LOCKED_BEFORE_UNIVERSAL_DEDUPE_REBUILD",
+  "base_commit": "326452298c0028e713a422728d96cf48d226f40a",
+  "scope": "Public Phase 1 artifact names, job sequencing, dynamic patterns, handoff shapes, and downstream read compatibility. Internal implementation is intentionally excluded.",
+  "job_sequence": [
+    "AGENT_1A_URL_MANIFEST",
+    "AGENT_1B_EXTRACT",
+    "M6_BUCKET_INDEX",
+    "P2_SOURCE_INVENTORY_CARTOGRAPHY"
+  ],
+  "job_next": {
+    "AGENT_1A_URL_MANIFEST": "AGENT_1B_EXTRACT",
+    "AGENT_1B_EXTRACT": "M6_BUCKET_INDEX",
+    "M6_BUCKET_INDEX": "P2_SOURCE_INVENTORY_CARTOGRAPHY"
+  },
+  "agent_1a_required_writes": [
+    "domain_selection_profile",
+    "active_run_package_manifest",
+    "deduped_url_manifest",
+    "source_discovery_matrix_manifest",
+    "adapter_expansion_log",
+    "neutral_evidence_bucket_manifest"
+  ],
+  "agent_1b_required_writes": [
+    "source_family_index",
+    "legal_doc_inventory",
+    "legal_doc_extraction_index",
+    "legal_doc_lossless_validation_manifest"
+  ],
+  "m6_required_writes": [
+    "source_discovery_handoff",
+    "post_phase_1_domain_gate_handoff"
+  ],
+  "common_root_codes": [
+    "homepage_landing",
+    "company_identity",
+    "contact_notice",
+    "product_service",
+    "platform_feature_solution",
+    "technical_docs_api",
+    "docs_api_data_flow",
+    "integrations_ecosystem",
+    "pricing_commercial_availability",
+    "use_case_customer_industry",
+    "privacy_data_processing",
+    "security_trust_compliance",
+    "data_governance_controls",
+    "ai_safety_transparency",
+    "support_help_resources",
+    "regulatory_licensing_status",
+    "grievance_complaints"
+  ],
+  "dynamic_patterns": {
+    "logical_root": "lossless_root__{COMMON_ROOT}",
+    "physical_root_shard": "lossless_root__{COMMON_ROOT}__part_{NNN}",
+    "legal_document": "legal_doc_{DOC_TYPE}",
+    "legal_document_stable_suffix": "legal_doc_{DOC_TYPE}__{STABLE_SUFFIX}"
+  },
+  "handoff_required_top_level_fields": {
+    "source_discovery_handoff": [
+      "run_id",
+      "target_url",
+      "generated_by",
+      "schema_version",
+      "status",
+      "contract",
+      "common_root_index",
+      "neutral_evidence_bucket_index",
+      "legal_document_index",
+      "full_matrix_source_index",
+      "missing_or_limited_sources",
+      "access_matrix",
+      "canonical_artifacts",
+      "handoff_to_domain_gate"
+    ],
+    "post_phase_1_domain_gate_handoff": [
+      "run_id",
+      "target_url",
+      "generated_by",
+      "schema_version",
+      "classification_allowed",
+      "classification_source_artifacts",
+      "legal_doc_granularity_rule",
+      "domain_lock_allowed_before_this_handoff",
+      "forbidden_phase_1_actions_confirmed"
+    ]
+  },
+  "common_root_entry_required_fields": [
+    "file",
+    "priority",
+    "root_traversal_policy",
+    "neutral_buckets",
+    "storage_status",
+    "virtual_root_file",
+    "physical_artifacts",
+    "shard_count",
+    "shard_resolution_required",
+    "complete",
+    "primary",
+    "legal_documents",
+    "index_only",
+    "failed_absent"
+  ],
+  "canonical_source_reference_required_fields": [
+    "source_id",
+    "manifest_id",
+    "common_root",
+    "url",
+    "file",
+    "physical_artifacts",
+    "text_field",
+    "route_type",
+    "materiality",
+    "admission_tier",
+    "extraction_decision",
+    "neutral_buckets",
+    "legal_doc_candidate",
+    "status"
+  ],
+  "downstream_required_read_subsets": {
+    "M6_BUCKET_INDEX": [
+      "deduped_url_manifest",
+      "source_discovery_matrix_manifest",
+      "adapter_expansion_log",
+      "neutral_evidence_bucket_manifest",
+      "source_family_index",
+      "legal_doc_inventory",
+      "legal_doc_extraction_index",
+      "legal_doc_lossless_validation_manifest"
+    ],
+    "P2_SOURCE_INVENTORY_CARTOGRAPHY": [
+      "source_discovery_handoff",
+      "post_phase_1_domain_gate_handoff",
+      "source_discovery_matrix_manifest",
+      "neutral_evidence_bucket_manifest",
+      "adapter_expansion_log",
+      "source_family_index",
+      "legal_doc_inventory",
+      "legal_doc_extraction_index",
+      "legal_doc_lossless_validation_manifest"
+    ],
+    "M9": [
+      "source_discovery_handoff",
+      "post_phase_1_domain_gate_handoff",
+      "source_discovery_matrix_manifest",
+      "neutral_evidence_bucket_manifest",
+      "adapter_expansion_log",
+      "source_family_index",
+      "legal_doc_inventory",
+      "legal_doc_extraction_index",
+      "legal_doc_lossless_validation_manifest"
+    ],
+    "P2A_TARGET_PROFILE_SOURCE_INDEX": [
+      "source_discovery_handoff",
+      "post_phase_1_domain_gate_handoff",
+      "source_discovery_matrix_manifest",
+      "neutral_evidence_bucket_manifest",
+      "adapter_expansion_log",
+      "source_family_index"
+    ],
+    "P2B_DOMAIN_DERIVATION_SOURCE_INDEX": [
+      "source_discovery_handoff",
+      "post_phase_1_domain_gate_handoff",
+      "source_discovery_matrix_manifest",
+      "neutral_evidence_bucket_manifest",
+      "adapter_expansion_log",
+      "source_family_index"
+    ],
+    "P2C_ACTIVITY_PROFILE_SOURCE_INDEX": [
+      "source_discovery_handoff",
+      "post_phase_1_domain_gate_handoff",
+      "source_discovery_matrix_manifest",
+      "neutral_evidence_bucket_manifest",
+      "adapter_expansion_log",
+      "source_family_index"
+    ],
+    "P2D_DATA_PRIVACY_NAVIGATION_INDEX": [
+      "source_discovery_handoff",
+      "post_phase_1_domain_gate_handoff",
+      "source_discovery_matrix_manifest",
+      "neutral_evidence_bucket_manifest",
+      "adapter_expansion_log",
+      "source_family_index"
+    ],
+    "P2E_DOMAIN_CONTROL_OBLIGATION_NAVIGATION_INDEX": [
+      "source_discovery_handoff",
+      "post_phase_1_domain_gate_handoff",
+      "source_discovery_matrix_manifest",
+      "neutral_evidence_bucket_manifest",
+      "adapter_expansion_log",
+      "source_family_index"
+    ]
+  },
+  "dynamic_read_requirements": {
+    "M6_BUCKET_INDEX": ["legal_doc_{DOC_TYPE}"],
+    "P2_SOURCE_INVENTORY_CARTOGRAPHY": ["legal_doc_{DOC_TYPE}"],
+    "M9": ["legal_doc_{DOC_TYPE}"],
+    "P2A_TARGET_PROFILE_SOURCE_INDEX": ["legal_doc_{DOC_TYPE}"],
+    "P2_INDEX_COMPILER_VALIDATION": ["legal_doc_{DOC_TYPE}"]
+  },
+  "non_impact_guards": {
+    "rename_existing_public_artifact": false,
+    "remove_existing_public_field_used_downstream": false,
+    "change_phase_job_id": false,
+    "change_job_sequence": false,
+    "change_17_root_identity": false,
+    "change_dynamic_legal_document_pattern": false,
+    "require_downstream_consumer_edit_for_phase1_rebuild": false,
+    "allow_additive_phase1_fields": true,
+    "allow_internal_phase1_model_replacement": true,
+    "allow_compatibility_projection": true
+  }
+}

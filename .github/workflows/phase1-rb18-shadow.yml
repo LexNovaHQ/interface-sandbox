@@ -1,0 +1,75 @@
+name: Phase 1 RB-18 Shadow Validation
+
+on:
+  pull_request:
+    paths:
+      - "diligence-artifact-backend/src/phases/01-source-discovery/**"
+      - "diligence-artifact-backend/src/runtime/config.js"
+      - "diligence-artifact-backend/src/runtime/services/provider.service.js"
+      - "diligence-artifact-backend/src/runtime/services/storage/drive.service.js"
+      - "diligence-artifact-backend/src/runtime/services/storage/firestore.service.js"
+      - "diligence-artifact-backend/scripts/check-gemini-key-configuration.mjs"
+      - "diligence-artifact-backend/scripts/check-phase1-rb18-shadow-runs-v2.mjs"
+      - "diligence-artifact-backend/scripts/check-phase1-rb18-materialisation-classification.mjs"
+      - "diligence-artifact-backend/scripts/lib/rb18-controlled-fetch.mjs"
+      - "diligence-artifact-backend/package.json"
+      - ".github/workflows/phase1-rb18-shadow.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phase1-rb18-shadow-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  shadow:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: diligence-artifact-backend
+    env:
+      NODE_OPTIONS: "--max-old-space-size=2048"
+      SOURCE_FETCH_TIMEOUT_MS: "6000"
+      LN_PHASE1_FINGERPRINT_TIMEOUT_MS: "6000"
+      LN_PHASE1_FINGERPRINT_CONCURRENCY: "4"
+      LN_PHASE1_SHADOW_MAX_NETWORK_REQUESTS: "120"
+      LN_PHASE1_SHADOW_NETWORK_TIMEOUT_MS: "6000"
+      GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
+      GEMINI_MODELS: "gemini-2.5-flash"
+      GEMINI_RETRY_ROUNDS: "2"
+      GEMINI_KEYS_PER_MODEL_PER_ROUND: "2"
+      GEMINI_TIMEOUT_MS: "120000"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: diligence-artifact-backend/package-lock.json
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Validate deterministic Phase 1 behaviour first
+        run: npm run check:phase1-behavioural
+      - name: Validate Gemini key configuration parser
+        run: npm run check:gemini-key-configuration
+      - name: Require semantic provider secret
+        shell: bash
+        run: |
+          if [ -z "$GEMINI_API_KEYS" ]; then
+            echo "GEMINI_API_KEYS repository secret is required only for unresolved RB-18B semantic clusters."
+            exit 1
+          fi
+      - name: Run one-job two-layer Sarvam and Paytm manifest shadows
+        run: npm run check:phase1-rb18-shadow
+      - name: Upload RB-18B shadow diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase1-rb18-shadow-diagnostics
+          path: diligence-artifact-backend/phase1-shadow-output
+          if-no-files-found: error
